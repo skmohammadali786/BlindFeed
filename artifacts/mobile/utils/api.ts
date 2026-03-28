@@ -2,7 +2,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function getApiBase(): string {
   if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin}/api-server/api`;
+    // Dev: Expo Metro runs behind our dev-proxy which routes /api-server/* → port 8080.
+    // Production: Replit's router maps the API artifact's /api path directly.
+    const isProduction = process.env.NODE_ENV === "production";
+    return isProduction
+      ? `${window.location.origin}/api`
+      : `${window.location.origin}/api-server/api`;
   }
   const domain = process.env.EXPO_PUBLIC_DOMAIN;
   return domain ? `https://${domain}/api-server/api` : "http://localhost:8080/api";

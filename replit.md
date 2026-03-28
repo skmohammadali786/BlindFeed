@@ -90,7 +90,10 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 - `useReactionAnim` — triple-spring bounce for Worth it / Skip reaction buttons
 - `useShimmer` — opacity shimmer for skeleton/loading states
 
-**API client**: `utils/api.ts` — auto-detects web vs native; uses `window.location.origin + /api-server/api` on web (works in both dev proxy and production), env var fallback for native.
+**API client**: `utils/api.ts` — auto-detects environment:
+- Dev (NODE_ENV=development): `window.location.origin + /api-server/api` → dev proxy strips `/api-server` and forwards to port 8080
+- Production (NODE_ENV=production): `window.location.origin + /api` → Replit's router sends `/api/*` directly to the API server (artifact `previewPath = "/api"`)
+- Native fallback: `https://${EXPO_PUBLIC_DOMAIN}/api-server/api` or `localhost:8080/api`
 
 **Context**: `context/AppContext.tsx` — exposes `appInitialized`, `registered`, `onboarded`, posts, settings, tempUserId, session timer
 

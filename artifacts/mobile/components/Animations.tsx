@@ -140,6 +140,8 @@ export function GlowPulse({
   return <Animated.View style={[animStyle, style]}>{children}</Animated.View>;
 }
 
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
 export function AnimatedPressable({
   children,
   style,
@@ -153,24 +155,22 @@ export function AnimatedPressable({
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <Animated.View style={[animStyle, style as StyleProp<ViewStyle>]}>
-      <TouchableOpacity
-        onPressIn={() => {
-          scale.value = withSpring(scaleTo, { damping: 12, stiffness: 350 });
-        }}
-        onPressOut={() => {
-          scale.value = withSpring(1, { damping: 10, stiffness: 200 });
-        }}
-        onPress={onPress}
-        onLongPress={onLongPress}
-        disabled={disabled}
-        activeOpacity={activeOpacity}
-        style={{ width: "100%" }}
-        {...rest}
-      >
-        {children}
-      </TouchableOpacity>
-    </Animated.View>
+    <AnimatedTouchable
+      onPressIn={() => {
+        scale.value = withSpring(scaleTo, { damping: 12, stiffness: 350 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 10, stiffness: 200 });
+      }}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      disabled={disabled}
+      activeOpacity={activeOpacity}
+      style={[style as StyleProp<ViewStyle>, animStyle]}
+      {...rest}
+    >
+      {children}
+    </AnimatedTouchable>
   );
 }
 
