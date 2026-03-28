@@ -278,7 +278,7 @@ export default function SettingsScreen() {
               <TouchableOpacity style={styles.modalCancel} onPress={() => setShowResetModal(false)}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalConfirm} onPress={handleResetId}>
+              <TouchableOpacity style={[styles.modalConfirm, { backgroundColor: "#FF3B30" }]} onPress={handleResetId}>
                 <Text style={styles.modalConfirmText}>Reset</Text>
               </TouchableOpacity>
             </View>
@@ -296,7 +296,7 @@ export default function SettingsScreen() {
               <TouchableOpacity style={styles.modalCancel} onPress={() => setShowLogoutModal(false)}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalConfirm} onPress={handleLogout}>
+              <TouchableOpacity style={[styles.modalConfirm, { backgroundColor: "#FF3B30" }]} onPress={handleLogout}>
                 <Text style={styles.modalConfirmText}>Log out</Text>
               </TouchableOpacity>
             </View>
