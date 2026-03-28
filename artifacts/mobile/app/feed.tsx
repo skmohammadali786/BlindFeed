@@ -32,6 +32,14 @@ import {
 
 type SortMode = "fresh" | "top";
 
+function parseImageUrls(imageUrl: string | null | undefined): string[] {
+  if (!imageUrl) return [];
+  if (imageUrl.startsWith("[")) {
+    try { return JSON.parse(imageUrl); } catch { return [imageUrl]; }
+  }
+  return [imageUrl];
+}
+
 function ReactionBtn({
   active,
   activeColor,
@@ -118,12 +126,29 @@ function PostCard({
   return (
     <AnimatedListItem index={index}>
       <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
-        {post.imageUrl && (
-          <Image
-            source={{ uri: getObjectUrl(post.imageUrl) }}
-            style={styles.postImage}
-            contentFit="cover"
-          />
+        {(() => {
+          const imgs = parseImageUrls(post.imageUrl);
+          if (imgs.length === 0) return null;
+          return (
+            <View>
+              <Image
+                source={{ uri: getObjectUrl(imgs[0]) }}
+                style={styles.postImage}
+                contentFit="cover"
+              />
+              {imgs.length > 1 && (
+                <View style={styles.moreImagesTag}>
+                  <Text style={styles.moreImagesText}>+{imgs.length - 1}</Text>
+                </View>
+              )}
+            </View>
+          );
+        })()}
+        {post.videoUrl && (
+          <View style={styles.videoIndicator}>
+            <Feather name="play-circle" size={14} color="#fff" />
+            <Text style={styles.videoIndicatorText}>Video</Text>
+          </View>
         )}
         <Text style={styles.cardText}>{post.content}</Text>
         <View style={styles.cardMeta}>
@@ -398,6 +423,27 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       gap: 10,
     },
     postImage: { width: "100%", height: 180, borderRadius: 10 },
+    moreImagesTag: {
+      position: "absolute",
+      bottom: 8,
+      right: 8,
+      backgroundColor: "rgba(0,0,0,0.65)",
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    moreImagesText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+    videoIndicator: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      alignSelf: "flex-start",
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    videoIndicatorText: { color: "#fff", fontSize: 12, fontFamily: "Inter_500Medium" },
     cardText: { fontSize: 16, fontFamily: "Inter_400Regular", color: colors.text, lineHeight: 24 },
     cardMeta: { flexDirection: "row", alignItems: "center", gap: 10 },
     cardTime: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textSecondary },

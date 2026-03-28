@@ -41,21 +41,27 @@ export default function SettingsScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showFeedModal, setShowFeedModal] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const styles = makeStyles(colors);
+
+  const showToastMsg = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleClearCache = async () => {
     setShowClearModal(false);
     await clearAllData();
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Done", "Cache cleared successfully.");
+    showToastMsg("Cache cleared successfully");
   };
 
   const handleResetId = async () => {
     setShowResetModal(false);
     await resetUserId();
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Done", "Your anonymous ID has been reset.");
+    showToastMsg("Anonymous ID has been reset");
   };
 
   const handleLogout = async () => {
@@ -133,6 +139,12 @@ export default function SettingsScreen() {
   return (
     <ScreenTransition>
       <View style={[styles.container, { paddingTop: top }]}>
+        {toast && (
+          <View style={[styles.toastBanner, { top: top + 8 }]}>
+            <Feather name="check-circle" size={15} color="#fff" />
+            <Text style={styles.toastText}>{toast}</Text>
+          </View>
+        )}
         <FadeSlide delay={0} from="top">
           <View style={styles.headerBar}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -182,7 +194,7 @@ export default function SettingsScreen() {
               <SettingRow
                 label="Notification settings"
                 subtitle="Daily reminders, post activity"
-                onPress={() => router.push("/notifications")}
+                onPress={() => router.push("/notification-settings")}
               />
             </View>
           </AnimatedListItem>
@@ -209,11 +221,13 @@ export default function SettingsScreen() {
                 label="Reset anonymous ID"
                 subtitle="Get a new temporary identity"
                 onPress={() => setShowResetModal(true)}
+                destructive
               />
               <SettingRow
                 label="Log out"
                 subtitle="Sign out and return to login"
                 onPress={() => setShowLogoutModal(true)}
+                destructive
               />
               <SettingRow
                 label="Delete account"
@@ -358,6 +372,30 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    toastBanner: {
+      position: "absolute",
+      left: 20,
+      right: 20,
+      zIndex: 999,
+      backgroundColor: "#34C759",
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      elevation: 6,
+    },
+    toastText: {
+      color: "#fff",
+      fontSize: 14,
+      fontFamily: "Inter_500Medium",
+      flex: 1,
     },
     headerBar: {
       flexDirection: "row",

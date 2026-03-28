@@ -13,6 +13,7 @@ export interface Post {
   id: string;
   content: string;
   imageUrl?: string | null;
+  videoUrl?: string | null;
   createdAt: number;
   expiresAt: number;
   worthItCount: number;
@@ -45,7 +46,7 @@ interface AppContextType {
   setOnboarded: () => void;
   setRegistered: (id: string) => void;
   logout: () => Promise<void>;
-  addPost: (content: string, imageUrl?: string | null, isDraft?: boolean, expiresInHours?: number | null) => Promise<Post | null>;
+  addPost: (content: string, imageUrl?: string | null, videoUrl?: string | null, isDraft?: boolean, expiresInHours?: number | null) => Promise<Post | null>;
   fetchMyPosts: () => Promise<ApiMyPost[]>;
   publishDraft: (draftId: string) => Promise<void>;
   deleteDraft: (draftId: string) => void;
@@ -62,6 +63,7 @@ export interface DraftPost {
   id: string;
   content: string;
   imageUrl?: string | null;
+  videoUrl?: string | null;
   createdAt: number;
 }
 
@@ -104,6 +106,7 @@ function mapApiPost(p: ApiPost): Post {
     id: String(p.id),
     content: p.content,
     imageUrl: p.imageUrl,
+    videoUrl: p.videoUrl,
     createdAt: new Date(p.createdAt).getTime(),
     expiresAt: new Date(p.expiresAt).getTime(),
     worthItCount: p.worthItCount,
@@ -173,7 +176,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (draftsRaw) {
-        try { setDrafts(JSON.parse(draftsRaw)); } catch (_) {}
+        try {
+          const parsed: DraftPost[] = JSON.parse(draftsRaw);
+          const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+          const fresh = parsed.filter((d) => Date.now() - d.createdAt < TWELVE_HOURS_MS);
+          if (fresh.length !== parsed.length) {
+            await AsyncStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(fresh));
+          }
+          setDrafts(fresh);
+        } catch (_) {}
       }
     } catch (_) {}
     setLoaded(true);
@@ -215,12 +226,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.multiRemove([STORAGE_KEYS.ANONYMOUS_ID, STORAGE_KEYS.REGISTERED]);
   }, []);
 
-  const addPost = useCallback(async (content: string, imageUrl?: string | null, isDraft?: boolean, expiresInHours?: number | null): Promise<Post | null> => {
+  const addPost = useCallback(async (
+    content: string,
+    imageUrl?: string | null,
+    videoUrl?: string | null,
+    isDraft?: boolean,
+    expiresInHours?: number | null,
+  ): Promise<Post | null> => {
     if (isDraft) {
       const draft: DraftPost = {
         id: generateId(),
         content,
         imageUrl: imageUrl ?? null,
+        videoUrl: videoUrl ?? null,
         createdAt: Date.now(),
       };
       setDrafts((prev) => {
@@ -235,6 +253,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const apiPost = await api.post<ApiPost>("/posts", {
         content,
         imageUrl: imageUrl ?? null,
+        videoUrl: videoUrl ?? null,
         expiresInHours: expiresInHours === undefined ? 48 : expiresInHours,
       });
       const newPost = mapApiPost(apiPost);
@@ -252,7 +271,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const publishDraft = useCallback(async (draftId: string) => {
     const draft = drafts.find((d) => d.id === draftId);
     if (!draft) return;
-    await addPost(draft.content, draft.imageUrl);
+    await addPost(draft.content, draft.imageUrl, draft.videoUrl);
     setDrafts((prev) => {
       const updated = prev.filter((d) => d.id !== draftId);
       AsyncStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(updated));

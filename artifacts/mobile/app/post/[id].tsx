@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -29,6 +30,14 @@ import {
   useReactionAnim,
 } from "@/components/Animations";
 import Animated from "react-native-reanimated";
+
+function parseImageUrls(imageUrl: string | null | undefined): string[] {
+  if (!imageUrl) return [];
+  if (imageUrl.startsWith("[")) {
+    try { return JSON.parse(imageUrl); } catch { return [imageUrl]; }
+  }
+  return [imageUrl];
+}
 
 function hashColor(str: string): string {
   const palette = ["#3DDB85", "#4ECDC4", "#FFE66D", "#F7AEF8", "#B8F0E6", "#FFB347", "#A8DADC", "#E9C46A"];
@@ -138,6 +147,7 @@ export default function PostDetailScreen() {
             id: String(data.id),
             content: data.content,
             imageUrl: data.imageUrl,
+            videoUrl: data.videoUrl,
             createdAt: new Date(data.createdAt).getTime(),
             expiresAt: new Date(data.expiresAt).getTime(),
             worthItCount: data.worthItCount,
@@ -289,8 +299,26 @@ export default function PostDetailScreen() {
             </View>
           </View>
 
-          {post.imageUrl && (
-            <Image source={{ uri: getObjectUrl(post.imageUrl) }} style={styles.postImage} contentFit="cover" />
+          {(() => {
+            const imgs = parseImageUrls(post.imageUrl);
+            if (imgs.length === 0) return null;
+            if (imgs.length === 1) {
+              return <Image source={{ uri: getObjectUrl(imgs[0]) }} style={styles.postImage} contentFit="cover" />;
+            }
+            return (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }} contentContainerStyle={{ gap: 8 }}>
+                {imgs.map((url, i) => (
+                  <Image key={i} source={{ uri: getObjectUrl(url) }} style={styles.multiImage} contentFit="cover" />
+                ))}
+              </ScrollView>
+            );
+          })()}
+
+          {post.videoUrl && (
+            <View style={styles.videoContainer}>
+              <Feather name="play-circle" size={40} color="#fff" />
+              <Text style={styles.videoNote}>Video attached — open in app to play</Text>
+            </View>
           )}
 
           <Text style={styles.postContent}>{post.content}</Text>
@@ -537,6 +565,17 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     copiedLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.green },
 
     postImage: { width: "100%", height: 220, borderRadius: 14, marginBottom: 14 },
+    multiImage: { width: 200, height: 200, borderRadius: 12 },
+    videoContainer: {
+      backgroundColor: "#1C1C1E",
+      borderRadius: 14,
+      height: 140,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 14,
+      gap: 8,
+    },
+    videoNote: { color: "#8E8E93", fontSize: 13, fontFamily: "Inter_400Regular" },
     postContent: {
       fontSize: 20,
       fontFamily: "Inter_400Regular",

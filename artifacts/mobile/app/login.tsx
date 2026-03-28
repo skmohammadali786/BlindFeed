@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -31,6 +30,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const canLogin = identifier.trim().length >= 3 && password.length >= 6;
 
@@ -38,6 +38,7 @@ export default function LoginScreen() {
     if (!canLogin || loading) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    setErrorMsg(null);
     setLoading(true);
     try {
       const result = await api.post<{ anonymousId: string; name: string }>("/auth/login", {
@@ -51,7 +52,7 @@ export default function LoginScreen() {
       router.replace("/feed");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Login failed. Please try again.";
-      Alert.alert("Login failed", message);
+      setErrorMsg(message);
     } finally {
       setLoading(false);
     }
@@ -86,6 +87,15 @@ export default function LoginScreen() {
               Log in with your email or phone number and password.
             </Text>
           </FadeSlide>
+
+          {errorMsg && (
+            <FadeSlide delay={0}>
+              <View style={styles.errorBanner}>
+                <Feather name="alert-circle" size={14} color="#fff" />
+                <Text style={styles.errorBannerText}>{errorMsg}</Text>
+              </View>
+            </FadeSlide>
+          )}
 
           <FadeSlide delay={120}>
             <View style={styles.fieldGroup}>
@@ -159,6 +169,22 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    errorBanner: {
+      backgroundColor: "#FF3B30",
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 16,
+    },
+    errorBannerText: {
+      color: "#fff",
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      flex: 1,
     },
     backRow: {
       flexDirection: "row",

@@ -7,6 +7,7 @@ export const postsTable = pgTable("posts", {
   anonymousId: text("anonymous_id").notNull(),
   content: text("content").notNull(),
   imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
   worthItCount: integer("worth_it_count").default(0).notNull(),
   skipCount: integer("skip_count").default(0).notNull(),
   expiresAt: timestamp("expires_at").notNull(),

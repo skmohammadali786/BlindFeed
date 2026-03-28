@@ -90,6 +90,7 @@ export interface ApiPost {
   anonymousId: string;
   content: string;
   imageUrl: string | null;
+  videoUrl: string | null;
   worthItCount: number;
   skipCount: number;
   expiresAt: string;

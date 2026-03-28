@@ -40,7 +40,8 @@ export default function CreateScreen() {
   const { colors } = useTheme();
   const { addPost, drafts, publishDraft, deleteDraft } = useApp();
   const [content, setContent] = useState("");
-  const [selectedImage, setSelectedImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [selectedImages, setSelectedImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [posting, setPosting] = useState(false);
   const [showDrafts, setShowDrafts] = useState(false);
@@ -72,19 +73,48 @@ export default function CreateScreen() {
     : "";
   const canPost = canSubmit && !isRateLimited;
 
-  const pickImage = async () => {
+  const MAX_IMAGES = 3;
+  const MAX_VIDEO_DURATION_SEC = 60;
+
+  const pickImages = async () => {
+    if (selectedImages.length >= MAX_IMAGES) return;
     const permResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permResult.granted) {
-      Alert.alert("Permission needed", "Allow access to photos to add an image.");
+      Alert.alert("Permission needed", "Allow access to photos to add images.");
       return;
     }
+    const remaining = MAX_IMAGES - selectedImages.length;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
       quality: 0.8,
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
     });
-    if (!result.canceled) setSelectedImage(result.assets[0]);
+    if (!result.canceled) {
+      setSelectedImages((prev) => [...prev, ...result.assets].slice(0, MAX_IMAGES));
+    }
+  };
+
+  const pickVideo = async () => {
+    const permResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permResult.granted) {
+      Alert.alert("Permission needed", "Allow access to media to add a video.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "videos",
+      quality: 0.8,
+      videoMaxDuration: MAX_VIDEO_DURATION_SEC,
+    });
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      const durationSec = (asset.duration ?? 0);
+      if (durationSec > MAX_VIDEO_DURATION_SEC) {
+        Alert.alert("Video too long", `Please select a video under ${MAX_VIDEO_DURATION_SEC} seconds.`);
+        return;
+      }
+      setSelectedVideo(asset);
+    }
   };
 
   const handleSubmit = async (isDraft = false) => {
@@ -95,27 +125,53 @@ export default function CreateScreen() {
     setPosting(true);
     try {
       let imageUrl: string | null = null;
+      let videoUrl: string | null = null;
 
-      if (selectedImage && !isDraft) {
-        try {
-          const { uploadURL, objectPath } = await requestUploadUrl(
-            "post-image.jpg",
-            selectedImage.fileSize ?? 0,
-            selectedImage.mimeType ?? "image/jpeg",
-          );
-          const blob = await fetch(selectedImage.uri).then((r) => r.blob());
-          await fetch(uploadURL, {
-            method: "PUT",
-            body: blob,
-            headers: { "Content-Type": selectedImage.mimeType ?? "image/jpeg" },
-          });
-          imageUrl = objectPath;
-        } catch {
-          Alert.alert("Image upload failed", "Your post will be submitted without the image.");
+      if (!isDraft) {
+        const uploadedImageUrls: string[] = [];
+        for (const img of selectedImages) {
+          try {
+            const { uploadURL, objectPath } = await requestUploadUrl(
+              "post-image.jpg",
+              img.fileSize ?? 0,
+              img.mimeType ?? "image/jpeg",
+            );
+            const blob = await fetch(img.uri).then((r) => r.blob());
+            await fetch(uploadURL, {
+              method: "PUT",
+              body: blob,
+              headers: { "Content-Type": img.mimeType ?? "image/jpeg" },
+            });
+            uploadedImageUrls.push(objectPath);
+          } catch {
+          }
+        }
+        if (uploadedImageUrls.length === 1) {
+          imageUrl = uploadedImageUrls[0];
+        } else if (uploadedImageUrls.length > 1) {
+          imageUrl = JSON.stringify(uploadedImageUrls);
+        }
+
+        if (selectedVideo) {
+          try {
+            const { uploadURL, objectPath } = await requestUploadUrl(
+              "post-video.mp4",
+              selectedVideo.fileSize ?? 0,
+              selectedVideo.mimeType ?? "video/mp4",
+            );
+            const blob = await fetch(selectedVideo.uri).then((r) => r.blob());
+            await fetch(uploadURL, {
+              method: "PUT",
+              body: blob,
+              headers: { "Content-Type": selectedVideo.mimeType ?? "video/mp4" },
+            });
+            videoUrl = objectPath;
+          } catch {
+          }
         }
       }
 
-      await addPost(content.trim(), imageUrl, isDraft, isDraft ? 48 : expiresInHours);
+      await addPost(content.trim(), imageUrl, videoUrl, isDraft, isDraft ? 48 : expiresInHours);
       if (isDraft) {
         Alert.alert("Saved", "Draft saved successfully.");
         router.back();
@@ -262,20 +318,64 @@ export default function CreateScreen() {
           {charCount}/{MAX_CHARS}
         </Text>
 
-        {selectedImage && (
-          <View style={styles.imagePreviewContainer}>
-            <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} contentFit="cover" />
-            <TouchableOpacity style={styles.removeImage} onPress={() => setSelectedImage(null)}>
-              <Feather name="x" size={16} color="#fff" />
-            </TouchableOpacity>
-          </View>
+        {(selectedImages.length > 0 || selectedVideo) && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.mediaRow}
+            contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+          >
+            {selectedImages.map((img, idx) => (
+              <View key={idx} style={styles.mediaThumbnailWrap}>
+                <Image source={{ uri: img.uri }} style={styles.mediaThumbnail} contentFit="cover" />
+                <TouchableOpacity
+                  style={styles.removeThumb}
+                  onPress={() => setSelectedImages((prev) => prev.filter((_, i) => i !== idx))}
+                >
+                  <Feather name="x" size={12} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {selectedVideo && (
+              <View style={styles.mediaThumbnailWrap}>
+                <View style={[styles.mediaThumbnail, styles.videoThumb]}>
+                  <Feather name="play-circle" size={28} color="#fff" />
+                  {selectedVideo.duration !== undefined && (
+                    <Text style={styles.videoDuration}>
+                      {Math.round(selectedVideo.duration)}s
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.removeThumb}
+                  onPress={() => setSelectedVideo(null)}
+                >
+                  <Feather name="x" size={12} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
         )}
 
         <View style={styles.toolbar}>
-          <TouchableOpacity style={styles.toolbarBtn} onPress={pickImage}>
-            <Feather name="image" size={20} color={selectedImage ? colors.green : colors.textSecondary} />
-            <Text style={[styles.toolbarBtnText, selectedImage && { color: colors.green }]}>
-              {selectedImage ? "Change photo" : "Add photo"}
+          <TouchableOpacity
+            style={styles.toolbarBtn}
+            onPress={pickImages}
+            disabled={selectedImages.length >= MAX_IMAGES}
+          >
+            <Feather name="image" size={20} color={selectedImages.length > 0 ? colors.green : selectedImages.length >= MAX_IMAGES ? colors.textTertiary : colors.textSecondary} />
+            <Text style={[styles.toolbarBtnText, selectedImages.length > 0 && { color: colors.green }]}>
+              {selectedImages.length > 0 ? `Photos (${selectedImages.length}/3)` : "Add photos"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.toolbarBtn}
+            onPress={selectedVideo ? () => setSelectedVideo(null) : pickVideo}
+          >
+            <Feather name="video" size={20} color={selectedVideo ? colors.green : colors.textSecondary} />
+            <Text style={[styles.toolbarBtnText, selectedVideo && { color: colors.green }]}>
+              {selectedVideo ? "Remove video" : "Add video"}
             </Text>
           </TouchableOpacity>
 
@@ -412,23 +512,37 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       fontFamily: "Inter_500Medium",
       color: "#FF9F0A",
     },
-    imagePreviewContainer: {
+    mediaRow: {
       marginTop: 12,
+      flexDirection: "row",
+    },
+    mediaThumbnailWrap: {
       position: "relative",
     },
-    imagePreview: {
-      width: "100%",
-      height: 200,
-      borderRadius: 12,
+    mediaThumbnail: {
+      width: 90,
+      height: 90,
+      borderRadius: 10,
     },
-    removeImage: {
+    videoThumb: {
+      backgroundColor: "#1C1C1E",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 4,
+    },
+    videoDuration: {
+      color: "#fff",
+      fontSize: 11,
+      fontFamily: "Inter_500Medium",
+    },
+    removeThumb: {
       position: "absolute",
-      top: 8,
-      right: 8,
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: "rgba(0,0,0,0.6)",
+      top: 4,
+      right: 4,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: "rgba(0,0,0,0.65)",
       justifyContent: "center",
       alignItems: "center",
     },

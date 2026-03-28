@@ -19,6 +19,7 @@ router.get("/posts", async (req, res) => {
         anonymousId: postsTable.anonymousId,
         content: postsTable.content,
         imageUrl: postsTable.imageUrl,
+        videoUrl: postsTable.videoUrl,
         worthItCount: postsTable.worthItCount,
         skipCount: postsTable.skipCount,
         expiresAt: postsTable.expiresAt,
@@ -77,7 +78,7 @@ router.post("/posts", async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const { content, imageUrl, isDraft = false, expiresInHours } = req.body;
+  const { content, imageUrl, videoUrl, isDraft = false, expiresInHours } = req.body;
   if (!content || content.trim().length === 0) {
     return res.status(400).json({ error: "Content is required" });
   }
@@ -122,7 +123,7 @@ router.post("/posts", async (req, res) => {
   try {
     const [post] = await db
       .insert(postsTable)
-      .values({ anonymousId, content: content.trim(), imageUrl: imageUrl || null, expiresAt, isDraft })
+      .values({ anonymousId, content: content.trim(), imageUrl: imageUrl || null, videoUrl: videoUrl || null, expiresAt, isDraft })
       .returning();
     return res.status(201).json(post);
   } catch (err) {
@@ -258,6 +259,7 @@ router.get("/posts/search", async (req, res) => {
         anonymousId: postsTable.anonymousId,
         content: postsTable.content,
         imageUrl: postsTable.imageUrl,
+        videoUrl: postsTable.videoUrl,
         worthItCount: postsTable.worthItCount,
         skipCount: postsTable.skipCount,
         expiresAt: postsTable.expiresAt,
@@ -358,7 +360,7 @@ router.patch("/posts/:id", async (req, res) => {
     if (!post) return res.status(404).json({ error: "Not found" });
     if (post.anonymousId !== anonymousId) return res.status(403).json({ error: "Forbidden" });
 
-    const { content, imageUrl, isDraft } = req.body;
+    const { content, imageUrl, videoUrl, isDraft } = req.body;
 
     if (!isDraft && post.isDraft === false) {
       const ageMs = Date.now() - new Date(post.createdAt).getTime();
@@ -376,6 +378,7 @@ router.patch("/posts/:id", async (req, res) => {
       .set({
         ...(content !== undefined ? { content: content.trim() } : {}),
         ...(imageUrl !== undefined ? { imageUrl } : {}),
+        ...(videoUrl !== undefined ? { videoUrl } : {}),
         ...(isDraft !== undefined ? { isDraft } : {}),
         updatedAt: new Date(),
       })
