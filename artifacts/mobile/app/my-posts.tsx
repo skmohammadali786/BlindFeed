@@ -6,9 +6,11 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   Platform,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -32,21 +34,27 @@ function expiryLabel(expiresAt: string): { label: string; expired: boolean; isNe
   return { label: `${m}m left`, expired: false, isNever: false };
 }
 
+const EDIT_WINDOW_MS = 10 * 60 * 1000;
+
 function PostCard({
   post,
   index,
   onDelete,
+  onEdit,
   colors,
 }: {
   post: ApiMyPost;
   index: number;
   onDelete: (id: number) => void;
+  onEdit: (post: ApiMyPost) => void;
   colors: ReturnType<typeof useTheme>["colors"];
 }) {
   const styles = makeCardStyles(colors);
   const { label: expLabel, expired, isNever } = expiryLabel(post.expiresAt);
   const total = post.worthItCount + post.skipCount;
   const worthPct = total > 0 ? Math.round((post.worthItCount / total) * 100) : 0;
+  const ageMs = Date.now() - new Date(post.createdAt).getTime();
+  const canEdit = !expired && ageMs < EDIT_WINDOW_MS;
 
   return (
     <AnimatedListItem index={index}>
@@ -60,13 +68,24 @@ function PostCard({
             <Feather name={isNever ? "lock" : "clock"} size={11} color={expired ? "#FF3B30" : isNever ? colors.textSecondary : colors.green} />
             <Text style={[styles.expiryText, expired && styles.expiryTextExpired, isNever && styles.expiryTextNever]}>{expLabel}</Text>
           </View>
-          <AnimatedPressable
-            scaleTo={0.88}
-            onPress={() => onDelete(post.id)}
-            style={styles.deleteBtn}
-          >
-            <Feather name="trash-2" size={15} color="#FF3B30" />
-          </AnimatedPressable>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {canEdit && (
+              <AnimatedPressable
+                scaleTo={0.88}
+                onPress={() => onEdit(post)}
+                style={styles.editBtn}
+              >
+                <Feather name="edit-2" size={14} color={colors.green} />
+              </AnimatedPressable>
+            )}
+            <AnimatedPressable
+              scaleTo={0.88}
+              onPress={() => onDelete(post.id)}
+              style={styles.deleteBtn}
+            >
+              <Feather name="trash-2" size={15} color="#FF3B30" />
+            </AnimatedPressable>
+          </View>
         </View>
 
         <Text style={styles.content} numberOfLines={3}>{post.content}</Text>
@@ -141,6 +160,9 @@ export default function MyPostsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingPost, setEditingPost] = useState<ApiMyPost | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   const styles = makeStyles(colors);
 
@@ -186,6 +208,29 @@ export default function MyPostsScreen() {
     setRefreshing(true);
     await load();
   }, [load]);
+
+  const handleOpenEdit = useCallback((post: ApiMyPost) => {
+    setEditingPost(post);
+    setEditContent(post.content);
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editingPost || editSaving) return;
+    const trimmed = editContent.trim();
+    if (trimmed.length < 10) { Alert.alert("Too short", "Post must be at least 10 characters."); return; }
+    if (trimmed.length > 500) { Alert.alert("Too long", "Post cannot exceed 500 characters."); return; }
+    setEditSaving(true);
+    try {
+      await api.patch(`/posts/${editingPost.id}`, { content: trimmed });
+      setPosts((prev) => prev.map((p) => p.id === editingPost.id ? { ...p, content: trimmed } : p));
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setEditingPost(null);
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Failed to update post.");
+    } finally {
+      setEditSaving(false);
+    }
+  }, [editingPost, editContent, editSaving]);
 
   const active = posts.filter((p) => new Date(p.expiresAt).getTime() > Date.now());
   const expired = posts.filter((p) => new Date(p.expiresAt).getTime() <= Date.now());
@@ -237,6 +282,7 @@ export default function MyPostsScreen() {
                   post={item as ApiMyPost}
                   index={index}
                   onDelete={handleDelete}
+                  onEdit={handleOpenEdit}
                   colors={colors}
                 />
               );
@@ -261,6 +307,51 @@ export default function MyPostsScreen() {
             }
           />
         )}
+
+        {/* Edit Modal */}
+        <Modal
+          visible={editingPost !== null}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setEditingPost(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.editModal}>
+              <View style={styles.editModalHeader}>
+                <Text style={styles.editModalTitle}>Edit post</Text>
+                <Text style={styles.editModalHint}>Editing window: 10 min from posting</Text>
+              </View>
+              <TextInput
+                style={styles.editInput}
+                value={editContent}
+                onChangeText={setEditContent}
+                multiline
+                maxLength={500}
+                textAlignVertical="top"
+                autoFocus
+                placeholder="Edit your post..."
+                placeholderTextColor={colors.textTertiary}
+              />
+              <Text style={styles.editCharCount}>{editContent.length}/500</Text>
+              <View style={styles.editActions}>
+                <TouchableOpacity style={styles.editCancelBtn} onPress={() => setEditingPost(null)}>
+                  <Text style={styles.editCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.editSaveBtn, editSaving && { opacity: 0.6 }]}
+                  onPress={handleSaveEdit}
+                  disabled={editSaving}
+                >
+                  {editSaving ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <Text style={styles.editSaveText}>Save changes</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </ScreenTransition>
   );
@@ -306,9 +397,6 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     expiryTextNever: {
       color: colors.textSecondary,
-    },
-    deleteBtn: {
-      padding: 6,
     },
     content: {
       fontSize: 15,
@@ -398,6 +486,22 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       fontSize: 12,
       fontFamily: "Inter_400Regular",
       color: colors.textTertiary,
+    },
+    editBtn: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: colors.greenDim,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    deleteBtn: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: "rgba(255,59,48,0.1)",
+      justifyContent: "center",
+      alignItems: "center",
     },
   });
 }
@@ -490,5 +594,43 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       fontFamily: "Inter_600SemiBold",
       color: "#000",
     },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      justifyContent: "flex-end",
+    },
+    editModal: {
+      backgroundColor: colors.background,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 20,
+      gap: 12,
+      paddingBottom: 34,
+    },
+    editModalHeader: { gap: 2 },
+    editModalTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.text },
+    editModalHint: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textTertiary },
+    editInput: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      fontSize: 15,
+      fontFamily: "Inter_400Regular",
+      color: colors.text,
+      minHeight: 120,
+      textAlignVertical: "top",
+    },
+    editCharCount: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary, textAlign: "right" },
+    editActions: { flexDirection: "row", gap: 10 },
+    editCancelBtn: {
+      flex: 1, borderRadius: 14, paddingVertical: 14,
+      backgroundColor: colors.surface, alignItems: "center",
+    },
+    editCancelText: { fontSize: 15, fontFamily: "Inter_500Medium", color: colors.textSecondary },
+    editSaveBtn: {
+      flex: 2, borderRadius: 14, paddingVertical: 14,
+      backgroundColor: colors.green, alignItems: "center",
+    },
+    editSaveText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#000" },
   });
 }

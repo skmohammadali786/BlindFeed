@@ -208,10 +208,20 @@ export default function PostDetailScreen() {
               <Feather name="arrow-left" size={20} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.postDetailLabel}>Post detail</Text>
-            <TouchableOpacity onPress={handleCopy} style={styles.copyBtn}>
-              <Feather name={copied ? "check" : "copy"} size={16} color={copied ? colors.green : colors.textSecondary} />
-              {copied && <Text style={styles.copiedLabel}>Copied</Text>}
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <TouchableOpacity onPress={handleCopy} style={styles.copyBtn}>
+                <Feather name={copied ? "check" : "copy"} size={16} color={copied ? colors.green : colors.textSecondary} />
+                {copied && <Text style={styles.copiedLabel}>Copied</Text>}
+              </TouchableOpacity>
+              {!post.isOwn && (
+                <TouchableOpacity
+                  style={styles.copyBtn}
+                  onPress={() => router.push({ pathname: "/report", params: { postId: post.id } } as any)}
+                >
+                  <Feather name="flag" size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {post.imageUrl && (

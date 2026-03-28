@@ -334,6 +334,18 @@ export default function SettingsScreen() {
                 )}
               </TouchableOpacity>
             ))}
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+            <TouchableOpacity
+              style={styles.feedPrefOption}
+              onPress={() => {
+                updateSetting("feedPreference", "all");
+                updateSetting("contentFilter", true);
+                setShowFeedModal(false);
+              }}
+            >
+              <Text style={[styles.feedPrefLabel, { color: "#FF3B30" }]}>Reset to defaults</Text>
+              <Feather name="refresh-cw" size={15} color="#FF3B30" />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.modalCancel} onPress={() => setShowFeedModal(false)}>
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>

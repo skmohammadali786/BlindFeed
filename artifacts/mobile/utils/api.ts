@@ -1,5 +1,16 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+export class ApiError extends Error {
+  status: number;
+  retryAfterMs?: number;
+  constructor(message: string, status: number, retryAfterMs?: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
 function getApiBase(): string {
   // Explicit base URL injected at build time — most reliable across all environments.
   // Dev:  EXPO_PUBLIC_API_URL = https://<dev-domain>/api-server/api  (dev-proxy strips prefix)
@@ -48,12 +59,15 @@ async function request<T>(
 
   if (!res.ok) {
     let message = `Server error (${res.status})`;
+    let retryAfterMs: number | undefined;
     try {
       const data = await res.json();
       if (data?.error) message = data.error;
+      if (data?.retryAfterMs) retryAfterMs = data.retryAfterMs;
     } catch {
     }
-    throw new Error(message);
+    const err = new ApiError(message, res.status, retryAfterMs);
+    throw err;
   }
 
   return res.json() as Promise<T>;
@@ -98,7 +112,7 @@ export interface ApiMyPost extends ApiPost {
 export interface ApiNotification {
   id: number;
   recipientAnonymousId: string;
-  type: "comment" | "reply";
+  type: "comment" | "reply" | "report_action";
   postId: number | null;
   commentId: number | null;
   message: string;

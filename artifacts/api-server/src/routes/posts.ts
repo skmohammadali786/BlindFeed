@@ -70,6 +70,9 @@ router.get("/posts", async (req, res) => {
   }
 });
 
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_MAX = 2;
+
 router.post("/posts", async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
@@ -77,6 +80,33 @@ router.post("/posts", async (req, res) => {
   const { content, imageUrl, isDraft = false, expiresInHours } = req.body;
   if (!content || content.trim().length === 0) {
     return res.status(400).json({ error: "Content is required" });
+  }
+
+  if (!isDraft) {
+    try {
+      const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+      const recentPosts = await db
+        .select({ id: postsTable.id, createdAt: postsTable.createdAt })
+        .from(postsTable)
+        .where(
+          and(
+            eq(postsTable.anonymousId, anonymousId),
+            eq(postsTable.isDraft, false),
+            gt(postsTable.createdAt, windowStart)
+          )
+        );
+
+      if (recentPosts.length >= RATE_LIMIT_MAX) {
+        const oldest = recentPosts.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0];
+        const retryAfterMs = oldest.createdAt.getTime() + RATE_LIMIT_WINDOW_MS - Date.now();
+        return res.status(429).json({
+          error: "You can post 2 times per 15 minutes. Please wait.",
+          retryAfterMs: Math.max(0, Math.ceil(retryAfterMs)),
+        });
+      }
+    } catch (err) {
+      req.log.error(err, "Error checking rate limit");
+    }
   }
 
   let hours: number;
@@ -203,6 +233,8 @@ router.get("/posts/:id", async (req, res) => {
   }
 });
 
+const EDIT_WINDOW_MS = 10 * 60 * 1000;
+
 router.patch("/posts/:id", async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
@@ -216,12 +248,25 @@ router.patch("/posts/:id", async (req, res) => {
     if (post.anonymousId !== anonymousId) return res.status(403).json({ error: "Forbidden" });
 
     const { content, imageUrl, isDraft } = req.body;
+
+    if (!isDraft && post.isDraft === false) {
+      const ageMs = Date.now() - new Date(post.createdAt).getTime();
+      if (ageMs > EDIT_WINDOW_MS) {
+        return res.status(403).json({ error: "Edit window expired. Posts can only be edited within 10 minutes of posting." });
+      }
+    }
+
+    if (content !== undefined && content.trim().length === 0) {
+      return res.status(400).json({ error: "Content cannot be empty" });
+    }
+
     const [updated] = await db
       .update(postsTable)
       .set({
-        ...(content !== undefined ? { content } : {}),
+        ...(content !== undefined ? { content: content.trim() } : {}),
         ...(imageUrl !== undefined ? { imageUrl } : {}),
         ...(isDraft !== undefined ? { isDraft } : {}),
+        updatedAt: new Date(),
       })
       .where(eq(postsTable.id, postId))
       .returning();

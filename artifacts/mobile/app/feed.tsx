@@ -241,11 +241,23 @@ export default function FeedScreen() {
           </FadeSlide>
         ) : feedError ? (
           <FadeSlide delay={100} style={styles.errorContainer}>
-            <Feather name="wifi-off" size={40} color={colors.textTertiary} />
-            <Text style={styles.errorText}>Couldn't load posts</Text>
-            <Text style={styles.errorSub}>{feedError}</Text>
+            <Feather
+              name={feedError.toLowerCase().includes("internet") || feedError.toLowerCase().includes("connection") ? "wifi-off" : "alert-circle"}
+              size={44}
+              color={colors.textTertiary}
+            />
+            <Text style={styles.errorText}>
+              {feedError.toLowerCase().includes("internet") || feedError.toLowerCase().includes("connection")
+                ? "You're offline"
+                : "Something went wrong"}
+            </Text>
+            <Text style={styles.errorSub}>
+              {feedError.toLowerCase().includes("internet") || feedError.toLowerCase().includes("connection")
+                ? "Check your connection and try again."
+                : feedError}
+            </Text>
             <AnimatedPressable style={styles.retryBtn} onPress={() => refreshFeed(sortMode)} scaleTo={0.93}>
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={styles.retryText}>Try again</Text>
             </AnimatedPressable>
           </FadeSlide>
         ) : (
@@ -294,7 +306,6 @@ export default function FeedScreen() {
               { label: "Settings", icon: "settings", route: "/settings" },
               { label: "Usage Insights", icon: "bar-chart-2", route: "/usage-insights" },
               { label: "Community Guidelines", icon: "book-open", route: "/community-guidelines" },
-              { label: "Report Content", icon: "flag", route: "/report" },
             ].map((item, i) => (
               <AnimatedListItem key={item.route} index={i}>
                 <TouchableOpacity

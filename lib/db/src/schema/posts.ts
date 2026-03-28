@@ -12,6 +12,7 @@ export const postsTable = pgTable("posts", {
   expiresAt: timestamp("expires_at").notNull(),
   isDraft: boolean("is_draft").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at"),
 });
 
 export const insertPostSchema = createInsertSchema(postsTable).omit({

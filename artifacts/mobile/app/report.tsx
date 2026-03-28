@@ -1,21 +1,26 @@
 import { Feather } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
+import { api } from "@/utils/api";
 import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable } from "@/components/Animations";
 
 const REASONS = [
-  { id: "spam", label: "Spam", icon: "alert-circle" },
+  { id: "spam", label: "Spam or misleading", icon: "alert-circle" },
   { id: "abuse", label: "Abuse or harassment", icon: "alert-triangle" },
   { id: "sensitive", label: "Sensitive content", icon: "eye-off" },
+  { id: "misinformation", label: "Misinformation", icon: "info" },
   { id: "other", label: "Other", icon: "more-horizontal" },
 ];
 
@@ -26,10 +31,31 @@ export default function ReportScreen() {
   const top = isWeb ? 67 : insets.top;
   const bottom = isWeb ? 34 : insets.bottom > 0 ? insets.bottom : 16;
 
-  const [selected, setSelected] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const { postId } = useLocalSearchParams<{ postId: string }>();
 
-  const handleSubmit = () => { if (!selected) return; setSubmitted(true); };
+  const [selected, setSelected] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!selected || submitting) return;
+    if (!postId) { setError("No post to report."); return; }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.post(`/posts/${postId}/report`, {
+        reason: selected,
+        description: description.trim() || undefined,
+      });
+      setSubmitted(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to submit. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const styles = makeStyles(colors);
 
@@ -46,7 +72,7 @@ export default function ReportScreen() {
             </View>
             <Text style={styles.successTitle}>Report submitted</Text>
             <Text style={styles.successSub}>
-              Thank you for helping keep BlindFeed safe.{"\n"}We'll review this content shortly.
+              Thank you for helping keep BlindFeed safe.{"\n"}We'll review this content shortly.{"\n"}You'll be notified if any action is taken.
             </Text>
             <AnimatedPressable style={styles.doneBtn} onPress={() => router.back()} scaleTo={0.96}>
               <Text style={styles.doneBtnText}>Done</Text>
@@ -70,15 +96,25 @@ export default function ReportScreen() {
           </View>
         </FadeSlide>
 
-        <View style={[styles.content, { paddingBottom: bottom + 24 }]}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.content, { paddingBottom: bottom + 24 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <FadeSlide delay={60}>
             <Text style={styles.question}>Why are you reporting this content?</Text>
           </FadeSlide>
+
           <View style={styles.reasons}>
             {REASONS.map((reason, idx) => (
               <AnimatedListItem key={reason.id} index={idx}>
                 <TouchableOpacity
-                  style={[styles.reasonRow, selected === reason.id && styles.reasonRowSelected, idx < REASONS.length - 1 && styles.reasonRowBorder]}
+                  style={[
+                    styles.reasonRow,
+                    selected === reason.id && styles.reasonRowSelected,
+                    idx < REASONS.length - 1 && styles.reasonRowBorder,
+                  ]}
                   onPress={() => setSelected(reason.id)}
                   activeOpacity={0.8}
                 >
@@ -94,17 +130,47 @@ export default function ReportScreen() {
             ))}
           </View>
 
+          <FadeSlide delay={220}>
+            <View style={styles.descBox}>
+              <Text style={styles.descLabel}>Additional details (optional)</Text>
+              <TextInput
+                style={styles.descInput}
+                placeholder="Describe the issue..."
+                placeholderTextColor={colors.textTertiary}
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                maxLength={400}
+                textAlignVertical="top"
+              />
+              <Text style={styles.descCount}>{description.length}/400</Text>
+            </View>
+          </FadeSlide>
+
+          {error && (
+            <FadeSlide delay={0}>
+              <View style={styles.errorBox}>
+                <Feather name="alert-circle" size={15} color="#FF3B30" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            </FadeSlide>
+          )}
+
           <FadeSlide delay={280}>
             <AnimatedPressable
-              style={[styles.submitBtn, !selected && styles.submitBtnDisabled]}
+              style={[styles.submitBtn, (!selected || submitting) && styles.submitBtnDisabled]}
               onPress={handleSubmit}
-              disabled={!selected}
+              disabled={!selected || submitting}
               scaleTo={0.96}
             >
-              <Text style={[styles.submitBtnText, !selected && { color: colors.textTertiary }]}>Submit Report</Text>
+              {submitting ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <Text style={[styles.submitBtnText, !selected && { color: colors.textTertiary }]}>Submit Report</Text>
+              )}
             </AnimatedPressable>
           </FadeSlide>
-        </View>
+        </ScrollView>
       </View>
     </ScreenTransition>
   );
@@ -116,7 +182,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
     backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
     headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.text },
-    content: { flex: 1, padding: 20, gap: 20 },
+    content: { padding: 20, gap: 16 },
     question: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary },
     reasons: { backgroundColor: colors.surface, borderRadius: 14, overflow: "hidden" },
     reasonRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 16 },
@@ -124,7 +190,16 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     reasonRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
     reasonLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
     reasonLabel: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.text },
-    submitBtn: { backgroundColor: colors.green, borderRadius: 14, paddingVertical: 17, alignItems: "center", marginTop: 8 },
+    descBox: { backgroundColor: colors.surface, borderRadius: 14, padding: 14, gap: 8 },
+    descLabel: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.textSecondary },
+    descInput: {
+      fontSize: 14, fontFamily: "Inter_400Regular", color: colors.text,
+      minHeight: 80, paddingTop: 4,
+    },
+    descCount: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary, textAlign: "right" },
+    errorBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(255,59,48,0.1)", borderRadius: 12, padding: 12 },
+    errorText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#FF3B30" },
+    submitBtn: { backgroundColor: colors.green, borderRadius: 14, paddingVertical: 17, alignItems: "center", marginTop: 4 },
     submitBtnDisabled: { backgroundColor: colors.surface },
     submitBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
     successContent: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40, gap: 16 },

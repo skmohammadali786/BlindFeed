@@ -20,7 +20,7 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp, DraftPost } from "@/context/AppContext";
-import { requestUploadUrl } from "@/utils/api";
+import { requestUploadUrl, ApiError } from "@/utils/api";
 import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable, PulseView } from "@/components/Animations";
 
 const MAX_CHARS = 500;
@@ -46,14 +46,31 @@ export default function CreateScreen() {
   const [showDrafts, setShowDrafts] = useState(false);
   const [expiresInHours, setExpiresInHours] = useState<number | null>(48);
   const [showExpiryModal, setShowExpiryModal] = useState(false);
+  const [rateLimitMs, setRateLimitMs] = useState<number | null>(null);
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+
+  React.useEffect(() => {
+    if (!rateLimitMs) return;
+    const t = setInterval(() => {
+      setRateLimitMs((prev) => {
+        if (!prev || prev <= 1000) return null;
+        return prev - 1000;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [rateLimitMs]);
   const top = isWeb ? 67 : insets.top;
   const bottom = isWeb ? 34 : insets.bottom > 0 ? insets.bottom : 16;
 
   const charCount = content.length;
   const canSubmit = charCount >= MIN_CHARS && charCount <= MAX_CHARS && !posting;
   const isNearLimit = charCount > MAX_CHARS * 0.8;
+  const isRateLimited = rateLimitMs !== null && rateLimitMs > 0;
+  const rateLimitCountdown = rateLimitMs
+    ? `${Math.floor(rateLimitMs / 60000)}:${String(Math.floor((rateLimitMs % 60000) / 1000)).padStart(2, "0")}`
+    : "";
+  const canPost = canSubmit && !isRateLimited;
 
   const pickImage = async () => {
     const permResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -106,7 +123,11 @@ export default function CreateScreen() {
         setSubmitted(true);
       }
     } catch (err: unknown) {
-      Alert.alert("Error", err instanceof Error ? err.message : "Failed to post. Please try again.");
+      if (err instanceof ApiError && err.status === 429 && err.retryAfterMs) {
+        setRateLimitMs(err.retryAfterMs);
+      } else {
+        Alert.alert("Error", err instanceof Error ? err.message : "Failed to post. Please try again.");
+      }
     } finally {
       setPosting(false);
     }
@@ -198,18 +219,27 @@ export default function CreateScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New post</Text>
         <TouchableOpacity
-          style={[styles.postBtn, !canSubmit && styles.postBtnDisabled]}
+          style={[styles.postBtn, !canPost && styles.postBtnDisabled]}
           onPress={() => handleSubmit(false)}
-          disabled={!canSubmit}
+          disabled={!canPost}
           activeOpacity={0.85}
         >
           {posting ? (
             <ActivityIndicator size="small" color="#000" />
           ) : (
-            <Text style={[styles.postBtnText, !canSubmit && styles.postBtnTextDisabled]}>Post</Text>
+            <Text style={[styles.postBtnText, !canPost && styles.postBtnTextDisabled]}>Post</Text>
           )}
         </TouchableOpacity>
       </View>
+
+      {isRateLimited && (
+        <View style={styles.rateLimitBanner}>
+          <Feather name="clock" size={14} color="#FF9F0A" />
+          <Text style={styles.rateLimitText}>
+            Post limit reached — try again in {rateLimitCountdown}
+          </Text>
+        </View>
+      )}
 
       <ScrollView
         style={{ flex: 1 }}
@@ -366,6 +396,22 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     charCountWarning: { color: "#FF9500" },
     charCountError: { color: "#FF3B30" },
+    rateLimitBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: "rgba(255,159,10,0.12)",
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: "rgba(255,159,10,0.2)",
+    },
+    rateLimitText: {
+      flex: 1,
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+      color: "#FF9F0A",
+    },
     imagePreviewContainer: {
       marginTop: 12,
       position: "relative",
