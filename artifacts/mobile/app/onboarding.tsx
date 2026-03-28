@@ -55,7 +55,6 @@ export default function OnboardingScreen() {
       await setOnboarded();
       router.replace("/feed");
     } else {
-      slideKey.current += 1;
       setCurrentSlide((s) => s + 1);
     }
   };

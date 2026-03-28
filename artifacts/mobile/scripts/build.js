@@ -139,6 +139,7 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
   const env = {
     ...process.env,
     EXPO_PUBLIC_DOMAIN: expoPublicDomain,
+    EXPO_PUBLIC_API_URL: `https://${domain}/api`,
     EXPO_PUBLIC_REPL_ID: expoPublicReplId,
   };
 

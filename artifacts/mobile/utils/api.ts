@@ -1,9 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function getApiBase(): string {
+  // Explicit base URL injected at build time — most reliable across all environments.
+  // Dev:  EXPO_PUBLIC_API_URL = https://<dev-domain>/api-server/api  (dev-proxy strips prefix)
+  // Prod: EXPO_PUBLIC_API_URL = https://<prod-domain>/api            (Replit routes /api/* directly)
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  // Web browser fallback (when no explicit URL is configured).
   if (typeof window !== "undefined" && window.location?.origin) {
-    // Dev: Expo Metro runs behind our dev-proxy which routes /api-server/* → port 8080.
-    // Production: Replit's router maps the API artifact's /api path directly.
     const isProduction = process.env.NODE_ENV === "production";
     return isProduction
       ? `${window.location.origin}/api`
