@@ -8,7 +8,7 @@ const router = Router();
 const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
 
 router.get("/posts", async (req, res) => {
-  const { sort = "fresh", limit = "20", offset = "0" } = req.query;
+  const { sort = "fresh", limit = "50", offset = "0" } = req.query;
   const anonymousId = req.headers["x-anonymous-id"] as string;
 
   try {
@@ -29,7 +29,7 @@ router.get("/posts", async (req, res) => {
       .$dynamic();
 
     if (sort === "top") {
-      query = query.orderBy(desc(postsTable.worthItCount));
+      query = query.orderBy(desc(postsTable.worthItCount), desc(postsTable.createdAt));
     } else {
       query = query.orderBy(desc(postsTable.createdAt));
     }

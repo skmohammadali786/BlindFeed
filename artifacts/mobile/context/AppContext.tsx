@@ -313,7 +313,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (sort === "top") {
-        return [...active].sort((a, b) => b.worthItCount - a.worthItCount);
+        return [...active].sort((a, b) =>
+          b.worthItCount !== a.worthItCount
+            ? b.worthItCount - a.worthItCount
+            : b.createdAt - a.createdAt
+        );
       }
       return active;
     },
