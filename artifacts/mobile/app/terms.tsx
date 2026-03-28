@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
+import { ScreenTransition, FadeSlide, AnimatedListItem } from "@/components/Animations";
 
 export default function TermsScreen() {
   const { colors } = useTheme();
@@ -22,14 +23,17 @@ export default function TermsScreen() {
   const styles = makeStyles(colors);
 
   return (
-    <View style={[styles.container, { paddingTop: top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Terms & Privacy</Text>
-        <View style={{ width: 38 }} />
-      </View>
+    <ScreenTransition>
+      <View style={[styles.container, { paddingTop: top }]}>
+        <FadeSlide delay={0} from="top">
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Feather name="arrow-left" size={20} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Terms & Privacy</Text>
+            <View style={{ width: 38 }} />
+          </View>
+        </FadeSlide>
 
       <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: bottom + 80 }]} showsVerticalScrollIndicator={false}>
         <Text style={styles.section}>Terms of Service</Text>
@@ -77,7 +81,8 @@ export default function TermsScreen() {
           <Text style={styles.badgeText}>Your privacy is our top priority</Text>
         </View>
       </ScrollView>
-    </View>
+      </View>
+    </ScreenTransition>
   );
 }
 

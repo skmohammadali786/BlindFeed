@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
+import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable, PulseView } from "@/components/Animations";
 
 const RULES = [
   { icon: "heart", text: "No abuse or harassment" },
@@ -29,55 +30,67 @@ export default function CommunityGuidelinesScreen() {
   const styles = makeStyles(colors);
 
   return (
-    <View style={[styles.container, { paddingTop: top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Community Guidelines</Text>
-        <View style={{ width: 38 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottom + 24 }]} showsVerticalScrollIndicator={false}>
-        <View style={styles.iconContainer}>
-          <View style={styles.iconBg}>
-            <Feather name="shield" size={36} color={colors.green} />
+    <ScreenTransition>
+      <View style={[styles.container, { paddingTop: top }]}>
+        <FadeSlide delay={0} from="top">
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Feather name="arrow-left" size={20} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Community Guidelines</Text>
+            <View style={{ width: 38 }} />
           </View>
-        </View>
+        </FadeSlide>
 
-        <Text style={styles.intro}>
-          BlindFeed is anonymous, but that doesn't mean anything goes. We believe in honest, respectful conversations.
-        </Text>
-
-        <Text style={styles.sectionTitle}>The rules</Text>
-
-        <View style={styles.rulesCard}>
-          {RULES.map((rule, idx) => (
-            <View key={idx} style={[styles.ruleRow, idx < RULES.length - 1 && styles.ruleRowBorder]}>
-              <View style={styles.ruleIcon}>
-                <Feather name={rule.icon as never} size={16} color={colors.green} />
-              </View>
-              <Text style={styles.ruleText}>{rule.text}</Text>
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottom + 24 }]} showsVerticalScrollIndicator={false}>
+          <FadeSlide delay={60}>
+            <View style={styles.iconContainer}>
+              <PulseView>
+                <View style={styles.iconBg}>
+                  <Feather name="shield" size={36} color={colors.green} />
+                </View>
+              </PulseView>
             </View>
-          ))}
-        </View>
+            <Text style={styles.intro}>
+              BlindFeed is anonymous, but that doesn't mean anything goes. We believe in honest, respectful conversations.
+            </Text>
+          </FadeSlide>
 
-        <Text style={styles.sectionTitle}>Enforcement</Text>
-        <Text style={styles.body}>
-          Violations may result in content removal. Repeat offenders may be temporarily or permanently banned. We don't reveal identities, but we do track anonymous IDs for moderation.
-        </Text>
+          <FadeSlide delay={120}>
+            <Text style={styles.sectionTitle}>The rules</Text>
+            <View style={styles.rulesCard}>
+              {RULES.map((rule, idx) => (
+                <AnimatedListItem key={idx} index={idx}>
+                  <View style={[styles.ruleRow, idx < RULES.length - 1 && styles.ruleRowBorder]}>
+                    <View style={styles.ruleIcon}>
+                      <Feather name={rule.icon as never} size={16} color={colors.green} />
+                    </View>
+                    <Text style={styles.ruleText}>{rule.text}</Text>
+                  </View>
+                </AnimatedListItem>
+              ))}
+            </View>
+          </FadeSlide>
 
-        <Text style={styles.sectionTitle}>Reporting</Text>
-        <Text style={styles.body}>
-          See something that doesn't belong? Use the report button on any post. Our team reviews all reports within 24 hours.
-        </Text>
+          <FadeSlide delay={280}>
+            <Text style={styles.sectionTitle}>Enforcement</Text>
+            <Text style={styles.body}>
+              Violations may result in content removal. Repeat offenders may be temporarily or permanently banned. We don't reveal identities, but we do track anonymous IDs for moderation.
+            </Text>
 
-        <TouchableOpacity style={styles.reportBtn} onPress={() => router.push("/report")} activeOpacity={0.85}>
-          <Feather name="flag" size={16} color={colors.green} />
-          <Text style={styles.reportBtnText}>Report content</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+            <Text style={styles.sectionTitle}>Reporting</Text>
+            <Text style={styles.body}>
+              See something that doesn't belong? Use the report button on any post. Our team reviews all reports within 24 hours.
+            </Text>
+
+            <AnimatedPressable style={styles.reportBtn} onPress={() => router.push("/report")} scaleTo={0.96}>
+              <Feather name="flag" size={16} color={colors.green} />
+              <Text style={styles.reportBtnText}>Report content</Text>
+            </AnimatedPressable>
+          </FadeSlide>
+        </ScrollView>
+      </View>
+    </ScreenTransition>
   );
 }
 

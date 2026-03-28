@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ScreenTransition, FadeSlide, AnimatedListItem } from "@/components/Animations";
 
 function SectionHeader({ title, colors }: { title: string; colors: ReturnType<typeof useTheme>["colors"] }) {
   return (
@@ -125,113 +126,105 @@ export default function SettingsScreen() {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: top }]}>
-      <View style={styles.headerBar}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={{ width: 32 }} />
-      </View>
+    <ScreenTransition>
+      <View style={[styles.container, { paddingTop: top }]}>
+        <FadeSlide delay={0} from="top">
+          <View style={styles.headerBar}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <Feather name="arrow-left" size={20} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Settings</Text>
+            <View style={{ width: 32 }} />
+          </View>
+        </FadeSlide>
 
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: bottom + 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Appearance */}
-        <SectionHeader title="Appearance" colors={colors} />
-        <View style={styles.section}>
-          <SettingRow
-            label="Dark mode"
-            subtitle={isDark ? "Currently dark" : "Currently light"}
-            value={isDark}
-            onToggle={(v) => setDark(v)}
-          />
-        </View>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: bottom + 24 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <AnimatedListItem index={0}>
+            <SectionHeader title="Appearance" colors={colors} />
+            <View style={styles.section}>
+              <SettingRow
+                label="Dark mode"
+                subtitle={isDark ? "Currently dark" : "Currently light"}
+                value={isDark}
+                onToggle={(v) => setDark(v)}
+              />
+            </View>
+          </AnimatedListItem>
 
-        {/* Content */}
-        <SectionHeader title="Content" colors={colors} />
-        <View style={styles.section}>
-          <SettingRow
-            label="Content filter"
-            subtitle="Filter potentially sensitive content"
-            value={settings.contentFilter}
-            onToggle={(v) => updateSetting("contentFilter", v)}
-          />
-          <SettingRow
-            label="Feed preference"
-            subtitle={feedPrefLabel[settings.feedPreference ?? "all"]}
-            onPress={() => setShowFeedModal(true)}
-          />
-        </View>
+          <AnimatedListItem index={1}>
+            <SectionHeader title="Content" colors={colors} />
+            <View style={styles.section}>
+              <SettingRow
+                label="Content filter"
+                subtitle="Filter potentially sensitive content"
+                value={settings.contentFilter}
+                onToggle={(v) => updateSetting("contentFilter", v)}
+              />
+              <SettingRow
+                label="Feed preference"
+                subtitle={feedPrefLabel[settings.feedPreference ?? "all"]}
+                onPress={() => setShowFeedModal(true)}
+              />
+            </View>
+          </AnimatedListItem>
 
-        {/* Notifications */}
-        <SectionHeader title="Notifications" colors={colors} />
-        <View style={styles.section}>
-          <SettingRow
-            label="Notification settings"
-            subtitle="Daily reminders, post activity"
-            onPress={() => router.push("/notifications")}
-          />
-        </View>
+          <AnimatedListItem index={2}>
+            <SectionHeader title="Notifications" colors={colors} />
+            <View style={styles.section}>
+              <SettingRow
+                label="Notification settings"
+                subtitle="Daily reminders, post activity"
+                onPress={() => router.push("/notifications")}
+              />
+            </View>
+          </AnimatedListItem>
 
-        {/* Data & Privacy */}
-        <SectionHeader title="Data & Privacy" colors={colors} />
-        <View style={styles.section}>
-          <SettingRow
-            label="Your anonymous ID"
-            subtitle={tempUserId}
-            onPress={() => router.push("/identity")}
-          />
-          <SettingRow
-            label="Data transparency"
-            subtitle="Review what we store"
-            onPress={() => router.push("/terms")}
-          />
-          <SettingRow
-            label="Clear cache"
-            subtitle="Clear local cached data"
-            onPress={() => setShowClearModal(true)}
-          />
-          <SettingRow
-            label="Reset anonymous ID"
-            subtitle="Get a new temporary identity"
-            onPress={() => setShowResetModal(true)}
-          />
-          <SettingRow
-            label="Delete account"
-            subtitle="Permanently remove all your data"
-            onPress={() => setShowDeleteModal(true)}
-            destructive
-          />
-        </View>
+          <AnimatedListItem index={3}>
+            <SectionHeader title="Data & Privacy" colors={colors} />
+            <View style={styles.section}>
+              <SettingRow
+                label="Your anonymous ID"
+                subtitle={tempUserId}
+                onPress={() => router.push("/identity")}
+              />
+              <SettingRow
+                label="Data transparency"
+                subtitle="Review what we store"
+                onPress={() => router.push("/terms")}
+              />
+              <SettingRow
+                label="Clear cache"
+                subtitle="Clear local cached data"
+                onPress={() => setShowClearModal(true)}
+              />
+              <SettingRow
+                label="Reset anonymous ID"
+                subtitle="Get a new temporary identity"
+                onPress={() => setShowResetModal(true)}
+              />
+              <SettingRow
+                label="Delete account"
+                subtitle="Permanently remove all your data"
+                onPress={() => setShowDeleteModal(true)}
+                destructive
+              />
+            </View>
+          </AnimatedListItem>
 
-        {/* About */}
-        <SectionHeader title="About" colors={colors} />
-        <View style={styles.section}>
-          <SettingRow
-            label="Community guidelines"
-            onPress={() => router.push("/community-guidelines")}
-          />
-          <SettingRow
-            label="Terms & Privacy"
-            onPress={() => router.push("/terms")}
-          />
-          <SettingRow
-            label="Rate BlindFeed"
-            onPress={handleRateApp}
-          />
-          <SettingRow
-            label="Send feedback"
-            onPress={handleFeedback}
-          />
-          <SettingRow
-            label="Version"
-            rightText="1.0.0"
-            chevron={false}
-          />
-        </View>
-      </ScrollView>
+          <AnimatedListItem index={4}>
+            <SectionHeader title="About" colors={colors} />
+            <View style={styles.section}>
+              <SettingRow label="Community guidelines" onPress={() => router.push("/community-guidelines")} />
+              <SettingRow label="Terms & Privacy" onPress={() => router.push("/terms")} />
+              <SettingRow label="Rate BlindFeed" onPress={handleRateApp} />
+              <SettingRow label="Send feedback" onPress={handleFeedback} />
+              <SettingRow label="Version" rightText="1.0.0" chevron={false} />
+            </View>
+          </AnimatedListItem>
+        </ScrollView>
 
       {/* Clear Cache Modal */}
       <Modal visible={showClearModal} transparent animationType="fade" onRequestClose={() => setShowClearModal(false)}>
@@ -315,7 +308,8 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+      </View>
+    </ScreenTransition>
   );
 }
 

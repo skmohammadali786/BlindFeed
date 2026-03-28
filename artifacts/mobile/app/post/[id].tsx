@@ -20,6 +20,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
 import { api, ApiComment, getObjectUrl } from "@/utils/api";
 import { timeAgo } from "@/utils/time";
+import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable, useReactionAnim } from "@/components/Animations";
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -215,11 +216,12 @@ export default function PostDetailScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: top }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={0}
-    >
+    <ScreenTransition>
+      <KeyboardAvoidingView
+        style={[styles.container, { paddingTop: top }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
+      >
       <FlatList
         data={allItems}
         keyExtractor={(item, i) =>
@@ -286,7 +288,8 @@ export default function PostDetailScreen() {
           </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </ScreenTransition>
   );
 }
 

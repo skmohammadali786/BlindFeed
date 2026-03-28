@@ -9,9 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
+import { ScreenTransition, AnimatedPressable, FadeSlide } from "@/components/Animations";
 
 const SLIDES = [
   {
@@ -45,7 +47,6 @@ export default function OnboardingScreen() {
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top;
   const bottom = isWeb ? 34 : insets.bottom > 0 ? insets.bottom : 24;
-
   const slide = SLIDES[currentSlide];
 
   const handleNext = async () => {
@@ -54,6 +55,7 @@ export default function OnboardingScreen() {
       await setOnboarded();
       router.replace("/feed");
     } else {
+      slideKey.current += 1;
       setCurrentSlide((s) => s + 1);
     }
   };
@@ -61,27 +63,48 @@ export default function OnboardingScreen() {
   const styles = makeStyles(colors);
 
   return (
-    <View style={[styles.container, { paddingTop: top, paddingBottom: bottom }]}>
-      <View style={styles.progressBar}>
-        {SLIDES.map((_, i) => (
-          <View key={i} style={[styles.progressSegment, i <= currentSlide && styles.progressSegmentActive]} />
-        ))}
-      </View>
+    <ScreenTransition>
+      <View style={[styles.container, { paddingTop: top, paddingBottom: bottom }]}>
+        <FadeSlide delay={0}>
+          <View style={styles.progressBar}>
+            {SLIDES.map((_, i) => (
+              <View
+                key={i}
+                style={[styles.progressSegment, i <= currentSlide && styles.progressSegmentActive]}
+              />
+            ))}
+          </View>
+        </FadeSlide>
 
-      <View style={styles.illustrationContainer}>
-        <Image source={slide.image} style={styles.illustration} contentFit="cover" />
-      </View>
+        <Animated.View
+          key={`slide-img-${currentSlide}`}
+          entering={FadeIn.duration(400)}
+          exiting={FadeOut.duration(200)}
+          style={styles.illustrationContainer}
+        >
+          <Image source={slide.image} style={styles.illustration} contentFit="cover" />
+        </Animated.View>
 
-      <View style={styles.bottomSection}>
-        <View style={styles.textBlock}>
-          <Text style={styles.title}>{slide.title}</Text>
-          <Text style={styles.subtitle}>{slide.subtitle}</Text>
-        </View>
-        <TouchableOpacity style={[styles.button, slide.isLast && styles.buttonGreen]} onPress={handleNext} activeOpacity={0.85}>
-          <Text style={[styles.buttonText, slide.isLast && styles.buttonTextDark]}>{slide.cta}</Text>
-        </TouchableOpacity>
+        <Animated.View
+          key={`slide-text-${currentSlide}`}
+          entering={FadeIn.delay(80).duration(350)}
+          exiting={FadeOut.duration(150)}
+          style={styles.bottomSection}
+        >
+          <View style={styles.textBlock}>
+            <Text style={styles.title}>{slide.title}</Text>
+            <Text style={styles.subtitle}>{slide.subtitle}</Text>
+          </View>
+          <AnimatedPressable
+            style={[styles.button, slide.isLast && styles.buttonGreen]}
+            onPress={handleNext}
+            scaleTo={0.96}
+          >
+            <Text style={[styles.buttonText, slide.isLast && styles.buttonTextDark]}>{slide.cta}</Text>
+          </AnimatedPressable>
+        </Animated.View>
       </View>
-    </View>
+    </ScreenTransition>
   );
 }
 
@@ -91,13 +114,27 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     progressBar: { flexDirection: "row", paddingHorizontal: 20, gap: 8, marginTop: 12 },
     progressSegment: { flex: 1, height: 3, borderRadius: 2, backgroundColor: colors.textTertiary },
     progressSegmentActive: { backgroundColor: colors.green },
-    illustrationContainer: { flex: 1, marginHorizontal: 20, marginTop: 24, borderRadius: 20, overflow: "hidden", maxHeight: 380, alignSelf: "stretch" },
+    illustrationContainer: {
+      flex: 1,
+      marginHorizontal: 20,
+      marginTop: 24,
+      borderRadius: 20,
+      overflow: "hidden",
+      maxHeight: 380,
+      alignSelf: "stretch",
+    },
     illustration: { width: "100%", height: "100%" },
     bottomSection: { paddingHorizontal: 24, paddingTop: 40, gap: 24 },
     textBlock: { gap: 8 },
     title: { fontSize: 34, fontFamily: "Inter_700Bold", color: colors.text, letterSpacing: -0.5 },
     subtitle: { fontSize: 17, fontFamily: "Inter_400Regular", color: colors.textSecondary },
-    button: { height: 56, borderRadius: 16, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
+    button: {
+      height: 56,
+      borderRadius: 16,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+    },
     buttonGreen: { backgroundColor: colors.green },
     buttonText: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.text },
     buttonTextDark: { color: "#000000" },

@@ -1,9 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function getApiBase(): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}/api-server/api`;
+  }
   const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) return `https://${domain}/api-server/api`;
-  return "http://localhost:3001/api";
+  return domain ? `https://${domain}/api-server/api` : "http://localhost:8080/api";
 }
 
 async function getAnonymousId(): Promise<string | null> {
@@ -23,16 +25,27 @@ async function request<T>(
   };
   if (anonymousId) headers["x-anonymous-id"] = anonymousId;
 
-  const res = await fetch(`${base}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${base}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (networkErr) {
+    throw new Error("No internet connection. Please try again.");
+  }
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(err.error || `HTTP ${res.status}`);
+    let message = `Server error (${res.status})`;
+    try {
+      const data = await res.json();
+      if (data?.error) message = data.error;
+    } catch {
+    }
+    throw new Error(message);
   }
+
   return res.json() as Promise<T>;
 }
 
@@ -77,11 +90,16 @@ export async function requestUploadUrl(
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (anonymousId) headers["x-anonymous-id"] = anonymousId;
 
-  const res = await fetch(`${base}/storage/uploads/request-url`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ name, size, contentType }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${base}/storage/uploads/request-url`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ name, size, contentType }),
+    });
+  } catch {
+    throw new Error("No internet connection.");
+  }
   if (!res.ok) throw new Error("Failed to get upload URL");
   return res.json();
 }

@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
+import { ScreenTransition, FadeSlide, AnimatedListItem } from "@/components/Animations";
 
 export default function NotificationsScreen() {
   const { colors } = useTheme();
@@ -23,17 +24,21 @@ export default function NotificationsScreen() {
   const styles = makeStyles(colors);
 
   return (
-    <View style={[styles.container, { paddingTop: top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
-        <View style={{ width: 38 }} />
-      </View>
+    <ScreenTransition>
+      <View style={[styles.container, { paddingTop: top }]}>
+        <FadeSlide delay={0} from="top">
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Feather name="arrow-left" size={20} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Notifications</Text>
+            <View style={{ width: 38 }} />
+          </View>
+        </FadeSlide>
 
-      <View style={styles.content}>
-        <View style={styles.card}>
+        <AnimatedListItem index={0}>
+          <View style={styles.content}>
+            <View style={styles.card}>
           <View style={styles.row}>
             <View style={styles.rowLeft}>
               <Text style={styles.rowLabel}>Daily reminder</Text>
@@ -62,8 +67,10 @@ export default function NotificationsScreen() {
             />
           </View>
         </View>
+          </View>
+        </AnimatedListItem>
       </View>
-    </View>
+    </ScreenTransition>
   );
 }
 

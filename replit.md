@@ -79,9 +79,22 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 - `app/community-guidelines.tsx` — Shield icon + 4 rules + "I understand"
 - `app/terms.tsx` — Terms of Service + Privacy Policy + "I Understand"
 
+**Animation system**: `components/Animations.tsx` — comprehensive Reanimated 3 animation library used on every screen:
+- `ScreenTransition` — wraps screen root with `FadeIn.duration(320)` entering animation
+- `FadeSlide` — fades in + slides up/down with configurable `delay` and spring physics
+- `AnimatedListItem` — staggered `FadeInDown` for list items (delay = `index * 65ms`, capped at 500ms)
+- `AnimatedPressable` — spring-scale press feedback (scale to `scaleTo` prop, default 0.94)
+- `BounceFab` — FAB entrance with `ZoomIn.springify().damping(11)`
+- `PulseView` — continuous scale pulsing via `withRepeat`
+- `GlowPulse` — continuous opacity pulsing
+- `useReactionAnim` — triple-spring bounce for Worth it / Skip reaction buttons
+- `useShimmer` — opacity shimmer for skeleton/loading states
+
+**API client**: `utils/api.ts` — auto-detects web vs native; uses `window.location.origin + /api-server/api` on web (works in both dev proxy and production), env var fallback for native.
+
 **Context**: `context/AppContext.tsx` — exposes `appInitialized`, `registered`, `onboarded`, posts, settings, tempUserId, session timer
 
-**Key packages**: `expo-router`, `expo-haptics`, `expo-image`, `expo-image-picker`, `expo-clipboard`, `@react-native-async-storage/async-storage`, `react-native-safe-area-context`
+**Key packages**: `expo-router`, `expo-haptics`, `expo-image`, `expo-image-picker`, `expo-clipboard`, `@react-native-async-storage/async-storage`, `react-native-safe-area-context`, `react-native-reanimated`
 
 ### `artifacts/api-server` (`@workspace/api-server`)
 

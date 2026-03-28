@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
+import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable } from "@/components/Animations";
 
 const REASONS = [
   { id: "spam", label: "Spam", icon: "alert-circle" },
@@ -34,67 +35,78 @@ export default function ReportScreen() {
 
   if (submitted) {
     return (
-      <View style={[styles.container, { paddingTop: top }]}>
-        <TouchableOpacity style={[styles.backBtn, { margin: 16 }]} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.successContent}>
-          <View style={styles.successIcon}>
-            <Feather name="check" size={30} color={colors.green} />
-          </View>
-          <Text style={styles.successTitle}>Report submitted</Text>
-          <Text style={styles.successSub}>
-            Thank you for helping keep BlindFeed safe.{"\n"}We'll review this content shortly.
-          </Text>
-          <TouchableOpacity style={styles.doneBtn} onPress={() => router.back()} activeOpacity={0.85}>
-            <Text style={styles.doneBtnText}>Done</Text>
+      <ScreenTransition>
+        <View style={[styles.container, { paddingTop: top }]}>
+          <TouchableOpacity style={[styles.backBtn, { margin: 16 }]} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={20} color={colors.text} />
           </TouchableOpacity>
+          <FadeSlide delay={0} style={styles.successContent as any}>
+            <View style={styles.successIcon}>
+              <Feather name="check" size={30} color={colors.green} />
+            </View>
+            <Text style={styles.successTitle}>Report submitted</Text>
+            <Text style={styles.successSub}>
+              Thank you for helping keep BlindFeed safe.{"\n"}We'll review this content shortly.
+            </Text>
+            <AnimatedPressable style={styles.doneBtn} onPress={() => router.back()} scaleTo={0.96}>
+              <Text style={styles.doneBtnText}>Done</Text>
+            </AnimatedPressable>
+          </FadeSlide>
         </View>
-      </View>
+      </ScreenTransition>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Report Content</Text>
-        <View style={{ width: 38 }} />
-      </View>
-
-      <View style={[styles.content, { paddingBottom: bottom + 24 }]}>
-        <Text style={styles.question}>Why are you reporting this content?</Text>
-        <View style={styles.reasons}>
-          {REASONS.map((reason, idx) => (
-            <TouchableOpacity
-              key={reason.id}
-              style={[styles.reasonRow, selected === reason.id && styles.reasonRowSelected, idx < REASONS.length - 1 && styles.reasonRowBorder]}
-              onPress={() => setSelected(reason.id)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.reasonLeft}>
-                <Feather name={reason.icon as never} size={18} color={selected === reason.id ? colors.green : colors.textSecondary} />
-                <Text style={[styles.reasonLabel, selected === reason.id && { color: colors.green, fontFamily: "Inter_500Medium" }]}>
-                  {reason.label}
-                </Text>
-              </View>
-              {selected === reason.id && <Feather name="check" size={18} color={colors.green} />}
+    <ScreenTransition>
+      <View style={[styles.container, { paddingTop: top }]}>
+        <FadeSlide delay={0} from="top">
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Feather name="arrow-left" size={20} color={colors.text} />
             </TouchableOpacity>
-          ))}
-        </View>
+            <Text style={styles.headerTitle}>Report Content</Text>
+            <View style={{ width: 38 }} />
+          </View>
+        </FadeSlide>
 
-        <TouchableOpacity
-          style={[styles.submitBtn, !selected && styles.submitBtnDisabled]}
-          onPress={handleSubmit}
-          disabled={!selected}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.submitBtnText, !selected && { color: colors.textTertiary }]}>Submit Report</Text>
-        </TouchableOpacity>
+        <View style={[styles.content, { paddingBottom: bottom + 24 }]}>
+          <FadeSlide delay={60}>
+            <Text style={styles.question}>Why are you reporting this content?</Text>
+          </FadeSlide>
+          <View style={styles.reasons}>
+            {REASONS.map((reason, idx) => (
+              <AnimatedListItem key={reason.id} index={idx}>
+                <TouchableOpacity
+                  style={[styles.reasonRow, selected === reason.id && styles.reasonRowSelected, idx < REASONS.length - 1 && styles.reasonRowBorder]}
+                  onPress={() => setSelected(reason.id)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.reasonLeft}>
+                    <Feather name={reason.icon as never} size={18} color={selected === reason.id ? colors.green : colors.textSecondary} />
+                    <Text style={[styles.reasonLabel, selected === reason.id && { color: colors.green, fontFamily: "Inter_500Medium" }]}>
+                      {reason.label}
+                    </Text>
+                  </View>
+                  {selected === reason.id && <Feather name="check" size={18} color={colors.green} />}
+                </TouchableOpacity>
+              </AnimatedListItem>
+            ))}
+          </View>
+
+          <FadeSlide delay={280}>
+            <AnimatedPressable
+              style={[styles.submitBtn, !selected && styles.submitBtnDisabled]}
+              onPress={handleSubmit}
+              disabled={!selected}
+              scaleTo={0.96}
+            >
+              <Text style={[styles.submitBtnText, !selected && { color: colors.textTertiary }]}>Submit Report</Text>
+            </AnimatedPressable>
+          </FadeSlide>
+        </View>
       </View>
-    </View>
+    </ScreenTransition>
   );
 }
 

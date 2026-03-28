@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
 import { timeAgo } from "@/utils/time";
+import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable } from "@/components/Animations";
 
 const SUGGESTIONS = ["Popular today", "Trending", "Random", "Most reacted", "New voices"];
 
@@ -53,34 +54,37 @@ export default function SearchScreen() {
   const styles = makeStyles(colors);
 
   return (
-    <View style={[styles.container, { paddingTop: top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.searchBar}>
-          <Feather name="search" size={16} color={colors.textTertiary} />
-          <TextInput
-            ref={inputRef}
-            style={styles.searchInput}
-            placeholder="Search posts..."
-            placeholderTextColor={colors.textTertiary}
-            value={query}
-            onChangeText={setQuery}
-            onSubmitEditing={() => handleSearch(query)}
-            returnKeyType="search"
-            autoFocus
-            autoCapitalize="none"
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery("")}>
-              <Feather name="x-circle" size={16} color={colors.textTertiary} />
+    <ScreenTransition>
+      <View style={[styles.container, { paddingTop: top }]}>
+        <FadeSlide delay={0} from="top">
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Feather name="arrow-left" size={20} color={colors.text} />
             </TouchableOpacity>
-          )}
-        </View>
-      </View>
+            <View style={styles.searchBar}>
+              <Feather name="search" size={16} color={colors.textTertiary} />
+              <TextInput
+                ref={inputRef}
+                style={styles.searchInput}
+                placeholder="Search posts..."
+                placeholderTextColor={colors.textTertiary}
+                value={query}
+                onChangeText={setQuery}
+                onSubmitEditing={() => handleSearch(query)}
+                returnKeyType="search"
+                autoFocus
+                autoCapitalize="none"
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery("")}>
+                  <Feather name="x-circle" size={16} color={colors.textTertiary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </FadeSlide>
 
-      <FlatList
+        <FlatList
         data={showResults ? results : []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.listContent, { paddingBottom: bottom + 24 }]}
@@ -123,27 +127,30 @@ export default function SearchScreen() {
             <Text style={styles.sectionLabel}>{results.length} result{results.length !== 1 ? "s" : ""}</Text>
           )
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.resultCard}
-            onPress={() => router.push({ pathname: "/post/[id]", params: { id: item.id } })}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.resultText} numberOfLines={3}>{item.content}</Text>
-            <View style={styles.resultMeta}>
-              <Text style={styles.resultTime}>{timeAgo(item.createdAt)}</Text>
-              <View style={styles.resultReactions}>
-                <Feather name="check" size={12} color={colors.green} />
-                <Text style={styles.resultCount}>{item.worthItCount}</Text>
-                <Feather name="x" size={12} color={colors.textTertiary} style={{ marginLeft: 8 }} />
-                <Text style={styles.resultCount}>{item.skipCount}</Text>
+        renderItem={({ item, index }) => (
+          <AnimatedListItem index={index}>
+            <TouchableOpacity
+              style={styles.resultCard}
+              onPress={() => router.push({ pathname: "/post/[id]", params: { id: item.id } })}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.resultText} numberOfLines={3}>{item.content}</Text>
+              <View style={styles.resultMeta}>
+                <Text style={styles.resultTime}>{timeAgo(item.createdAt)}</Text>
+                <View style={styles.resultReactions}>
+                  <Feather name="check" size={12} color={colors.green} />
+                  <Text style={styles.resultCount}>{item.worthItCount}</Text>
+                  <Feather name="x" size={12} color={colors.textTertiary} style={{ marginLeft: 8 }} />
+                  <Text style={styles.resultCount}>{item.skipCount}</Text>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </AnimatedListItem>
         )}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
       />
-    </View>
+      </View>
+    </ScreenTransition>
   );
 }
 

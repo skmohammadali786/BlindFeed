@@ -18,6 +18,13 @@ import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
 import { api } from "@/utils/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  ScreenTransition,
+  FadeSlide,
+  AnimatedPressable,
+  PulseView,
+  AnimatedListItem,
+} from "@/components/Animations";
 
 function generateAnonymousId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -49,9 +56,14 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       const existing = await AsyncStorage.getItem("bf_anonymous_id");
-      let anonymousId = existing ?? generateAnonymousId();
+      const anonymousId = existing ?? generateAnonymousId();
 
-      await api.post("/auth/register", { anonymousId, name: name.trim(), email: email.trim(), phone: phone.trim() });
+      await api.post("/auth/register", {
+        anonymousId,
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+      });
       await setRegistered(anonymousId);
 
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -62,7 +74,9 @@ export default function RegisterScreen() {
         router.replace("/onboarding");
       }
     } catch (err: unknown) {
-      Alert.alert("Error", err instanceof Error ? err.message : "Registration failed. Please try again.");
+      const message =
+        err instanceof Error ? err.message : "Registration failed. Please check your info and try again.";
+      Alert.alert("Couldn't register", message);
     } finally {
       setLoading(false);
     }
@@ -72,122 +86,150 @@ export default function RegisterScreen() {
 
   if (step === 0) {
     return (
-      <View style={[styles.container, { paddingTop: top, paddingBottom: bottom }]}>
-        <View style={styles.topSection}>
-          <View style={styles.shieldIcon}>
-            <Feather name="shield" size={32} color={colors.green} />
-          </View>
-          <Text style={styles.title}>Quick Setup</Text>
-          <Text style={styles.subtitle}>
-            BlindFeed is completely anonymous — your posts, reactions, and identity are never revealed to anyone.
-          </Text>
-          <Text style={styles.subtitle}>
-            We collect your name, email, and phone number <Text style={styles.highlight}>solely for moderation</Text> — to hold bad actors accountable if harmful content is posted. This information is never shown to any user, ever.
-          </Text>
-        </View>
+      <ScreenTransition>
+        <View style={[styles.container, { paddingTop: top, paddingBottom: bottom }]}>
+          <FadeSlide delay={0} style={styles.topSection}>
+            <PulseView>
+              <View style={styles.shieldIcon}>
+                <Feather name="shield" size={32} color={colors.green} />
+              </View>
+            </PulseView>
+            <Text style={styles.title}>Quick Setup</Text>
+            <Text style={styles.subtitle}>
+              BlindFeed is completely anonymous — your posts, reactions, and identity are never revealed to anyone.
+            </Text>
+            <Text style={styles.subtitle}>
+              We collect your name, email, and phone number{" "}
+              <Text style={styles.highlight}>solely for moderation</Text> — to hold bad actors accountable if
+              harmful content is posted. This information is never shown to any user, ever.
+            </Text>
+          </FadeSlide>
 
-        <View style={styles.privacyBox}>
-          <View style={styles.privacyRow}>
-            <Feather name="eye-off" size={15} color={colors.green} />
-            <Text style={styles.privacyText}>Never visible to other users</Text>
-          </View>
-          <View style={styles.privacyRow}>
-            <Feather name="lock" size={15} color={colors.green} />
-            <Text style={styles.privacyText}>Stored securely, used only if needed</Text>
-          </View>
-          <View style={styles.privacyRow}>
-            <Feather name="user-x" size={15} color={colors.green} />
-            <Text style={styles.privacyText}>Never sold or shared with third parties</Text>
-          </View>
-        </View>
+          <FadeSlide delay={120}>
+            <View style={styles.privacyBox}>
+              {[
+                { icon: "eye-off", text: "Never visible to other users" },
+                { icon: "lock", text: "Stored securely, used only if needed" },
+                { icon: "user-x", text: "Never sold or shared with third parties" },
+              ].map((item, i) => (
+                <AnimatedListItem key={item.text} index={i}>
+                  <View style={styles.privacyRow}>
+                    <Feather name={item.icon as any} size={15} color={colors.green} />
+                    <Text style={styles.privacyText}>{item.text}</Text>
+                  </View>
+                </AnimatedListItem>
+              ))}
+            </View>
+          </FadeSlide>
 
-        <TouchableOpacity style={styles.btn} onPress={() => setStep(1)} activeOpacity={0.85}>
-          <Text style={styles.btnText}>I understand, continue</Text>
-        </TouchableOpacity>
-      </View>
+          <FadeSlide delay={280}>
+            <AnimatedPressable style={styles.btn} onPress={() => setStep(1)} scaleTo={0.96}>
+              <Text style={styles.btnText}>I understand, continue</Text>
+            </AnimatedPressable>
+          </FadeSlide>
+        </View>
+      </ScreenTransition>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: top }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: bottom + 24 }}
-        keyboardShouldPersistTaps="handled"
+    <ScreenTransition>
+      <KeyboardAvoidingView
+        style={[styles.container, { paddingTop: top }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <TouchableOpacity onPress={() => setStep(0)} style={styles.backRow}>
-          <Feather name="arrow-left" size={20} color={colors.textSecondary} />
-          <Text style={styles.backText}>Back</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.title}>Create account</Text>
-        <Text style={styles.formSubtitle}>
-          This information is <Text style={styles.highlight}>private</Text> and only used for content moderation.
-        </Text>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Full name</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Your real name"
-            placeholderTextColor={colors.textTertiary}
-            autoCapitalize="words"
-            autoComplete="name"
-          />
-          <Text style={styles.fieldNote}>Used only to identify you if you post harmful content</Text>
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Email address</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={colors.textTertiary}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-          />
-          <Text style={styles.fieldNote}>For account recovery and moderation contact only</Text>
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Phone number</Text>
-          <TextInput
-            style={styles.input}
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="+1 234 567 8900"
-            placeholderTextColor={colors.textTertiary}
-            keyboardType="phone-pad"
-            autoComplete="tel"
-          />
-          <Text style={styles.fieldNote}>For identity verification if content is reported</Text>
-        </View>
-
-        <View style={styles.noteBox}>
-          <Feather name="info" size={14} color={colors.textSecondary} />
-          <Text style={styles.noteText}>
-            Your anonymous identity in the app is completely separate from this information. Other users will never know who you are.
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.btn, (!canProceed || loading) && styles.btnDisabled]}
-          onPress={handleRegister}
-          disabled={!canProceed || loading}
-          activeOpacity={0.85}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: bottom + 24 }}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.btnText}>{loading ? "Setting up..." : "Join BlindFeed"}</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <FadeSlide delay={0}>
+            <TouchableOpacity onPress={() => setStep(0)} style={styles.backRow}>
+              <Feather name="arrow-left" size={20} color={colors.textSecondary} />
+              <Text style={styles.backText}>Back</Text>
+            </TouchableOpacity>
+          </FadeSlide>
+
+          <FadeSlide delay={60}>
+            <Text style={styles.title}>Create account</Text>
+            <Text style={styles.formSubtitle}>
+              This information is <Text style={styles.highlight}>private</Text> and only used for content moderation.
+            </Text>
+          </FadeSlide>
+
+          {[
+            {
+              label: "Full name",
+              value: name,
+              onChange: setName,
+              placeholder: "Your real name",
+              note: "Used only to identify you if you post harmful content",
+              keyboardType: "default" as const,
+              autoCapitalize: "words" as const,
+              autoComplete: "name" as const,
+            },
+            {
+              label: "Email address",
+              value: email,
+              onChange: setEmail,
+              placeholder: "you@example.com",
+              note: "For account recovery and moderation contact only",
+              keyboardType: "email-address" as const,
+              autoCapitalize: "none" as const,
+              autoComplete: "email" as const,
+            },
+            {
+              label: "Phone number",
+              value: phone,
+              onChange: setPhone,
+              placeholder: "+1 234 567 8900",
+              note: "For identity verification if content is reported",
+              keyboardType: "phone-pad" as const,
+              autoCapitalize: "none" as const,
+              autoComplete: "tel" as const,
+            },
+          ].map((field, i) => (
+            <AnimatedListItem key={field.label} index={i}>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>{field.label}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  placeholder={field.placeholder}
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType={field.keyboardType}
+                  autoCapitalize={field.autoCapitalize}
+                  autoComplete={field.autoComplete}
+                />
+                <Text style={styles.fieldNote}>{field.note}</Text>
+              </View>
+            </AnimatedListItem>
+          ))}
+
+          <FadeSlide delay={300}>
+            <View style={styles.noteBox}>
+              <Feather name="info" size={14} color={colors.textSecondary} />
+              <Text style={styles.noteText}>
+                Your anonymous identity in the app is completely separate from this information. Other users will
+                never know who you are.
+              </Text>
+            </View>
+          </FadeSlide>
+
+          <FadeSlide delay={360}>
+            <AnimatedPressable
+              style={[styles.btn, (!canProceed || loading) && styles.btnDisabled]}
+              onPress={handleRegister}
+              disabled={!canProceed || loading}
+              scaleTo={0.96}
+            >
+              <Text style={styles.btnText}>{loading ? "Setting up..." : "Join BlindFeed"}</Text>
+            </AnimatedPressable>
+          </FadeSlide>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenTransition>
   );
 }
 

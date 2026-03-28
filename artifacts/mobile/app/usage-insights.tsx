@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
+import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable } from "@/components/Animations";
 
 function formatTime(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -42,39 +43,44 @@ export default function UsageInsightsScreen() {
   const styles = makeStyles(colors);
 
   return (
-    <View style={[styles.container, { paddingTop: top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Usage Insights</Text>
-        <View style={{ width: 38 }} />
-      </View>
+    <ScreenTransition>
+      <View style={[styles.container, { paddingTop: top }]}>
+        <FadeSlide delay={0} from="top">
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Feather name="arrow-left" size={20} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Usage Insights</Text>
+            <View style={{ width: 38 }} />
+          </View>
+        </FadeSlide>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingBottom: bottom + 24 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.sectionTitle}>Your Activity</Text>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[styles.content, { paddingBottom: bottom + 24 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <FadeSlide delay={60}><Text style={styles.sectionTitle}>Your Activity</Text></FadeSlide>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Feather name="edit-3" size={20} color={colors.green} />
-            <Text style={[styles.statValue, { color: colors.green }]}>{String(myPosts.length)}</Text>
-            <Text style={styles.statLabel}>Posts</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Feather name="zap" size={20} color="#FFD60A" />
-            <Text style={[styles.statValue, { color: "#FFD60A" }]}>{String(reactionCount)}</Text>
-            <Text style={styles.statLabel}>Reactions</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Feather name="clock" size={20} color={colors.textSecondary} />
-            <Text style={styles.statValue}>{timeStr}</Text>
-            <Text style={styles.statLabel}>This session</Text>
-          </View>
-        </View>
+          <AnimatedListItem index={0}>
+            <View style={styles.statsRow}>
+              <View style={styles.statCard}>
+                <Feather name="edit-3" size={20} color={colors.green} />
+                <Text style={[styles.statValue, { color: colors.green }]}>{String(myPosts.length)}</Text>
+                <Text style={styles.statLabel}>Posts</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Feather name="zap" size={20} color="#FFD60A" />
+                <Text style={[styles.statValue, { color: "#FFD60A" }]}>{String(reactionCount)}</Text>
+                <Text style={styles.statLabel}>Reactions</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Feather name="clock" size={20} color={colors.textSecondary} />
+                <Text style={styles.statValue}>{timeStr}</Text>
+                <Text style={styles.statLabel}>This session</Text>
+              </View>
+            </View>
+          </AnimatedListItem>
 
         {reactionCount > 0 && (
           <View style={styles.card}>
@@ -149,8 +155,9 @@ export default function UsageInsightsScreen() {
           <Feather name="shield" size={14} color={colors.textTertiary} />
           <Text style={styles.privacyText}>Stats are based on your current session activity.</Text>
         </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+    </ScreenTransition>
   );
 }
 

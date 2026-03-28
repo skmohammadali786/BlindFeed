@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp, DraftPost } from "@/context/AppContext";
 import { requestUploadUrl } from "@/utils/api";
+import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable, PulseView } from "@/components/Animations";
 
 const MAX_CHARS = 500;
 const MIN_CHARS = 10;
@@ -107,18 +108,24 @@ export default function CreateScreen() {
 
   if (submitted) {
     return (
-      <View style={[styles.container, { paddingTop: top }]}>
-        <View style={styles.successContainer}>
-          <View style={styles.successIcon}>
-            <Feather name="check" size={36} color="#000" />
+      <ScreenTransition>
+        <View style={[styles.container, { paddingTop: top }]}>
+          <View style={styles.successContainer}>
+            <FadeSlide delay={0} style={{ alignItems: "center", gap: 16, width: "100%" }}>
+              <PulseView>
+                <View style={styles.successIcon}>
+                  <Feather name="check" size={36} color="#000" />
+                </View>
+              </PulseView>
+              <Text style={styles.successTitle}>Your post is live</Text>
+              <Text style={styles.successSub}>Anonymous and real</Text>
+              <AnimatedPressable style={styles.feedBtn} onPress={() => router.replace("/feed")} scaleTo={0.96}>
+                <Text style={styles.feedBtnText}>Back to feed</Text>
+              </AnimatedPressable>
+            </FadeSlide>
           </View>
-          <Text style={styles.successTitle}>Your post is live</Text>
-          <Text style={styles.successSub}>Anonymous and real</Text>
-          <TouchableOpacity style={styles.feedBtn} onPress={() => router.replace("/feed")} activeOpacity={0.85}>
-            <Text style={styles.feedBtnText}>Back to feed</Text>
-          </TouchableOpacity>
         </View>
-      </View>
+      </ScreenTransition>
     );
   }
 
