@@ -59,23 +59,47 @@ function ReactionBtn({
       <TouchableOpacity
         style={[
           reactionStyles.btn,
-          { borderColor: active ? activeColor : colors.border, backgroundColor: active ? `${activeColor}22` : colors.surface },
+          {
+            borderColor: active ? activeColor : colors.border,
+            backgroundColor: active ? activeColor : colors.surface,
+          },
         ]}
         onPress={() => { trigger(); onPress(); }}
-        activeOpacity={0.75}
+        activeOpacity={0.8}
       >
-        <Feather name={icon as any} size={18} color={active ? activeColor : colors.text} />
-        <Text style={[reactionStyles.label, { color: active ? activeColor : colors.text }]}>{label}</Text>
-        <Text style={[reactionStyles.count, { color: active ? activeColor : colors.textSecondary }]}>({count})</Text>
+        <View style={[reactionStyles.iconCircle, { backgroundColor: active ? "rgba(255,255,255,0.22)" : `${activeColor}18` }]}>
+          <Feather name={icon as any} size={16} color={active ? "#fff" : activeColor} />
+        </View>
+        <View style={reactionStyles.btnLabels}>
+          <Text style={[reactionStyles.label, { color: active ? "#fff" : colors.text }]}>{label}</Text>
+          <Text style={[reactionStyles.count, { color: active ? "rgba(255,255,255,0.75)" : colors.textSecondary }]}>{count} votes</Text>
+        </View>
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
 const reactionStyles = StyleSheet.create({
-  btn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: 13, borderRadius: 14, borderWidth: 1 },
-  label: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  count: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  btn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+  },
+  iconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  btnLabels: { flex: 1, gap: 2 },
+  label: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  count: { fontSize: 12, fontFamily: "Inter_400Regular" },
 });
 
 export default function PostDetailScreen() {
@@ -93,6 +117,7 @@ export default function PostDetailScreen() {
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ApiComment | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
   const [deleteCommentId, setDeleteCommentId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [remotePost, setRemotePost] = useState<import("@/context/AppContext").Post | null>(null);
@@ -157,6 +182,7 @@ export default function PostDetailScreen() {
     const text = commentText.trim();
     if (!text || submitting) return;
     setSubmitting(true);
+    setCommentError(null);
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const body: { content: string; parentId?: number } = { content: text };
@@ -166,8 +192,11 @@ export default function PostDetailScreen() {
       setReplyingTo(null);
       await fetchComments();
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 200);
-    } catch (_) {}
-    finally { setSubmitting(false); }
+    } catch (_) {
+      setCommentError("Failed to post comment. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDeleteComment = (commentId: number) => {
@@ -266,13 +295,7 @@ export default function PostDetailScreen() {
 
           <Text style={styles.postContent}>{post.content}</Text>
 
-          <View style={styles.metaRow}>
-            <Text style={styles.postTime}>{timeAgo(post.createdAt)}</Text>
-            <View style={styles.expiryRow}>
-              <Feather name="clock" size={11} color={colors.textTertiary} />
-              <Text style={styles.postExpiry}>Expires {timeAgo(post.expiresAt)}</Text>
-            </View>
-          </View>
+          <Text style={styles.postTime}>{timeAgo(post.createdAt)}</Text>
 
           <View style={styles.statsRow}>
             {[
@@ -450,12 +473,22 @@ export default function PostDetailScreen() {
             </View>
           )}
 
+          {commentError && (
+            <View style={styles.commentErrorRow}>
+              <Feather name="alert-circle" size={13} color="#FF3B30" />
+              <Text style={styles.commentErrorText}>{commentError}</Text>
+              <TouchableOpacity onPress={() => setCommentError(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x" size={13} color="#FF3B30" />
+              </TouchableOpacity>
+            </View>
+          )}
+
           <View style={styles.inputRow}>
             <TextInput
               ref={inputRef}
               style={styles.input}
               value={commentText}
-              onChangeText={setCommentText}
+              onChangeText={(t) => { setCommentText(t); if (commentError) setCommentError(null); }}
               placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
               placeholderTextColor={colors.textTertiary}
               multiline
@@ -512,10 +545,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       letterSpacing: -0.2,
       marginBottom: 12,
     },
-    metaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-    postTime: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.textSecondary },
-    expiryRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-    postExpiry: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textTertiary },
+    postTime: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.textSecondary, marginBottom: 14 },
 
     statsRow: {
       flexDirection: "row",
@@ -642,6 +672,22 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center",
     },
     sendBtnDisabled: { backgroundColor: colors.surface },
+
+    commentErrorRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+      backgroundColor: "rgba(255,59,48,0.08)",
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    commentErrorText: {
+      flex: 1,
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+      color: "#FF3B30",
+    },
 
     notFound: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
     notFoundText: { fontSize: 18, fontFamily: "Inter_600SemiBold", color: colors.text },
