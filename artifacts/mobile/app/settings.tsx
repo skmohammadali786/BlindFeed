@@ -303,7 +303,7 @@ export default function SettingsScreen() {
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalConfirm, { backgroundColor: colors.green }]}
+                style={[styles.modalConfirm, { backgroundColor: "#FF3B30" }]}
                 onPress={async () => {
                   setShowResetFeedModal(false);
                   await resetFeed();

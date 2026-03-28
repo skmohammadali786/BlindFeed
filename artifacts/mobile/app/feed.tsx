@@ -21,6 +21,8 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   Easing,
+  FadeInDown,
+  FadeOutUp,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
@@ -440,10 +442,24 @@ export default function FeedScreen() {
         </Animated.View>
 
         {newPostsBanner && (
-          <TouchableOpacity style={styles.newPostsBanner} onPress={handleBannerPress} activeOpacity={0.85}>
-            <Feather name="arrow-up" size={13} color="#000" />
-            <Text style={styles.newPostsBannerText}>New posts — tap to dismiss</Text>
-          </TouchableOpacity>
+          <Animated.View entering={FadeInDown.duration(350).springify().damping(14)} exiting={FadeOutUp.duration(220)} style={styles.newPostsBannerWrap}>
+            <TouchableOpacity style={styles.newPostsBanner} onPress={handleRefresh} activeOpacity={0.88}>
+              <View style={[styles.newPostsBannerIcon, { backgroundColor: colors.greenDim }]}>
+                <Feather name="refresh-cw" size={16} color={colors.green} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.newPostsBannerTitle}>New posts available</Text>
+                <Text style={styles.newPostsBannerSub}>Tap to load the latest</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.newPostsBannerClose}
+                onPress={handleBannerPress}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Feather name="x" size={14} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </Animated.View>
         )}
 
         {feedLoading && activePosts.length === 0 ? (
@@ -749,20 +765,54 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       justifyContent: "center",
       alignItems: "center",
     },
-    newPostsBanner: {
+    newPostsBannerWrap: {
       position: "absolute",
-      top: HEADER_HEIGHT + 8,
-      left: 60,
-      right: 60,
+      top: HEADER_HEIGHT + 10,
+      left: 16,
+      right: 16,
       zIndex: 9,
+    },
+    newPostsBanner: {
       flexDirection: "row",
       alignItems: "center",
+      gap: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      backgroundColor: colors.cardBg,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.green + "40",
+      shadowColor: colors.green,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 14,
+      elevation: 10,
+    },
+    newPostsBannerIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
       justifyContent: "center",
-      gap: 6,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      backgroundColor: "#3DDB85",
-      borderRadius: 20,
+      alignItems: "center",
+    },
+    newPostsBannerTitle: {
+      fontSize: 14,
+      fontFamily: "Inter_700Bold",
+      color: colors.text,
+    },
+    newPostsBannerSub: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+      marginTop: 1,
+    },
+    newPostsBannerClose: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
     },
     newPostsBannerText: {
       fontSize: 12,

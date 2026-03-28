@@ -108,17 +108,6 @@ export default function NotificationSettingsScreen() {
           contentContainerStyle={{ paddingBottom: bottom + 24 }}
           showsVerticalScrollIndicator={false}
         >
-          {permGranted === false && !isWeb && (
-            <AnimatedListItem index={0}>
-              <View style={styles.permBanner}>
-                <Feather name="bell-off" size={14} color="#FF9F0A" />
-                <Text style={styles.permBannerText}>
-                  Notification permission is off. Enable it in your device settings to receive notifications.
-                </Text>
-              </View>
-            </AnimatedListItem>
-          )}
-
           <AnimatedListItem index={1}>
             <Text style={styles.sectionLabel}>Reminders</Text>
             <View style={styles.section}>

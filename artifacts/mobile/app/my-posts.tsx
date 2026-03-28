@@ -4,7 +4,6 @@ import * as Haptics from "expo-haptics";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Platform,
@@ -163,6 +162,8 @@ export default function MyPostsScreen() {
   const [editingPost, setEditingPost] = useState<ApiMyPost | null>(null);
   const [editContent, setEditContent] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const styles = makeStyles(colors);
 
@@ -182,27 +183,23 @@ export default function MyPostsScreen() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = useCallback((postId: number) => {
-    Alert.alert(
-      "Delete post?",
-      "This will permanently remove your post from the feed.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await api.delete(`/posts/${postId}`);
-              if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              setPosts((prev) => prev.filter((p) => p.id !== postId));
-            } catch {
-              Alert.alert("Error", "Could not delete post. Try again.");
-            }
-          },
-        },
-      ]
-    );
+    setDeleteConfirmId(postId);
   }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteConfirmId || deleteLoading) return;
+    setDeleteLoading(true);
+    try {
+      await api.delete(`/posts/${deleteConfirmId}`);
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPosts((prev) => prev.filter((p) => p.id !== deleteConfirmId));
+      setDeleteConfirmId(null);
+    } catch {
+      setDeleteConfirmId(null);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [deleteConfirmId, deleteLoading]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -310,6 +307,44 @@ export default function MyPostsScreen() {
             }
           />
         )}
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          visible={deleteConfirmId !== null}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setDeleteConfirmId(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.editModal}>
+              <View style={{ alignItems: "center", marginBottom: 16 }}>
+                <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(255,59,48,0.1)", justifyContent: "center", alignItems: "center", marginBottom: 12 }}>
+                  <Feather name="trash-2" size={22} color="#FF3B30" />
+                </View>
+                <Text style={[styles.editModalTitle, { textAlign: "center" }]}>Delete post?</Text>
+                <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary, textAlign: "center", marginTop: 6, lineHeight: 20 }}>
+                  This will permanently remove your post from the feed. This action cannot be undone.
+                </Text>
+              </View>
+              <View style={styles.editActions}>
+                <TouchableOpacity style={styles.editCancelBtn} onPress={() => setDeleteConfirmId(null)}>
+                  <Text style={styles.editCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.editSaveBtn, { backgroundColor: "#FF3B30", opacity: deleteLoading ? 0.6 : 1 }]}
+                  onPress={handleConfirmDelete}
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={[styles.editSaveText, { color: "#fff" }]}>Delete</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {/* Edit Modal */}
         <Modal
