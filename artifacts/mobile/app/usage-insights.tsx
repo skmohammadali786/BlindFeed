@@ -50,7 +50,7 @@ function calcStreak(posts: Array<{ createdAt: string }>): number {
 
 export default function UsageInsightsScreen() {
   const { colors } = useTheme();
-  const { getMyPosts, posts, sessionSeconds } = useApp();
+  const { posts, sessionSeconds } = useApp();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top;
@@ -66,7 +66,6 @@ export default function UsageInsightsScreen() {
     }).catch(() => {});
   }, []);
 
-  const myPosts = getMyPosts();
   const reactedPosts = posts.filter((p) => p.myReaction !== null);
   const reactionCount = reactedPosts.length;
   const worthItCount = reactedPosts.filter((p) => p.myReaction === "worthit").length;
@@ -74,7 +73,7 @@ export default function UsageInsightsScreen() {
   const totalReactions = worthItCount + skipCount;
   const worthItPct = totalReactions > 0 ? Math.round((worthItCount / totalReactions) * 100) : 0;
   const timeStr = formatTime(sessionSeconds);
-  const totalPosts = allPosts.length || myPosts.length;
+  const totalPosts = allPosts.length;
 
   const styles = makeStyles(colors);
 
@@ -169,10 +168,10 @@ export default function UsageInsightsScreen() {
             </View>
           )}
 
-          {myPosts.length > 0 && (
+          {allPosts.length > 0 && (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>My Posts</Text>
-              {myPosts.map((post) => {
+              {allPosts.map((post) => {
                 const total = post.worthItCount + post.skipCount;
                 const pct = total > 0 ? Math.round((post.worthItCount / total) * 100) : 0;
                 return (
