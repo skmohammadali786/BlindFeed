@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { postsTable, reactionsTable, commentsTable } from "@workspace/db/schema";
 
@@ -74,12 +74,15 @@ router.post("/posts", async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const { content, imageUrl, isDraft = false } = req.body;
+  const { content, imageUrl, isDraft = false, expiresInHours } = req.body;
   if (!content || content.trim().length === 0) {
     return res.status(400).json({ error: "Content is required" });
   }
 
-  const expiresAt = new Date(Date.now() + FORTY_EIGHT_HOURS);
+  const hours = typeof expiresInHours === "number" && expiresInHours >= 1 && expiresInHours <= 168
+    ? expiresInHours
+    : 48;
+  const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
 
   try {
     const [post] = await db
@@ -90,6 +93,60 @@ router.post("/posts", async (req, res) => {
   } catch (err) {
     req.log.error(err, "Error creating post");
     return res.status(500).json({ error: "Failed to create post" });
+  }
+});
+
+router.get("/posts/mine", async (req, res) => {
+  const anonymousId = req.headers["x-anonymous-id"] as string;
+  if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const posts = await db
+      .select()
+      .from(postsTable)
+      .where(and(eq(postsTable.anonymousId, anonymousId), eq(postsTable.isDraft, false)))
+      .orderBy(desc(postsTable.createdAt));
+
+    const postIds = posts.map((p) => p.id);
+    let commentCountMap: Record<number, number> = {};
+    let latestCommentMap: Record<number, { content: string; createdAt: Date }> = {};
+
+    if (postIds.length > 0) {
+      const commentCounts = await db
+        .select({
+          postId: commentsTable.postId,
+          count: sql<number>`cast(count(*) as int)`,
+        })
+        .from(commentsTable)
+        .where(inArray(commentsTable.postId, postIds))
+        .groupBy(commentsTable.postId);
+      commentCountMap = Object.fromEntries(commentCounts.map((c) => [c.postId, c.count]));
+
+      const latestComments = await db
+        .select()
+        .from(commentsTable)
+        .where(and(inArray(commentsTable.postId, postIds), isNull(commentsTable.parentId)))
+        .orderBy(desc(commentsTable.createdAt));
+
+      for (const c of latestComments) {
+        if (!latestCommentMap[c.postId]) {
+          latestCommentMap[c.postId] = { content: c.content, createdAt: c.createdAt };
+        }
+      }
+    }
+
+    const enriched = posts.map((p) => ({
+      ...p,
+      myReaction: null,
+      commentCount: commentCountMap[p.id] ?? 0,
+      isOwn: true,
+      latestComment: latestCommentMap[p.id] ?? null,
+    }));
+
+    return res.json(enriched);
+  } catch (err) {
+    req.log.error(err, "Error fetching own posts");
+    return res.status(500).json({ error: "Failed to fetch posts" });
   }
 });
 

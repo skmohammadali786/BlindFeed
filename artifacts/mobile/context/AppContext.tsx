@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { api, ApiPost } from "@/utils/api";
+import { api, ApiPost, ApiMyPost } from "@/utils/api";
 
 export interface Post {
   id: string;
@@ -44,7 +44,8 @@ interface AppContextType {
   feedError: string | null;
   setOnboarded: () => void;
   setRegistered: (id: string) => void;
-  addPost: (content: string, imageUrl?: string | null, isDraft?: boolean) => Promise<Post | null>;
+  addPost: (content: string, imageUrl?: string | null, isDraft?: boolean, expiresInHours?: number) => Promise<Post | null>;
+  fetchMyPosts: () => Promise<ApiMyPost[]>;
   publishDraft: (draftId: string) => Promise<void>;
   deleteDraft: (draftId: string) => void;
   reactToPost: (postId: string, type: "worthit" | "skip") => Promise<void>;
@@ -203,7 +204,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(STORAGE_KEYS.ANONYMOUS_ID, anonId);
   }, []);
 
-  const addPost = useCallback(async (content: string, imageUrl?: string | null, isDraft?: boolean): Promise<Post | null> => {
+  const addPost = useCallback(async (content: string, imageUrl?: string | null, isDraft?: boolean, expiresInHours?: number): Promise<Post | null> => {
     if (isDraft) {
       const draft: DraftPost = {
         id: generateId(),
@@ -220,13 +221,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const apiPost = await api.post<ApiPost>("/posts", { content, imageUrl: imageUrl ?? null });
+      const apiPost = await api.post<ApiPost>("/posts", {
+        content,
+        imageUrl: imageUrl ?? null,
+        expiresInHours: expiresInHours ?? 48,
+      });
       const newPost = mapApiPost(apiPost);
       setPosts((prev) => [newPost, ...prev]);
       return newPost;
     } catch (err) {
       throw err;
     }
+  }, []);
+
+  const fetchMyPosts = useCallback(async (): Promise<ApiMyPost[]> => {
+    return api.get<ApiMyPost[]>("/posts/mine");
   }, []);
 
   const publishDraft = useCallback(async (draftId: string) => {
@@ -343,6 +352,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setOnboarded,
         setRegistered,
         addPost,
+        fetchMyPosts,
         publishDraft,
         deleteDraft,
         reactToPost,

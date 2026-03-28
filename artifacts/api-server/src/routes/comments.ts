@@ -30,9 +30,15 @@ router.get("/posts/:id/comments", async (req, res) => {
       }
     }
 
+    const anonymousId = req.headers["x-anonymous-id"] as string;
+
     const withReplies = topLevel.map((c) => ({
       ...c,
-      replies: replyMap[c.id] ?? [],
+      isOwn: c.anonymousId === anonymousId,
+      replies: (replyMap[c.id] ?? []).map((r) => ({
+        ...r,
+        isOwn: r.anonymousId === anonymousId,
+      })),
     }));
 
     return res.json(withReplies);

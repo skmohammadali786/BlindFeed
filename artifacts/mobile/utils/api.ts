@@ -87,7 +87,12 @@ export interface ApiComment {
   content: string;
   parentId: number | null;
   createdAt: string;
+  isOwn: boolean;
   replies: ApiComment[];
+}
+
+export interface ApiMyPost extends ApiPost {
+  latestComment: { content: string; createdAt: string } | null;
 }
 
 export async function requestUploadUrl(

@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -25,6 +26,15 @@ import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable, Pulse
 const MAX_CHARS = 500;
 const MIN_CHARS = 10;
 
+const EXPIRY_OPTIONS = [
+  { label: "1 hour", value: 1 },
+  { label: "6 hours", value: 6 },
+  { label: "12 hours", value: 12 },
+  { label: "24 hours", value: 24 },
+  { label: "48 hours", value: 48 },
+  { label: "7 days", value: 168 },
+];
+
 export default function CreateScreen() {
   const { colors } = useTheme();
   const { addPost, drafts, publishDraft, deleteDraft } = useApp();
@@ -33,6 +43,8 @@ export default function CreateScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [posting, setPosting] = useState(false);
   const [showDrafts, setShowDrafts] = useState(false);
+  const [expiresInHours, setExpiresInHours] = useState(48);
+  const [showExpiryModal, setShowExpiryModal] = useState(false);
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top;
@@ -85,7 +97,7 @@ export default function CreateScreen() {
         }
       }
 
-      await addPost(content.trim(), imageUrl, isDraft);
+      await addPost(content.trim(), imageUrl, isDraft, isDraft ? 48 : expiresInHours);
       if (isDraft) {
         Alert.alert("Saved", "Draft saved successfully.");
         router.back();
@@ -253,10 +265,48 @@ export default function CreateScreen() {
           </View>
         </View>
 
+        <TouchableOpacity style={styles.expiryRow} onPress={() => setShowExpiryModal(true)}>
+          <Feather name="clock" size={14} color={colors.textSecondary} />
+          <Text style={styles.expiryLabel}>Auto-delete after</Text>
+          <View style={styles.expiryChip}>
+            <Text style={styles.expiryChipText}>
+              {EXPIRY_OPTIONS.find((o) => o.value === expiresInHours)?.label ?? "48 hours"}
+            </Text>
+            <Feather name="chevron-down" size={12} color={colors.green} />
+          </View>
+        </TouchableOpacity>
+
         <View style={styles.anonBadge}>
           <Feather name="eye-off" size={12} color={colors.textTertiary} />
           <Text style={styles.anonText}>Posted anonymously. No one knows it's you.</Text>
         </View>
+
+        <Modal visible={showExpiryModal} transparent animationType="fade" onRequestClose={() => setShowExpiryModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>Auto-delete after</Text>
+              {EXPIRY_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={styles.expiryOption}
+                  onPress={() => {
+                    setExpiresInHours(opt.value);
+                    setShowExpiryModal(false);
+                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                >
+                  <Text style={[styles.expiryOptionText, expiresInHours === opt.value && { color: colors.green }]}>
+                    {opt.label}
+                  </Text>
+                  {expiresInHours === opt.value && <Feather name="check" size={16} color={colors.green} />}
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowExpiryModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -387,12 +437,88 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      marginTop: 16,
+      marginTop: 12,
     },
     anonText: {
       fontSize: 12,
       fontFamily: "Inter_400Regular",
       color: colors.textTertiary,
+    },
+    expiryRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+    },
+    expiryLabel: {
+      flex: 1,
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+    },
+    expiryChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: colors.greenDim,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    expiryChipText: {
+      fontSize: 13,
+      fontFamily: "Inter_600SemiBold",
+      color: colors.green,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 32,
+    },
+    modal: {
+      backgroundColor: colors.surface,
+      borderRadius: 18,
+      padding: 20,
+      width: "100%",
+      gap: 4,
+    },
+    modalTitle: {
+      fontSize: 17,
+      fontFamily: "Inter_700Bold",
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: 8,
+    },
+    expiryOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    expiryOptionText: {
+      fontSize: 15,
+      fontFamily: "Inter_500Medium",
+      color: colors.text,
+    },
+    modalCancel: {
+      marginTop: 8,
+      paddingVertical: 13,
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: 12,
+      alignItems: "center",
+    },
+    modalCancelText: {
+      fontSize: 15,
+      fontFamily: "Inter_500Medium",
+      color: colors.text,
     },
     successContainer: {
       flex: 1,

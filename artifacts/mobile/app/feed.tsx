@@ -288,6 +288,7 @@ export default function FeedScreen() {
           </TouchableWithoutFeedback>
           <View style={[styles.menuContainer, { top: top + 56 }]}>
             {[
+              { label: "My Posts", icon: "layers", route: "/my-posts" },
               { label: "Your Identity", icon: "user", route: "/identity" },
               { label: "Settings", icon: "settings", route: "/settings" },
               { label: "Usage Insights", icon: "bar-chart-2", route: "/usage-insights" },
