@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { postsTable, reactionsTable, commentsTable } from "@workspace/db/schema";
 
@@ -199,6 +199,117 @@ router.get("/posts/drafts", async (req, res) => {
   } catch (err) {
     req.log.error(err, "Error fetching drafts");
     return res.status(500).json({ error: "Failed to fetch drafts" });
+  }
+});
+
+const STOP_WORDS = new Set([
+  "the","a","an","and","or","but","is","are","was","were","i","you","he","she","it",
+  "we","they","my","your","his","her","its","our","their","that","this","to","of",
+  "in","on","at","for","with","from","by","about","as","be","been","have","has",
+  "had","do","does","did","will","would","could","should","may","might","can","not",
+  "no","so","if","when","where","who","what","how","why","just","like","get","got",
+  "been","also","into","than","then","they","them","these","those","there","here",
+  "out","up","down","back","more","much","many","some","any","all","most","very",
+  "really","even","still","ever","never","always","only","too","well","now","already",
+  "dont","cant","wont","isnt","arent","wasnt","havent","hasnt",
+]);
+
+router.get("/posts/trending", async (req, res) => {
+  try {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    const posts = await db
+      .select({ content: postsTable.content })
+      .from(postsTable)
+      .where(and(eq(postsTable.isDraft, false), gt(postsTable.expiresAt, now), gt(postsTable.createdAt, cutoff)))
+      .limit(100);
+
+    const wordCount: Record<string, number> = {};
+    for (const post of posts) {
+      const words = post.content.toLowerCase().match(/\b[a-z]{4,}\b/g) ?? [];
+      for (const word of words) {
+        if (!STOP_WORDS.has(word)) {
+          wordCount[word] = (wordCount[word] ?? 0) + 1;
+        }
+      }
+    }
+    const topics = Object.entries(wordCount)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 12)
+      .map(([word]) => word);
+    return res.json({ topics });
+  } catch (err) {
+    return res.json({ topics: [] });
+  }
+});
+
+router.get("/posts/search", async (req, res) => {
+  const { q = "", sort = "recent" } = req.query;
+  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const searchTerm = String(q).trim();
+
+  if (searchTerm.length < 2) return res.json([]);
+
+  try {
+    const now = new Date();
+    let query = db
+      .select({
+        id: postsTable.id,
+        anonymousId: postsTable.anonymousId,
+        content: postsTable.content,
+        imageUrl: postsTable.imageUrl,
+        worthItCount: postsTable.worthItCount,
+        skipCount: postsTable.skipCount,
+        expiresAt: postsTable.expiresAt,
+        createdAt: postsTable.createdAt,
+      })
+      .from(postsTable)
+      .where(and(
+        eq(postsTable.isDraft, false),
+        gt(postsTable.expiresAt, now),
+        ilike(postsTable.content, `%${searchTerm}%`)
+      ))
+      .$dynamic();
+
+    if (sort === "top") {
+      query = query.orderBy(desc(postsTable.worthItCount), desc(postsTable.createdAt));
+    } else {
+      query = query.orderBy(desc(postsTable.createdAt));
+    }
+
+    const posts = await query.limit(50);
+
+    let userReactions: Record<number, string> = {};
+    if (anonymousId) {
+      const reactions = await db
+        .select({ postId: reactionsTable.postId, type: reactionsTable.type })
+        .from(reactionsTable)
+        .where(eq(reactionsTable.anonymousId, anonymousId));
+      userReactions = Object.fromEntries(reactions.map((r) => [r.postId, r.type]));
+    }
+
+    const postIds = posts.map((p) => p.id);
+    let commentCountMap: Record<number, number> = {};
+    if (postIds.length > 0) {
+      const counts = await db
+        .select({ postId: commentsTable.postId, count: sql<number>`cast(count(*) as int)` })
+        .from(commentsTable)
+        .where(inArray(commentsTable.postId, postIds))
+        .groupBy(commentsTable.postId);
+      commentCountMap = Object.fromEntries(counts.map((c) => [c.postId, c.count]));
+    }
+
+    const enriched = posts.map((p) => ({
+      ...p,
+      myReaction: userReactions[p.id] ?? null,
+      commentCount: commentCountMap[p.id] ?? 0,
+      isOwn: p.anonymousId === anonymousId,
+    }));
+
+    return res.json(enriched);
+  } catch (err) {
+    req.log.error(err, "Error searching posts");
+    return res.status(500).json({ error: "Search failed" });
   }
 });
 
