@@ -26,13 +26,14 @@ import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable, Pulse
 const MAX_CHARS = 500;
 const MIN_CHARS = 10;
 
-const EXPIRY_OPTIONS = [
+const EXPIRY_OPTIONS: { label: string; value: number | null }[] = [
   { label: "1 hour", value: 1 },
   { label: "6 hours", value: 6 },
   { label: "12 hours", value: 12 },
   { label: "24 hours", value: 24 },
   { label: "48 hours", value: 48 },
   { label: "7 days", value: 168 },
+  { label: "Never", value: null },
 ];
 
 export default function CreateScreen() {
@@ -43,7 +44,7 @@ export default function CreateScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [posting, setPosting] = useState(false);
   const [showDrafts, setShowDrafts] = useState(false);
-  const [expiresInHours, setExpiresInHours] = useState(48);
+  const [expiresInHours, setExpiresInHours] = useState<number | null>(48);
   const [showExpiryModal, setShowExpiryModal] = useState(false);
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
@@ -287,7 +288,7 @@ export default function CreateScreen() {
               <Text style={styles.modalTitle}>Auto-delete after</Text>
               {EXPIRY_OPTIONS.map((opt) => (
                 <TouchableOpacity
-                  key={opt.value}
+                  key={String(opt.value ?? "never")}
                   style={styles.expiryOption}
                   onPress={() => {
                     setExpiresInHours(opt.value);

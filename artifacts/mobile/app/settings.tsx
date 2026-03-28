@@ -30,7 +30,7 @@ function SectionHeader({ title, colors }: { title: string; colors: ReturnType<ty
 
 export default function SettingsScreen() {
   const { colors, isDark, setDark } = useTheme();
-  const { settings, updateSetting, resetUserId, clearAllData, tempUserId } = useApp();
+  const { settings, updateSetting, resetUserId, clearAllData, tempUserId, logout } = useApp();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top;
@@ -39,6 +39,7 @@ export default function SettingsScreen() {
   const [showClearModal, setShowClearModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showFeedModal, setShowFeedModal] = useState(false);
 
   const styles = makeStyles(colors);
@@ -55,6 +56,13 @@ export default function SettingsScreen() {
     await resetUserId();
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("Done", "Your anonymous ID has been reset.");
+  };
+
+  const handleLogout = async () => {
+    setShowLogoutModal(false);
+    await logout();
+    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.replace("/");
   };
 
   const handleDeleteAccount = async () => {
@@ -207,6 +215,11 @@ export default function SettingsScreen() {
                 onPress={() => setShowResetModal(true)}
               />
               <SettingRow
+                label="Log out"
+                subtitle="Sign out and return to login"
+                onPress={() => setShowLogoutModal(true)}
+              />
+              <SettingRow
                 label="Delete account"
                 subtitle="Permanently remove all your data"
                 onPress={() => setShowDeleteModal(true)}
@@ -257,6 +270,24 @@ export default function SettingsScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalConfirm} onPress={handleResetId}>
                 <Text style={styles.modalConfirmText}>Reset</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Logout Modal */}
+      <Modal visible={showLogoutModal} transparent animationType="fade" onRequestClose={() => setShowLogoutModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Log out?</Text>
+            <Text style={styles.modalBody}>You'll need your email/phone number and password to log back in. Your posts and settings will be saved.</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowLogoutModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalConfirm} onPress={handleLogout}>
+                <Text style={styles.modalConfirmText}>Log out</Text>
               </TouchableOpacity>
             </View>
           </View>

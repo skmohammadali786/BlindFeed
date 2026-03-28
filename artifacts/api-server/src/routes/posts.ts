@@ -79,9 +79,14 @@ router.post("/posts", async (req, res) => {
     return res.status(400).json({ error: "Content is required" });
   }
 
-  const hours = typeof expiresInHours === "number" && expiresInHours >= 1 && expiresInHours <= 168
-    ? expiresInHours
-    : 48;
+  let hours: number;
+  if (expiresInHours === null) {
+    hours = 100 * 365 * 24;
+  } else if (typeof expiresInHours === "number" && expiresInHours >= 1 && expiresInHours <= 168) {
+    hours = expiresInHours;
+  } else {
+    hours = 48;
+  }
   const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
 
   try {

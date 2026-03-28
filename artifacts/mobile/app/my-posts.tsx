@@ -19,14 +19,17 @@ import { api, ApiMyPost } from "@/utils/api";
 import { timeAgo } from "@/utils/time";
 import { ScreenTransition, FadeSlide, AnimatedListItem, AnimatedPressable } from "@/components/Animations";
 
-function expiryLabel(expiresAt: string): { label: string; expired: boolean } {
+const NEVER_THRESHOLD_MS = 365 * 24 * 60 * 60 * 1000;
+
+function expiryLabel(expiresAt: string): { label: string; expired: boolean; isNever: boolean } {
   const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0) return { label: "Expired", expired: true };
+  if (ms > NEVER_THRESHOLD_MS) return { label: "Never expires", expired: false, isNever: true };
+  if (ms <= 0) return { label: "Expired", expired: true, isNever: false };
   const h = Math.floor(ms / (1000 * 60 * 60));
   const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-  if (h >= 24) return { label: `${Math.floor(h / 24)}d left`, expired: false };
-  if (h >= 1) return { label: `${h}h ${m}m left`, expired: false };
-  return { label: `${m}m left`, expired: false };
+  if (h >= 24) return { label: `${Math.floor(h / 24)}d left`, expired: false, isNever: false };
+  if (h >= 1) return { label: `${h}h ${m}m left`, expired: false, isNever: false };
+  return { label: `${m}m left`, expired: false, isNever: false };
 }
 
 function PostCard({
@@ -41,7 +44,7 @@ function PostCard({
   colors: ReturnType<typeof useTheme>["colors"];
 }) {
   const styles = makeCardStyles(colors);
-  const { label: expLabel, expired } = expiryLabel(post.expiresAt);
+  const { label: expLabel, expired, isNever } = expiryLabel(post.expiresAt);
   const total = post.worthItCount + post.skipCount;
   const worthPct = total > 0 ? Math.round((post.worthItCount / total) * 100) : 0;
 
@@ -53,9 +56,9 @@ function PostCard({
         activeOpacity={0.85}
       >
         <View style={styles.cardHeader}>
-          <View style={[styles.expiryBadge, expired && styles.expiryBadgeExpired]}>
-            <Feather name="clock" size={11} color={expired ? "#FF3B30" : colors.green} />
-            <Text style={[styles.expiryText, expired && styles.expiryTextExpired]}>{expLabel}</Text>
+          <View style={[styles.expiryBadge, expired && styles.expiryBadgeExpired, isNever && styles.expiryBadgeNever]}>
+            <Feather name={isNever ? "lock" : "clock"} size={11} color={expired ? "#FF3B30" : isNever ? colors.textSecondary : colors.green} />
+            <Text style={[styles.expiryText, expired && styles.expiryTextExpired, isNever && styles.expiryTextNever]}>{expLabel}</Text>
           </View>
           <AnimatedPressable
             scaleTo={0.88}
@@ -290,6 +293,9 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     expiryBadgeExpired: {
       backgroundColor: "rgba(255,59,48,0.12)",
     },
+    expiryBadgeNever: {
+      backgroundColor: colors.surface,
+    },
     expiryText: {
       fontSize: 11,
       fontFamily: "Inter_600SemiBold",
@@ -297,6 +303,9 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     expiryTextExpired: {
       color: "#FF3B30",
+    },
+    expiryTextNever: {
+      color: colors.textSecondary,
     },
     deleteBtn: {
       padding: 6,

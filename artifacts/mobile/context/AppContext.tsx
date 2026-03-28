@@ -44,7 +44,8 @@ interface AppContextType {
   feedError: string | null;
   setOnboarded: () => void;
   setRegistered: (id: string) => void;
-  addPost: (content: string, imageUrl?: string | null, isDraft?: boolean, expiresInHours?: number) => Promise<Post | null>;
+  logout: () => Promise<void>;
+  addPost: (content: string, imageUrl?: string | null, isDraft?: boolean, expiresInHours?: number | null) => Promise<Post | null>;
   fetchMyPosts: () => Promise<ApiMyPost[]>;
   publishDraft: (draftId: string) => Promise<void>;
   deleteDraft: (draftId: string) => void;
@@ -204,7 +205,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(STORAGE_KEYS.ANONYMOUS_ID, anonId);
   }, []);
 
-  const addPost = useCallback(async (content: string, imageUrl?: string | null, isDraft?: boolean, expiresInHours?: number): Promise<Post | null> => {
+  const logout = useCallback(async () => {
+    setRegisteredState(false);
+    setAnonymousId("");
+    await AsyncStorage.multiRemove([STORAGE_KEYS.ANONYMOUS_ID, STORAGE_KEYS.REGISTERED]);
+  }, []);
+
+  const addPost = useCallback(async (content: string, imageUrl?: string | null, isDraft?: boolean, expiresInHours?: number | null): Promise<Post | null> => {
     if (isDraft) {
       const draft: DraftPost = {
         id: generateId(),
@@ -224,7 +231,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const apiPost = await api.post<ApiPost>("/posts", {
         content,
         imageUrl: imageUrl ?? null,
-        expiresInHours: expiresInHours ?? 48,
+        expiresInHours: expiresInHours === undefined ? 48 : expiresInHours,
       });
       const newPost = mapApiPost(apiPost);
       setPosts((prev) => [newPost, ...prev]);
@@ -351,6 +358,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         feedError,
         setOnboarded,
         setRegistered,
+        logout,
         addPost,
         fetchMyPosts,
         publishDraft,
