@@ -12,6 +12,7 @@ export const postsTable = pgTable("posts", {
   skipCount: integer("skip_count").default(0).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   isDraft: boolean("is_draft").default(false).notNull(),
+  scheduledAt: timestamp("scheduled_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at"),
 });

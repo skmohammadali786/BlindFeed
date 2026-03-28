@@ -29,6 +29,8 @@ function NotifIcon({ type }: { type: string }) {
     icon = "corner-down-right"; bg = colors.surface; color = colors.textSecondary;
   } else if (type === "report_action") {
     icon = "alert-triangle"; bg = "rgba(255,59,48,0.12)"; color = "#FF3B30";
+  } else if (type === "appeal_response") {
+    icon = "shield"; bg = "rgba(99,102,241,0.12)"; color = "#6366F1";
   } else {
     icon = "message-circle"; bg = colors.greenDim; color = colors.green;
   }

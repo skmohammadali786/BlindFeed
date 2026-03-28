@@ -11,6 +11,8 @@ export const reportsTable = pgTable("reports", {
   status: text("status").notNull().default("pending"),
   adminNote: text("admin_note"),
   userResponse: text("user_response"),
+  appealStatus: text("appeal_status"),
+  appealResponse: text("appeal_response"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at"),
 });

@@ -72,13 +72,15 @@ router.post("/reports/:id/respond", async (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    await db.update(reportsTable).set({ userResponse: response.trim() })
-      .where(eq(reportsTable.id, reportId));
+    await db.update(reportsTable).set({
+      userResponse: response.trim(),
+      appealStatus: "pending",
+    }).where(eq(reportsTable.id, reportId));
 
     return res.json({ ok: true });
   } catch (err) {
-    req.log.error(err, "Error submitting report response");
-    return res.status(500).json({ error: "Failed to submit response" });
+    req.log.error(err, "Error submitting appeal");
+    return res.status(500).json({ error: "Failed to submit appeal" });
   }
 });
 
@@ -142,9 +144,13 @@ router.patch("/admin/reports/:id", async (req, res) => {
         .from(postsTable).where(eq(postsTable.id, report.postId)).limit(1);
 
       if (post) {
-        const actionMsg = action === "warn"
-          ? `Your post was reviewed and received a warning: "${adminNote || "Please follow community guidelines."}". You can respond if this was a mistake.`
-          : `Your post was reviewed and has been removed: "${adminNote || "It violated community guidelines."}". You can respond if this was a mistake.`;
+        const violation = adminNote?.trim() || "It violated our community guidelines.";
+        let actionMsg: string;
+        if (action === "warn") {
+          actionMsg = `⚠️ Content Warning: Your post received a moderation warning.\n\nReason: ${violation}\n\nIf you believe this was a mistake, you can submit an appeal below.`;
+        } else {
+          actionMsg = `🚫 Post Removed: Your post has been removed by our moderation team.\n\nReason: ${violation}\n\nIf you believe this was a mistake, you can submit an appeal to have your case reviewed.`;
+        }
 
         await db.insert(notificationsTable).values({
           recipientAnonymousId: post.anonymousId,
@@ -165,6 +171,59 @@ router.patch("/admin/reports/:id", async (req, res) => {
   } catch (err) {
     req.log.error(err, "Error actioning report");
     return res.status(500).json({ error: "Failed to action report" });
+  }
+});
+
+router.patch("/admin/appeals/:id", async (req, res) => {
+  if (req.query.secret !== ADMIN_KEY && req.headers["x-admin-key"] !== ADMIN_KEY) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  const reportId = parseInt(req.params.id, 10);
+  if (isNaN(reportId)) return res.status(400).json({ error: "Invalid report id" });
+
+  const { decision, response } = req.body;
+  if (!decision || !["accepted", "rejected"].includes(decision)) {
+    return res.status(400).json({ error: "decision must be 'accepted' or 'rejected'" });
+  }
+
+  try {
+    const [report] = await db.select().from(reportsTable)
+      .where(eq(reportsTable.id, reportId)).limit(1);
+    if (!report) return res.status(404).json({ error: "Report not found" });
+
+    await db.update(reportsTable).set({
+      appealStatus: decision,
+      appealResponse: response?.trim() || null,
+    }).where(eq(reportsTable.id, reportId));
+
+    const [post] = await db.select({ anonymousId: postsTable.anonymousId })
+      .from(postsTable).where(eq(postsTable.id, report.postId)).limit(1);
+
+    if (post) {
+      const msg = decision === "accepted"
+        ? `✅ Appeal Accepted: We've reviewed your appeal and decided in your favour. We apologize for any inconvenience caused.${response ? `\n\nNote: ${response.trim()}` : ""}`
+        : `❌ Appeal Rejected: We've reviewed your appeal and upheld the original decision.\n\nReason: ${response?.trim() || "The content was confirmed to violate our community guidelines."}`;
+
+      await db.insert(notificationsTable).values({
+        recipientAnonymousId: post.anonymousId,
+        type: "appeal_response",
+        postId: report.postId,
+        commentId: reportId,
+        message: msg,
+        isRead: false,
+      }).catch(() => {});
+
+      if (decision === "accepted") {
+        const newExpiry = new Date(Date.now() + 48 * 60 * 60 * 1000);
+        await db.update(postsTable).set({ expiresAt: newExpiry }).where(eq(postsTable.id, report.postId)).catch(() => {});
+      }
+    }
+
+    return res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err, "Error responding to appeal");
+    return res.status(500).json({ error: "Failed to respond to appeal" });
   }
 });
 

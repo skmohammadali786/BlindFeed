@@ -47,6 +47,7 @@ function RootLayoutNav() {
       <Stack.Screen name="terms" options={{ headerShown: false, animation: "slide_from_right" }} />
       <Stack.Screen name="rate" options={{ headerShown: false, animation: "slide_from_right" }} />
       <Stack.Screen name="my-posts" options={{ headerShown: false, animation: "slide_from_right" }} />
+      <Stack.Screen name="scheduled-posts" options={{ headerShown: false, animation: "slide_from_right" }} />
     </Stack>
   );
 }

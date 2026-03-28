@@ -402,6 +402,7 @@ export default function FeedScreen() {
           <View style={[styles.menuContainer, { top: top + 56 }]}>
             {[
               { label: "My Posts", icon: "layers", route: "/my-posts" },
+              { label: "Scheduled Posts", icon: "clock", route: "/scheduled-posts" },
               { label: "Activity", icon: "bell", route: "/notifications" },
               { label: "Your Identity", icon: "user", route: "/identity" },
               { label: "Settings", icon: "settings", route: "/settings" },

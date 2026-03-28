@@ -46,7 +46,7 @@ interface AppContextType {
   setOnboarded: () => void;
   setRegistered: (id: string) => void;
   logout: () => Promise<void>;
-  addPost: (content: string, imageUrl?: string | null, videoUrl?: string | null, isDraft?: boolean, expiresInHours?: number | null) => Promise<Post | null>;
+  addPost: (content: string, imageUrl?: string | null, videoUrl?: string | null, isDraft?: boolean, expiresInHours?: number | null, scheduledAt?: Date | null) => Promise<Post | null>;
   fetchMyPosts: () => Promise<ApiMyPost[]>;
   publishDraft: (draftId: string) => Promise<void>;
   deleteDraft: (draftId: string) => void;
@@ -233,6 +233,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     videoUrl?: string | null,
     isDraft?: boolean,
     expiresInHours?: number | null,
+    scheduledAt?: Date | null,
   ): Promise<Post | null> => {
     if (isDraft) {
       const draft: DraftPost = {
@@ -256,6 +257,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         imageUrl: imageUrl ?? null,
         videoUrl: videoUrl ?? null,
         expiresInHours: expiresInHours === undefined ? 48 : expiresInHours,
+        scheduledAt: scheduledAt ? scheduledAt.toISOString() : null,
       });
       const newPost = mapApiPost(apiPost);
       setPosts((prev) => [newPost, ...prev]);

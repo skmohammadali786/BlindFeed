@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, gt, ilike, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, ilike, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { postsTable, reactionsTable, commentsTable } from "@workspace/db/schema";
 import { postCreateLimiter, reactionLimiter, searchLimiter } from "../middleware/rateLimits";
@@ -27,7 +27,11 @@ router.get("/posts", async (req, res) => {
         createdAt: postsTable.createdAt,
       })
       .from(postsTable)
-      .where(and(eq(postsTable.isDraft, false), gt(postsTable.expiresAt, now)))
+      .where(and(
+        eq(postsTable.isDraft, false),
+        gt(postsTable.expiresAt, now),
+        or(isNull(postsTable.scheduledAt), lte(postsTable.scheduledAt, now))
+      ))
       .$dynamic();
 
     if (sort === "top") {
@@ -79,12 +83,20 @@ router.post("/posts", postCreateLimiter, async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const { content, imageUrl, videoUrl, isDraft = false, expiresInHours } = req.body;
+  const { content, imageUrl, videoUrl, isDraft = false, expiresInHours, scheduledAt: scheduledAtRaw } = req.body;
   if (!content || content.trim().length === 0) {
     return res.status(400).json({ error: "Content is required" });
   }
 
-  if (!isDraft) {
+  let scheduledAt: Date | null = null;
+  if (scheduledAtRaw) {
+    const parsed = new Date(scheduledAtRaw);
+    if (isNaN(parsed.getTime())) return res.status(400).json({ error: "Invalid scheduledAt date" });
+    if (parsed.getTime() <= Date.now()) return res.status(400).json({ error: "scheduledAt must be in the future" });
+    scheduledAt = parsed;
+  }
+
+  if (!isDraft && !scheduledAt) {
     try {
       const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
       const recentPosts = await db
@@ -124,7 +136,7 @@ router.post("/posts", postCreateLimiter, async (req, res) => {
   try {
     const [post] = await db
       .insert(postsTable)
-      .values({ anonymousId, content: content.trim(), imageUrl: imageUrl || null, videoUrl: videoUrl || null, expiresAt, isDraft })
+      .values({ anonymousId, content: content.trim(), imageUrl: imageUrl || null, videoUrl: videoUrl || null, expiresAt, isDraft, scheduledAt })
       .returning();
     return res.status(201).json({
       ...post,
@@ -133,6 +145,7 @@ router.post("/posts", postCreateLimiter, async (req, res) => {
       commentCount: 0,
       myReaction: null,
       isOwn: true,
+      isScheduled: scheduledAt !== null,
     });
   } catch (err) {
     req.log.error(err, "Error creating post");
@@ -214,6 +227,32 @@ router.get("/posts/drafts", async (req, res) => {
   }
 });
 
+router.get("/posts/scheduled", async (req, res) => {
+  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const permId = req.headers["x-perm-id"] as string | undefined;
+  if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
+
+  const ownerIds = [anonymousId, permId].filter((id): id is string => Boolean(id));
+  const now = new Date();
+
+  try {
+    const posts = await db
+      .select()
+      .from(postsTable)
+      .where(and(
+        inArray(postsTable.anonymousId, ownerIds),
+        eq(postsTable.isDraft, false),
+        gt(postsTable.scheduledAt as any, now),
+      ))
+      .orderBy(asc(postsTable.scheduledAt));
+
+    return res.json(posts.map((p) => ({ ...p, isOwn: true })));
+  } catch (err) {
+    req.log.error(err, "Error fetching scheduled posts");
+    return res.status(500).json({ error: "Failed to fetch scheduled posts" });
+  }
+});
+
 const STOP_WORDS = new Set([
   "the","a","an","and","or","but","is","are","was","were","i","you","he","she","it",
   "we","they","my","your","his","her","its","our","their","that","this","to","of",
@@ -233,7 +272,7 @@ router.get("/posts/trending", async (req, res) => {
     const posts = await db
       .select({ content: postsTable.content })
       .from(postsTable)
-      .where(and(eq(postsTable.isDraft, false), gt(postsTable.expiresAt, now), gt(postsTable.createdAt, cutoff)))
+      .where(and(eq(postsTable.isDraft, false), gt(postsTable.expiresAt, now), gt(postsTable.createdAt, cutoff), or(isNull(postsTable.scheduledAt), lte(postsTable.scheduledAt, now))))
       .limit(100);
 
     const wordCount: Record<string, number> = {};

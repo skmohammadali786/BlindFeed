@@ -4,6 +4,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
   Alert,
@@ -49,6 +50,12 @@ export default function CreateScreen() {
   const [expiresInHours, setExpiresInHours] = useState<number | null>(48);
   const [showExpiryModal, setShowExpiryModal] = useState(false);
   const [rateLimitMs, setRateLimitMs] = useState<number | null>(null);
+  const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [pickerDate, setPickerDate] = useState<Date>(new Date());
+  const [scheduledPosted, setScheduledPosted] = useState(false);
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
 
@@ -172,10 +179,12 @@ export default function CreateScreen() {
         }
       }
 
-      await addPost(content.trim(), imageUrl, videoUrl, isDraft, isDraft ? 48 : expiresInHours);
+      await addPost(content.trim(), imageUrl, videoUrl, isDraft, isDraft ? 48 : expiresInHours, isDraft ? null : scheduledAt);
       if (isDraft) {
         Alert.alert("Saved", "Draft saved successfully.");
         router.back();
+      } else if (scheduledAt) {
+        setScheduledPosted(true);
       } else {
         setSubmitted(true);
       }
@@ -195,7 +204,83 @@ export default function CreateScreen() {
     setShowDrafts(false);
   };
 
+  const formatScheduledAt = (date: Date): string => {
+    const now = new Date();
+    const diff = date.getTime() - now.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    if (days === 0) return `Today at ${timeStr}`;
+    if (days === 1) return `Tomorrow at ${timeStr}`;
+    if (days === 2) return `Day after tomorrow at ${timeStr}`;
+    if (days < 7) return `${date.toLocaleDateString([], { weekday: "long" })} at ${timeStr}`;
+    return `${date.toLocaleDateString([], { month: "short", day: "numeric" })} at ${timeStr}`;
+  };
+
+  const applyPreset = (presetDate: Date) => {
+    setScheduledAt(presetDate);
+    setPickerDate(presetDate);
+    setShowScheduleModal(false);
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const getSchedulePresets = (): { label: string; date: Date }[] => {
+    const now = new Date();
+    const tonight = new Date(now); tonight.setHours(20, 0, 0, 0);
+    const tomorrowAM = new Date(now); tomorrowAM.setDate(now.getDate() + 1); tomorrowAM.setHours(9, 0, 0, 0);
+    const tomorrowPM = new Date(now); tomorrowPM.setDate(now.getDate() + 1); tomorrowPM.setHours(20, 0, 0, 0);
+    const dayAfter = new Date(now); dayAfter.setDate(now.getDate() + 2); dayAfter.setHours(9, 0, 0, 0);
+    const nextWeek = new Date(now); nextWeek.setDate(now.getDate() + 7); nextWeek.setHours(9, 0, 0, 0);
+
+    return [
+      ...(tonight.getTime() > now.getTime() + 5 * 60 * 1000 ? [{ label: "Tonight at 8:00 PM", date: tonight }] : []),
+      { label: "Tomorrow at 9:00 AM", date: tomorrowAM },
+      { label: "Tomorrow at 8:00 PM", date: tomorrowPM },
+      { label: "Day after tomorrow 9:00 AM", date: dayAfter },
+      { label: "Next week 9:00 AM", date: nextWeek },
+    ];
+  };
+
   const styles = makeStyles(colors);
+
+  if (scheduledPosted && scheduledAt) {
+    return (
+      <ScreenTransition>
+        <View style={[styles.container, { paddingTop: top }]}>
+          <View style={styles.successContainer}>
+            <FadeSlide delay={0} style={{ alignItems: "center", gap: 16, width: "100%" }}>
+              <PulseView>
+                <View style={[styles.successIcon, { backgroundColor: "#1C3D5A" }]}>
+                  <Feather name="clock" size={36} color="#4ade80" />
+                </View>
+              </PulseView>
+              <Text style={styles.successTitle}>Post scheduled!</Text>
+              <Text style={[styles.successSub, { textAlign: "center" }]}>
+                Will go live {formatScheduledAt(scheduledAt)}
+              </Text>
+              <View style={styles.scheduledInfoBox}>
+                <Feather name="eye-off" size={14} color={colors.textSecondary} />
+                <Text style={styles.scheduledInfoText}>
+                  Your post is saved and will appear in the feed automatically at the scheduled time.
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
+                <AnimatedPressable
+                  style={[styles.feedBtn, { flex: 1, backgroundColor: colors.surface }]}
+                  onPress={() => router.replace("/scheduled-posts" as any)}
+                  scaleTo={0.96}
+                >
+                  <Text style={[styles.feedBtnText, { color: colors.text }]}>View scheduled</Text>
+                </AnimatedPressable>
+                <AnimatedPressable style={[styles.feedBtn, { flex: 1 }]} onPress={() => router.replace("/feed")} scaleTo={0.96}>
+                  <Text style={styles.feedBtnText}>Go to feed</Text>
+                </AnimatedPressable>
+              </View>
+            </FadeSlide>
+          </View>
+        </View>
+      </ScreenTransition>
+    );
+  }
 
   if (submitted) {
     return (
@@ -380,6 +465,13 @@ export default function CreateScreen() {
             </Text>
           </TouchableOpacity>
 
+          <TouchableOpacity style={styles.toolbarBtn} onPress={() => setShowScheduleModal(true)}>
+            <Feather name="clock" size={20} color={scheduledAt ? colors.green : colors.textSecondary} />
+            <Text style={[styles.toolbarBtnText, scheduledAt && { color: colors.green }]}>
+              {scheduledAt ? "Reschedule" : "Schedule"}
+            </Text>
+          </TouchableOpacity>
+
           <View style={styles.toolbarRight}>
             {drafts.length > 0 && (
               <TouchableOpacity style={styles.draftsBadge} onPress={() => setShowDrafts(true)}>
@@ -397,6 +489,21 @@ export default function CreateScreen() {
           </View>
         </View>
 
+        {scheduledAt && (
+          <TouchableOpacity
+            style={[styles.scheduledBanner, { backgroundColor: colors.greenDim }]}
+            onPress={() => setShowScheduleModal(true)}
+          >
+            <Feather name="clock" size={14} color={colors.green} />
+            <Text style={[styles.scheduledBannerText, { color: colors.green }]}>
+              Scheduled: {formatScheduledAt(scheduledAt)}
+            </Text>
+            <TouchableOpacity onPress={() => setScheduledAt(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="x" size={14} color={colors.green} />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity style={styles.expiryRow} onPress={() => setShowExpiryModal(true)}>
           <Feather name="clock" size={14} color={colors.textSecondary} />
           <Text style={styles.expiryLabel}>Auto-delete after</Text>
@@ -412,6 +519,126 @@ export default function CreateScreen() {
           <Feather name="eye-off" size={12} color={colors.textTertiary} />
           <Text style={styles.anonText}>Posted anonymously. No one knows it's you.</Text>
         </View>
+
+        <Modal visible={showScheduleModal} transparent animationType="slide" onRequestClose={() => setShowScheduleModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modal, { maxHeight: "85%" }]}>
+              <Text style={styles.modalTitle}>Schedule post</Text>
+              <Text style={[styles.scheduleSubtitle, { color: colors.textSecondary }]}>
+                Pick when your post goes live in the feed
+              </Text>
+
+              {getSchedulePresets().map((preset) => (
+                <TouchableOpacity
+                  key={preset.label}
+                  style={[styles.schedulePreset, scheduledAt?.toISOString() === preset.date.toISOString() && { backgroundColor: colors.greenDim, borderColor: colors.green }]}
+                  onPress={() => applyPreset(preset.date)}
+                >
+                  <Feather name="clock" size={15} color={scheduledAt?.toISOString() === preset.date.toISOString() ? colors.green : colors.textSecondary} />
+                  <Text style={[styles.schedulePresetText, scheduledAt?.toISOString() === preset.date.toISOString() && { color: colors.green }]}>
+                    {preset.label}
+                  </Text>
+                  {scheduledAt?.toISOString() === preset.date.toISOString() && (
+                    <Feather name="check" size={15} color={colors.green} />
+                  )}
+                </TouchableOpacity>
+              ))}
+
+              <View style={styles.scheduleDivider}>
+                <View style={[styles.scheduleDividerLine, { backgroundColor: colors.border }]} />
+                <Text style={[styles.scheduleDividerText, { color: colors.textTertiary }]}>or pick custom time</Text>
+                <View style={[styles.scheduleDividerLine, { backgroundColor: colors.border }]} />
+              </View>
+
+              {Platform.OS !== "web" ? (
+                <View style={{ gap: 8 }}>
+                  <TouchableOpacity
+                    style={[styles.schedulePreset, { justifyContent: "space-between" }]}
+                    onPress={() => { setShowDatePicker(true); }}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Feather name="calendar" size={15} color={colors.textSecondary} />
+                      <Text style={styles.schedulePresetText}>
+                        {pickerDate.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-down" size={15} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.schedulePreset, { justifyContent: "space-between" }]}
+                    onPress={() => { setShowTimePicker(true); }}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Feather name="clock" size={15} color={colors.textSecondary} />
+                      <Text style={styles.schedulePresetText}>
+                        {pickerDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-down" size={15} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.schedulePreset, { backgroundColor: colors.greenDim, borderColor: colors.green, justifyContent: "center", gap: 8, flexDirection: "row" }]}
+                    onPress={() => {
+                      if (pickerDate.getTime() <= Date.now()) {
+                        Alert.alert("Invalid time", "Please select a time in the future.");
+                        return;
+                      }
+                      applyPreset(pickerDate);
+                    }}
+                  >
+                    <Feather name="check" size={15} color={colors.green} />
+                    <Text style={[styles.schedulePresetText, { color: colors.green }]}>Set this custom time</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              {scheduledAt && (
+                <TouchableOpacity
+                  style={styles.scheduleRemoveBtn}
+                  onPress={() => { setScheduledAt(null); setShowScheduleModal(false); }}
+                >
+                  <Feather name="x-circle" size={15} color="#FF3B30" />
+                  <Text style={styles.scheduleRemoveBtnText}>Remove schedule (post now)</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowScheduleModal(false)}>
+                <Text style={styles.modalCancelText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {showDatePicker && Platform.OS !== "web" && (
+          <DateTimePicker
+            value={pickerDate}
+            mode="date"
+            minimumDate={new Date()}
+            onChange={(_, date) => {
+              setShowDatePicker(false);
+              if (date) {
+                const updated = new Date(pickerDate);
+                updated.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                setPickerDate(updated);
+              }
+            }}
+          />
+        )}
+
+        {showTimePicker && Platform.OS !== "web" && (
+          <DateTimePicker
+            value={pickerDate}
+            mode="time"
+            onChange={(_, date) => {
+              setShowTimePicker(false);
+              if (date) {
+                const updated = new Date(pickerDate);
+                updated.setHours(date.getHours(), date.getMinutes(), 0, 0);
+                setPickerDate(updated);
+              }
+            }}
+          />
+        )}
 
         <Modal visible={showExpiryModal} transparent animationType="fade" onRequestClose={() => setShowExpiryModal(false)}>
           <View style={styles.modalOverlay}>
@@ -886,6 +1113,86 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       fontSize: 13,
       fontFamily: "Inter_600SemiBold",
       color: colors.green,
+    },
+    scheduledBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      padding: 10,
+      borderRadius: 10,
+      marginTop: 10,
+    },
+    scheduledBannerText: {
+      flex: 1,
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+    },
+    scheduleSubtitle: {
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+      textAlign: "center",
+      marginBottom: 8,
+      marginTop: -4,
+    },
+    schedulePreset: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingVertical: 13,
+      paddingHorizontal: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginVertical: 3,
+    },
+    schedulePresetText: {
+      flex: 1,
+      fontSize: 14,
+      fontFamily: "Inter_500Medium",
+      color: colors.text,
+    },
+    scheduleDivider: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginVertical: 10,
+    },
+    scheduleDividerLine: {
+      flex: 1,
+      height: 1,
+    },
+    scheduleDividerText: {
+      fontSize: 11,
+      fontFamily: "Inter_400Regular",
+    },
+    scheduleRemoveBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      justifyContent: "center",
+      paddingVertical: 10,
+      marginTop: 4,
+    },
+    scheduleRemoveBtnText: {
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+      color: "#FF3B30",
+    },
+    scheduledInfoBox: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      width: "100%",
+    },
+    scheduledInfoText: {
+      flex: 1,
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+      lineHeight: 20,
     },
     previewScreen: {
       flex: 1,
