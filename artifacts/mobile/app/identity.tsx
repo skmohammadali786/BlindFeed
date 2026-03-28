@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { router } from "expo-router";
+import { usePreventScreenCapture } from "expo-screen-capture";
 import React, { useState } from "react";
 import {
   Platform,
@@ -15,6 +16,7 @@ import { useApp } from "@/context/AppContext";
 import { ScreenTransition, FadeSlide, PulseView, GlowPulse, AnimatedPressable } from "@/components/Animations";
 
 export default function IdentityScreen() {
+  usePreventScreenCapture();
   const { colors } = useTheme();
   const { tempUserId } = useApp();
   const insets = useSafeAreaInsets();

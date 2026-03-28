@@ -94,11 +94,12 @@ function generateId(): string {
 
 function generateUserId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let suffix = "";
-  for (let i = 0; i < 8; i++) {
-    suffix += chars[Math.floor(Math.random() * chars.length)];
+  const timestamp = Date.now().toString(36);
+  let random = "";
+  for (let i = 0; i < 10; i++) {
+    random += chars[Math.floor(Math.random() * chars.length)];
   }
-  return `anon_${suffix}`;
+  return `anon_${timestamp}${random}`;
 }
 
 function mapApiPost(p: ApiPost): Post {
