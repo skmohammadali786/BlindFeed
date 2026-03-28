@@ -56,10 +56,49 @@ function NotifCard({
   const styles = makeStyles(colors);
   const isReportAction = item.type === "report_action";
 
+  const isRemoved = isReportAction && item.message.toLowerCase().includes("removed");
+  const isSensitive = isReportAction && item.message.toLowerCase().includes("sensitive content");
+  const isWarn = isReportAction && item.message.toLowerCase().includes("warning");
+
+  const actionColor = isRemoved ? "#FF3B30" : isSensitive ? "#E68A00" : isWarn ? "#FF9D00" : "#FF3B30";
+  const actionLabel = isRemoved ? "Post Removed" : isSensitive ? "Marked Sensitive" : isWarn ? "Moderation Warning" : "Moderation Action";
+
+  if (isReportAction) {
+    return (
+      <AnimatedListItem index={index}>
+        <View style={[styles.reportCard, { borderColor: actionColor + "44", backgroundColor: actionColor + "09" }]}>
+          <View style={styles.reportCardHeader}>
+            <View style={[styles.reportIconBig, { backgroundColor: actionColor + "20" }]}>
+              <Feather name={isRemoved ? "trash-2" : isSensitive ? "alert-triangle" : "alert-circle"} size={20} color={actionColor} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.reportActionLabel, { color: actionColor }]}>{actionLabel}</Text>
+              <Text style={[styles.cardTime, { marginTop: 2 }]}>{timeAgo(new Date(item.createdAt).getTime())}</Text>
+            </View>
+            {!item.isRead && <View style={[styles.unreadDot, { backgroundColor: actionColor }]} />}
+          </View>
+          <Text style={styles.reportCardMessage}>{item.message}</Text>
+          {item.commentId && (
+            <TouchableOpacity
+              style={[styles.appealBtnBig, { borderColor: actionColor + "55", backgroundColor: actionColor + "12" }]}
+              onPress={() => { onRead(item.id, null); onAppeal(item.commentId!, item.id); }}
+              activeOpacity={0.8}
+            >
+              <Feather name="message-square" size={15} color={actionColor} />
+              <Text style={[styles.appealBtnBigText, { color: actionColor }]}>Appeal this decision</Text>
+              <View style={{ flex: 1 }} />
+              <Feather name="chevron-right" size={14} color={actionColor} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </AnimatedListItem>
+    );
+  }
+
   return (
     <AnimatedListItem index={index}>
       <TouchableOpacity
-        style={[styles.card, !item.isRead && styles.cardUnread, isReportAction && styles.cardReport]}
+        style={[styles.card, !item.isRead && styles.cardUnread]}
         onPress={() => onRead(item.id, item.postId)}
         activeOpacity={0.75}
       >
@@ -67,19 +106,9 @@ function NotifCard({
         <View style={styles.cardBody}>
           <Text style={styles.cardMessage}>{item.message}</Text>
           <Text style={styles.cardTime}>{timeAgo(new Date(item.createdAt).getTime())}</Text>
-          {isReportAction && item.commentId && (
-            <TouchableOpacity
-              style={styles.appealBtn}
-              onPress={(e) => { e.stopPropagation?.(); onAppeal(item.commentId!, item.id); }}
-              activeOpacity={0.8}
-            >
-              <Feather name="message-square" size={13} color={colors.green} />
-              <Text style={styles.appealBtnText}>Respond / Appeal</Text>
-            </TouchableOpacity>
-          )}
         </View>
         {!item.isRead && <View style={styles.unreadDot} />}
-        {!isReportAction && <Feather name="chevron-right" size={16} color={colors.textTertiary} />}
+        <Feather name="chevron-right" size={16} color={colors.textTertiary} />
       </TouchableOpacity>
     </AnimatedListItem>
   );
@@ -243,9 +272,17 @@ export default function NotificationsScreen() {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.appealModal}>
-              <Text style={styles.appealTitle}>Respond / Appeal</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(99,102,241,0.12)", justifyContent: "center", alignItems: "center" }}>
+                  <Feather name="shield" size={18} color="#6366F1" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.appealTitle}>Appeal Decision</Text>
+                  <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary }}>Our team reviews all appeals within 24–48 hours</Text>
+                </View>
+              </View>
               <Text style={styles.appealSub}>
-                Explain your side of the story. Our team will review your response.
+                Explain your side clearly. Include any context that may have been missed when the action was taken.
               </Text>
               <TextInput
                 style={styles.appealInput}
@@ -317,7 +354,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       gap: 12, backgroundColor: colors.surface, borderRadius: 14, padding: 14,
     },
     cardUnread: { borderLeftWidth: 3, borderLeftColor: colors.green },
-    cardReport: { borderLeftWidth: 3, borderLeftColor: "#FF3B30" },
     cardBody: { flex: 1, gap: 3 },
     cardMessage: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.text, lineHeight: 20 },
     cardTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary },
@@ -331,6 +367,20 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12,
     },
     unreadBannerText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.green },
+    reportCard: {
+      borderRadius: 16, borderWidth: 1.5, overflow: "hidden",
+      padding: 16, gap: 10,
+    },
+    reportCardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+    reportIconBig: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
+    reportActionLabel: { fontSize: 15, fontFamily: "Inter_700Bold" },
+    reportCardMessage: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.text, lineHeight: 19 },
+    appealBtnBig: {
+      flexDirection: "row", alignItems: "center", gap: 10,
+      borderRadius: 12, borderWidth: 1,
+      paddingHorizontal: 14, paddingVertical: 13, marginTop: 2,
+    },
+    appealBtnBigText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
     appealBtn: {
       flexDirection: "row", alignItems: "center", gap: 5,
       marginTop: 8, backgroundColor: colors.greenDim,

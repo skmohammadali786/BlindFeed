@@ -67,17 +67,29 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 - `app/index.tsx` — Entry redirect based on registration/onboarding state
 - `app/onboarding/privacy.tsx` — Quick Setup screen
 - `app/onboarding/register.tsx` — Registration (name/email/phone for moderation only)
-- `app/feed.tsx` — Main feed with Fresh/Top toggle, pull-to-refresh, real API posts
-- `app/create.tsx` — New post (text + image via expo-image-picker, presigned upload, drafts)
+- `app/feed.tsx` — Main feed: Fresh/Top toggle, scroll-animated header (Reanimated), colored card accent lines, sensitive content warning modal, FirstPostBanner for new users, enhanced vote bar with colored indicators
+- `app/create.tsx` — New post (text + image via expo-image-picker, presigned upload, drafts, scheduled posts)
 - `app/post/[id].tsx` — Post detail with comments/replies, Worth it/Skip reactions
 - `app/search.tsx` — Search with suggestion chips and recent searches
-- `app/settings.tsx` — Full settings with theme toggle, all actions wired up
+- `app/settings.tsx` — Full settings with theme toggle, reset feed, all actions wired up
 - `app/identity.tsx` — Temp user ID card with Copy ID (7-day rotation)
-- `app/usage-insights.tsx` — Activity stats derived from posts/reactions
+- `app/usage-insights.tsx` — Activity stats derived from posts/reactions + screen time tracking
 - `app/report.tsx` — Report content with 4 reasons + success state
-- `app/notifications.tsx` — Daily reminder + post performance toggles
+- `app/notifications.tsx` — Activity feed; report_action cards show moderation decisions (removed/sensitive/warn) with prominent appeal button; appeal modal lets user submit appeal via POST /reports/:id/respond
+- `app/my-posts.tsx` — User's own posts with edit/delete; encouraging empty state ("Your voice is missing")
+- `app/scheduled-posts.tsx` — Manage scheduled posts
+- `app/notification-settings.tsx` — Daily reminder + post performance toggles
 - `app/community-guidelines.tsx` — Shield icon + 4 rules + "I understand"
 - `app/terms.tsx` — Terms of Service + Privacy Policy + "I Understand"
+
+**Key Features:**
+- **Anonymous identity**: `getAnonymousId()` reads `bf_user_id`; `bf_anonymous_id` (legacy permanent ID) sent as `x-perm-id`
+- **Content filter**: Blocks `isSensitive` posts (except own) + keyword list: nsfw, explicit, 18+, adult content, graphic, gore, nude, nudity
+- **Sensitive content system**: DB `isSensitive` column; admin can mark posts sensitive (keeps live but shows warning modal); orange badge on feed cards
+- **Scheduled posts**: Create post with future delivery time; stored and published by API at scheduled time
+- **Appeal system**: Moderation report_action notifications include "Appeal this decision" → opens appeal modal → `POST /reports/:id/respond`
+- **Feed reset**: AppContext `resetFeed()` clears posts and re-fetches; accessible from Settings
+- **Multi-image**: Single = plain URL; multiple = `JSON.stringify([url1, url2])`; `parseImageUrls()` handles both
 
 **Animation system**: `components/Animations.tsx` — comprehensive Reanimated 3 animation library used on every screen:
 - `ScreenTransition` — wraps screen root with `FadeIn.duration(320)` entering animation

@@ -293,15 +293,18 @@ export default function MyPostsScreen() {
             refreshing={refreshing}
             ListEmptyComponent={
               <FadeSlide delay={80} style={styles.empty}>
-                <Feather name="edit-3" size={40} color={colors.textTertiary} />
-                <Text style={styles.emptyTitle}>No posts yet</Text>
-                <Text style={styles.emptySub}>Your posts will appear here after you publish them</Text>
+                <View style={[styles.emptyIconWrap, { backgroundColor: colors.greenDim }]}>
+                  <Feather name="edit-3" size={32} color={colors.green} />
+                </View>
+                <Text style={styles.emptyTitle}>Your voice is missing</Text>
+                <Text style={styles.emptySub}>Share something on your mind. No name, no face — just your raw thoughts with the world.</Text>
                 <AnimatedPressable
-                  style={styles.createBtn}
+                  style={[styles.createBtn, { backgroundColor: colors.green }]}
                   onPress={() => router.push("/create")}
                   scaleTo={0.95}
                 >
-                  <Text style={styles.createBtnText}>Create a post</Text>
+                  <Feather name="edit-2" size={15} color="#000" />
+                  <Text style={[styles.createBtnText, { color: "#000" }]}>Write your first post</Text>
                 </AnimatedPressable>
               </FadeSlide>
             }
@@ -570,28 +573,33 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       gap: 12,
       paddingHorizontal: 40,
     },
+    emptyIconWrap: { width: 72, height: 72, borderRadius: 36, justifyContent: "center", alignItems: "center", marginBottom: 4 },
     emptyTitle: {
       fontSize: 18,
-      fontFamily: "Inter_600SemiBold",
-      color: colors.textSecondary,
+      fontFamily: "Inter_700Bold",
+      color: colors.text,
+      textAlign: "center",
     },
     emptySub: {
       fontSize: 14,
       fontFamily: "Inter_400Regular",
-      color: colors.textTertiary,
+      color: colors.textSecondary,
       textAlign: "center",
-      lineHeight: 20,
+      lineHeight: 21,
     },
     createBtn: {
-      marginTop: 8,
+      marginTop: 12,
       paddingHorizontal: 28,
-      paddingVertical: 13,
+      paddingVertical: 14,
       backgroundColor: colors.green,
       borderRadius: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
     },
     createBtnText: {
       fontSize: 15,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "Inter_700Bold",
       color: "#000",
     },
     modalOverlay: {

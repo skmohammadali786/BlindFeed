@@ -372,8 +372,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       if (settings.contentFilter) {
         active = active.filter((p) => {
+          if (p.isOwn) return true;
+          if (p.isSensitive) return false;
           const lower = p.content.toLowerCase();
-          const blocked = ["nsfw", "explicit", "18+", "adult content"];
+          const blocked = ["nsfw", "explicit", "18+", "adult content", "graphic", "gore", "nude", "nudity"];
           return !blocked.some((term) => lower.includes(term));
         });
       }
