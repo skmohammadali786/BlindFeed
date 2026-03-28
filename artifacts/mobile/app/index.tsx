@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
 
-function SplashScreen({ onDone }: { onDone: () => void }) {
+function SplashScreen({ onDone, colors }: { onDone: () => void; colors: ReturnType<typeof useTheme>["colors"] }) {
   const logoScale = useSharedValue(0.6);
   const logoOpacity = useSharedValue(0);
   const textOpacity = useSharedValue(0);
@@ -62,7 +62,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   }));
 
   return (
-    <View style={splash.container}>
+    <View style={[splash.container, { backgroundColor: colors.background }]}>
       <View style={splash.center}>
         <Animated.View style={[splash.iconWrap, logoStyle]}>
           <Image
@@ -72,19 +72,19 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
           />
         </Animated.View>
 
-        <Animated.Text style={[splash.appName, textStyle]}>
+        <Animated.Text style={[splash.appName, { color: colors.text }, textStyle]}>
           BlindFeed
         </Animated.Text>
 
-        <Animated.Text style={[splash.tagline, textStyle]}>
+        <Animated.Text style={[splash.tagline, { color: colors.textSecondary }, textStyle]}>
           Speak freely. Anonymously.
         </Animated.Text>
       </View>
 
       <Animated.View style={[splash.dotRow, dotStyle]}>
-        <View style={[splash.dot, { opacity: 0.8 }]} />
-        <View style={[splash.dot, { opacity: 0.5 }]} />
-        <View style={[splash.dot, { opacity: 0.25 }]} />
+        <View style={[splash.dot, { backgroundColor: colors.green, opacity: 0.8 }]} />
+        <View style={[splash.dot, { backgroundColor: colors.green, opacity: 0.5 }]} />
+        <View style={[splash.dot, { backgroundColor: colors.green, opacity: 0.25 }]} />
       </Animated.View>
     </View>
   );
@@ -93,7 +93,6 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 const splash = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -112,13 +111,11 @@ const splash = StyleSheet.create({
   appName: {
     fontSize: 36,
     fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
     letterSpacing: -1,
   },
   tagline: {
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.45)",
     letterSpacing: 0.2,
   },
   dotRow: {
@@ -132,7 +129,6 @@ const splash = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#4ade80",
   },
 });
 
@@ -163,7 +159,7 @@ export default function EntryScreen() {
   if (!appInitialized) return null;
 
   if (showSplash) {
-    return <SplashScreen onDone={handleSplashDone} />;
+    return <SplashScreen onDone={handleSplashDone} colors={colors} />;
   }
 
   if (!ready) return null;
