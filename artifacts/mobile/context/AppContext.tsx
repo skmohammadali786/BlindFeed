@@ -276,13 +276,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const getActivePosts = useCallback(
     (sort: "fresh" | "top" = "fresh") => {
       const now = Date.now();
-      const active = posts.filter((p) => p.expiresAt > now);
+      let active = posts.filter((p) => p.expiresAt > now);
+
+      if (settings.feedPreference === "text") {
+        active = active.filter((p) => !p.imageUrl);
+      } else if (settings.feedPreference === "images") {
+        active = active.filter((p) => !!p.imageUrl);
+      }
+
+      if (settings.contentFilter) {
+        active = active.filter((p) => {
+          const lower = p.content.toLowerCase();
+          const blocked = ["nsfw", "explicit", "18+", "adult content"];
+          return !blocked.some((term) => lower.includes(term));
+        });
+      }
+
       if (sort === "top") {
         return [...active].sort((a, b) => b.worthItCount - a.worthItCount);
       }
       return active;
     },
-    [posts]
+    [posts, settings.feedPreference, settings.contentFilter]
   );
 
   const getMyPosts = useCallback(() => {

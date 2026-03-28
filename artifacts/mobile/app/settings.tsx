@@ -65,10 +65,11 @@ export default function SettingsScreen() {
   };
 
   const handleRateApp = () => {
-    const url = Platform.OS === "ios"
-      ? "https://apps.apple.com/app/blindfeed"
-      : "https://play.google.com/store/apps/details?id=com.blindfeed";
-    Linking.openURL(url).catch(() => Alert.alert("Error", "Could not open the app store."));
+    Alert.alert(
+      "Rate BlindFeed",
+      "We're not on the App Store yet, but your support means a lot! Once we launch, you'll be able to rate us here.",
+      [{ text: "Got it", style: "default" }]
+    );
   };
 
   const handleFeedback = () => {

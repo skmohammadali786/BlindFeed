@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 import React from "react";
 import {
   Platform,
@@ -46,7 +47,10 @@ export default function NotificationsScreen() {
             </View>
             <Switch
               value={settings.dailyReminder}
-              onValueChange={(v) => updateSetting("dailyReminder", v)}
+              onValueChange={(v) => {
+                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                updateSetting("dailyReminder", v);
+              }}
               trackColor={{ false: colors.surfaceElevated, true: colors.green }}
               thumbColor={colors.text}
               ios_backgroundColor={colors.surfaceElevated}
@@ -60,7 +64,10 @@ export default function NotificationsScreen() {
             </View>
             <Switch
               value={settings.postPerformance}
-              onValueChange={(v) => updateSetting("postPerformance", v)}
+              onValueChange={(v) => {
+                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                updateSetting("postPerformance", v);
+              }}
               trackColor={{ false: colors.surfaceElevated, true: colors.green }}
               thumbColor={colors.text}
               ios_backgroundColor={colors.surfaceElevated}
