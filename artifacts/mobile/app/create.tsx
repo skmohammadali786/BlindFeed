@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -14,7 +13,6 @@ import {
 } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Header from "@/components/Header";
 import Colors from "@/constants/colors";
 import { useApp } from "@/context/AppContext";
 
@@ -27,7 +25,8 @@ export default function CreateScreen() {
   const [submitted, setSubmitted] = useState(false);
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const bottomPadding = isWeb ? 34 : insets.bottom;
+  const top = isWeb ? 67 : insets.top;
+  const bottom = isWeb ? 34 : insets.bottom > 0 ? insets.bottom : 16;
 
   const charCount = content.length;
   const canSubmit = charCount >= MIN_CHARS && charCount <= MAX_CHARS;
@@ -42,38 +41,28 @@ export default function CreateScreen() {
     setSubmitted(true);
   };
 
-  const handleNewPost = () => {
-    setContent("");
-    setSubmitted(false);
-  };
-
-  const handleGoFeed = () => {
-    router.push("/");
-  };
-
   if (submitted) {
     return (
-      <View style={styles.container}>
-        <Header title="blindfeed" />
+      <View style={[styles.container, { paddingTop: top }]}>
         <View style={styles.successContainer}>
           <View style={styles.successIcon}>
-            <Feather name="check" size={32} color={Colors.worthIt} />
+            <Feather name="check" size={32} color={Colors.green} />
           </View>
           <Text style={styles.successTitle}>Posted anonymously</Text>
           <Text style={styles.successSub}>
-            Your thought is out there. No name. No pressure.{"\n"}It expires in 48 hours.
+            Your thought is out there.{"\n"}No name. No pressure. Expires in 48h.
           </Text>
           <TouchableOpacity
             style={styles.feedBtn}
-            onPress={handleGoFeed}
-            activeOpacity={0.8}
+            onPress={() => router.replace("/feed")}
+            activeOpacity={0.85}
           >
             <Text style={styles.feedBtnText}>See the feed</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.anotherBtn}
-            onPress={handleNewPost}
-            activeOpacity={0.8}
+            onPress={() => setSubmitted(false)}
+            activeOpacity={0.85}
           >
             <Text style={styles.anotherBtnText}>Write another</Text>
           </TouchableOpacity>
@@ -83,22 +72,24 @@ export default function CreateScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Header
-        title="new post"
-        right={
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={!canSubmit}
-            style={[styles.postBtn, !canSubmit && styles.postBtnDisabled]}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.postBtnText, !canSubmit && styles.postBtnTextDisabled]}>
-              Post
-            </Text>
-          </TouchableOpacity>
-        }
-      />
+    <View style={[styles.container, { paddingTop: top }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+          <Feather name="x" size={22} color={Colors.textSecondary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>New post</Text>
+        <TouchableOpacity
+          style={[styles.postBtn, !canSubmit && styles.postBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={!canSubmit}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.postBtnText, !canSubmit && styles.postBtnTextDisabled]}>
+            Post
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -107,22 +98,17 @@ export default function CreateScreen() {
       >
         <ScrollView
           style={styles.flex}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: bottomPadding + 24 },
-          ]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: bottom + 24 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Anonymity notice */}
-          <View style={styles.notice}>
-            <Feather name="eye-off" size={14} color={Colors.textTertiary} />
-            <Text style={styles.noticeText}>
-              No username. No identity. Just your words.
-            </Text>
+          {/* Anon badge */}
+          <View style={styles.anonBadge}>
+            <Feather name="eye-off" size={13} color={Colors.textTertiary} />
+            <Text style={styles.anonText}>Anonymous · Expires in 48 hours</Text>
           </View>
 
-          {/* Text input */}
+          {/* Input */}
           <TextInput
             style={styles.input}
             placeholder="What's worth saying anonymously?"
@@ -135,35 +121,25 @@ export default function CreateScreen() {
             textAlignVertical="top"
           />
 
-          {/* Rules */}
-          <View style={styles.rules}>
-            <Text style={styles.rulesTitle}>Ground rules</Text>
-            <View style={styles.rule}>
-              <Feather name="check-circle" size={14} color={Colors.textTertiary} />
-              <Text style={styles.ruleText}>Ideas, observations, honest opinions</Text>
+          {/* Guidelines */}
+          <View style={styles.guidelines}>
+            <Text style={styles.guidelinesTitle}>Guidelines</Text>
+            <View style={styles.guidelineRow}>
+              <Feather name="check-circle" size={13} color={Colors.textTertiary} />
+              <Text style={styles.guidelineText}>Ideas, observations, honest takes</Text>
             </View>
-            <View style={styles.rule}>
-              <Feather name="check-circle" size={14} color={Colors.textTertiary} />
-              <Text style={styles.ruleText}>Expires in 48 hours automatically</Text>
-            </View>
-            <View style={styles.rule}>
-              <Feather name="x-circle" size={14} color={Colors.skip} />
-              <Text style={styles.ruleText}>No harassment, hate, or personal attacks</Text>
+            <View style={styles.guidelineRow}>
+              <Feather name="x-circle" size={13} color="#FF453A" />
+              <Text style={styles.guidelineText}>No harassment or personal attacks</Text>
             </View>
           </View>
         </ScrollView>
 
-        {/* Footer */}
-        <View
-          style={[
-            styles.footer,
-            { paddingBottom: isWeb ? 34 : insets.bottom > 0 ? insets.bottom : 16 },
-          ]}
-        >
+        <View style={[styles.footer, { paddingBottom: bottom }]}>
           <Text
             style={[
               styles.charCount,
-              isNearLimit && styles.charCountWarning,
+              isNearLimit && styles.charCountWarn,
               charCount >= MAX_CHARS && styles.charCountError,
             ]}
           >
@@ -181,51 +157,91 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.text,
+  },
+  postBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: Colors.green,
+    borderRadius: 20,
+  },
+  postBtnDisabled: {
+    backgroundColor: Colors.surface,
+  },
+  postBtnText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#000",
+  },
+  postBtnTextDisabled: {
+    color: Colors.textTertiary,
+  },
   scrollContent: {
     padding: 20,
   },
-  notice: {
+  anonBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: Colors.surfaceElevated,
+    gap: 6,
+    backgroundColor: Colors.surface,
     borderRadius: 10,
-    padding: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    alignSelf: "flex-start",
   },
-  noticeText: {
+  anonText: {
     fontSize: 13,
     color: Colors.textTertiary,
     fontFamily: "Inter_400Regular",
   },
   input: {
-    fontSize: 18,
+    fontSize: 19,
     color: Colors.text,
     fontFamily: "Inter_400Regular",
-    lineHeight: 28,
-    minHeight: 160,
+    lineHeight: 30,
+    minHeight: 180,
     textAlignVertical: "top",
     marginBottom: 28,
   },
-  rules: {
+  guidelines: {
     gap: 10,
   },
-  rulesTitle: {
-    fontSize: 12,
+  guidelinesTitle: {
+    fontSize: 11,
     color: Colors.textTertiary,
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 0.8,
     textTransform: "uppercase",
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  rule: {
+  guidelineRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  ruleText: {
+  guidelineText: {
     fontSize: 13,
     color: Colors.textTertiary,
     fontFamily: "Inter_400Regular",
@@ -243,29 +259,8 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     fontFamily: "Inter_400Regular",
   },
-  charCountWarning: {
-    color: "#F59E0B",
-  },
-  charCountError: {
-    color: Colors.skip,
-  },
-  postBtn: {
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    backgroundColor: Colors.text,
-    borderRadius: 20,
-  },
-  postBtnDisabled: {
-    backgroundColor: Colors.border,
-  },
-  postBtnText: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.background,
-  },
-  postBtnTextDisabled: {
-    color: Colors.textTertiary,
-  },
+  charCountWarn: { color: "#FF9F0A" },
+  charCountError: { color: "#FF453A" },
   successContainer: {
     flex: 1,
     justifyContent: "center",
@@ -274,18 +269,18 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   successIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.worthItBg,
-    borderWidth: 1,
-    borderColor: Colors.worthIt,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.greenDim,
+    borderWidth: 1.5,
+    borderColor: Colors.green,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
   },
   successTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontFamily: "Inter_700Bold",
     color: Colors.text,
     textAlign: "center",
@@ -299,22 +294,22 @@ const styles = StyleSheet.create({
   },
   feedBtn: {
     marginTop: 16,
-    backgroundColor: Colors.text,
+    backgroundColor: Colors.green,
     borderRadius: 14,
     paddingHorizontal: 32,
-    paddingVertical: 14,
+    paddingVertical: 16,
     width: "100%",
     alignItems: "center",
   },
   feedBtnText: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    color: Colors.background,
+    color: "#000",
   },
   anotherBtn: {
     borderRadius: 14,
     paddingHorizontal: 32,
-    paddingVertical: 14,
+    paddingVertical: 16,
     width: "100%",
     alignItems: "center",
     borderWidth: 1,

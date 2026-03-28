@@ -10,7 +10,6 @@ import React, {
 export interface Post {
   id: string;
   content: string;
-  imageUri?: string;
   createdAt: number;
   expiresAt: number;
   worthItCount: number;
@@ -18,31 +17,29 @@ export interface Post {
   tempUserId: string;
 }
 
-export interface Reaction {
-  postId: string;
-  type: "worthit" | "skip";
-}
-
 interface AppContextType {
   posts: Post[];
   reactions: Record<string, "worthit" | "skip">;
   tempUserId: string;
-  addPost: (content: string, imageUri?: string) => Post;
+  onboarded: boolean;
+  setOnboarded: () => void;
+  addPost: (content: string) => void;
   reactToPost: (postId: string, type: "worthit" | "skip") => void;
-  getActivePosts: () => Post[];
+  getActivePosts: (sort?: "fresh" | "top") => Post[];
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
 const STORAGE_KEYS = {
-  POSTS: "blindfeed_posts",
-  REACTIONS: "blindfeed_reactions",
-  USER_ID: "blindfeed_user_id",
-  USER_CREATED: "blindfeed_user_created",
+  POSTS: "bf_posts",
+  REACTIONS: "bf_reactions",
+  USER_ID: "bf_user_id",
+  USER_CREATED: "bf_user_created",
+  ONBOARDED: "bf_onboarded",
 };
 
-const POST_EXPIRY_MS = 48 * 60 * 60 * 1000; // 48 hours
-const USER_RESET_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const POST_EXPIRY_MS = 48 * 60 * 60 * 1000;
+const USER_RESET_MS = 7 * 24 * 60 * 60 * 1000;
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
@@ -60,38 +57,52 @@ function generateUserId(): string {
 const SEED_POSTS: Omit<Post, "id" | "expiresAt" | "tempUserId">[] = [
   {
     content:
-      "The best ideas don't need a face behind them. They just need to be heard.",
-    createdAt: Date.now() - 1000 * 60 * 45,
-    worthItCount: 24,
+      "Just finished a 10-mile run. The silence at 5 AM hits different when nobody knows who you are.",
+    createdAt: Date.now() - 1000 * 60 * 120,
+    worthItCount: 47,
     skipCount: 3,
   },
   {
     content:
+      "Unpopular opinion: Most productivity advice is just procrastination in disguise.",
+    createdAt: Date.now() - 1000 * 60 * 240,
+    worthItCount: 128,
+    skipCount: 12,
+  },
+  {
+    content:
+      "Been learning to cook without following recipes. Failed spectacularly tonight but it was fun.",
+    createdAt: Date.now() - 1000 * 60 * 360,
+    worthItCount: 89,
+    skipCount: 6,
+  },
+  {
+    content:
+      "The best ideas don't need a face behind them. They just need to be heard.",
+    createdAt: Date.now() - 1000 * 60 * 480,
+    worthItCount: 212,
+    skipCount: 18,
+  },
+  {
+    content:
       "We spend more time curating our online identity than actually living. What if we just... stopped?",
-    createdAt: Date.now() - 1000 * 60 * 90,
+    createdAt: Date.now() - 1000 * 60 * 600,
     worthItCount: 67,
     skipCount: 11,
   },
   {
     content:
-      "Hot take: most 'thought leaders' are just people who got lucky and learned to talk confidently about it.",
-    createdAt: Date.now() - 1000 * 60 * 120,
-    worthItCount: 102,
-    skipCount: 44,
-  },
-  {
-    content:
       "Silence is underrated. Not every moment needs to be documented, shared, and validated.",
-    createdAt: Date.now() - 1000 * 60 * 180,
+    createdAt: Date.now() - 1000 * 60 * 720,
     worthItCount: 38,
     skipCount: 7,
   },
   {
     content:
-      "The algorithm punishes authenticity and rewards spectacle. We built the cage and then complained we couldn't fly.",
-    createdAt: Date.now() - 1000 * 60 * 220,
-    worthItCount: 89,
-    skipCount: 19,
+      "Hot take: most 'thought leaders' are just people who got lucky and learned to talk confidently about it.",
+    createdAt: Date.now() - 1000 * 60 * 900,
+    worthItCount: 102,
+    skipCount: 44,
   },
 ];
 
@@ -99,6 +110,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [reactions, setReactions] = useState<Record<string, "worthit" | "skip">>({});
   const [tempUserId, setTempUserId] = useState<string>("#------");
+  const [onboarded, setOnboardedState] = useState<boolean>(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -106,39 +119,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const loadData = async () => {
     try {
-      const [postsRaw, reactionsRaw, userIdRaw, userCreatedRaw] =
+      const [postsRaw, reactionsRaw, userIdRaw, userCreatedRaw, onboardedRaw] =
         await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.POSTS),
           AsyncStorage.getItem(STORAGE_KEYS.REACTIONS),
           AsyncStorage.getItem(STORAGE_KEYS.USER_ID),
           AsyncStorage.getItem(STORAGE_KEYS.USER_CREATED),
+          AsyncStorage.getItem(STORAGE_KEYS.ONBOARDED),
         ]);
 
-      // Handle user ID rotation
+      setOnboardedState(onboardedRaw === "true");
+
       let userId = userIdRaw;
       const userCreated = userCreatedRaw ? parseInt(userCreatedRaw) : null;
       if (!userId || !userCreated || Date.now() - userCreated > USER_RESET_MS) {
         userId = generateUserId();
         await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, userId);
-        await AsyncStorage.setItem(
-          STORAGE_KEYS.USER_CREATED,
-          Date.now().toString()
-        );
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_CREATED, Date.now().toString());
       }
       setTempUserId(userId);
 
-      // Load reactions
       const parsedReactions = reactionsRaw ? JSON.parse(reactionsRaw) : {};
       setReactions(parsedReactions);
 
-      // Load or seed posts
       let parsedPosts: Post[] = postsRaw ? JSON.parse(postsRaw) : [];
-
-      // Remove expired posts
       const now = Date.now();
       parsedPosts = parsedPosts.filter((p) => p.expiresAt > now);
 
-      // Seed with sample posts if none exist
       if (parsedPosts.length === 0) {
         parsedPosts = SEED_POSTS.map((seed) => ({
           ...seed,
@@ -146,22 +153,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           expiresAt: seed.createdAt + POST_EXPIRY_MS,
           tempUserId: generateUserId(),
         }));
+        await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(parsedPosts));
       }
 
       parsedPosts.sort((a, b) => b.createdAt - a.createdAt);
       setPosts(parsedPosts);
-      await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(parsedPosts));
-    } catch (e) {
-      // ignore
-    }
+    } catch (_) {}
+    setLoaded(true);
   };
 
+  const setOnboarded = useCallback(async () => {
+    setOnboardedState(true);
+    await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDED, "true");
+  }, []);
+
   const addPost = useCallback(
-    (content: string, imageUri?: string): Post => {
+    (content: string) => {
       const newPost: Post = {
         id: generateId(),
         content,
-        imageUri,
         createdAt: Date.now(),
         expiresAt: Date.now() + POST_EXPIRY_MS,
         worthItCount: 0,
@@ -173,7 +183,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updated));
         return updated;
       });
-      return newPost;
     },
     [tempUserId]
   );
@@ -181,13 +190,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const reactToPost = useCallback(
     (postId: string, type: "worthit" | "skip") => {
       if (reactions[postId]) return;
-
       setReactions((prev) => {
         const updated = { ...prev, [postId]: type };
         AsyncStorage.setItem(STORAGE_KEYS.REACTIONS, JSON.stringify(updated));
         return updated;
       });
-
       setPosts((prev) => {
         const updated = prev.map((p) => {
           if (p.id !== postId) return p;
@@ -204,10 +211,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [reactions]
   );
 
-  const getActivePosts = useCallback(() => {
-    const now = Date.now();
-    return posts.filter((p) => p.expiresAt > now);
-  }, [posts]);
+  const getActivePosts = useCallback(
+    (sort: "fresh" | "top" = "fresh") => {
+      const now = Date.now();
+      const active = posts.filter((p) => p.expiresAt > now);
+      if (sort === "top") {
+        return [...active].sort(
+          (a, b) => b.worthItCount + b.skipCount - (a.worthItCount + a.skipCount)
+        );
+      }
+      return active;
+    },
+    [posts]
+  );
+
+  if (!loaded) return null;
 
   return (
     <AppContext.Provider
@@ -215,6 +233,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         posts,
         reactions,
         tempUserId,
+        onboarded,
+        setOnboarded,
         addPost,
         reactToPost,
         getActivePosts,
