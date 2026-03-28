@@ -1,11 +1,14 @@
 import { Feather } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Modal,
   Platform,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,88 +16,85 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 import { Post, useApp } from "@/context/AppContext";
+import { getObjectUrl } from "@/utils/api";
 import { timeAgo } from "@/utils/time";
 
 type SortMode = "fresh" | "top";
 
 function PostCard({
   post,
-  reaction,
   onReact,
   onPress,
+  colors,
 }: {
   post: Post;
-  reaction?: "worthit" | "skip";
   onReact: (type: "worthit" | "skip") => void;
   onPress: () => void;
+  colors: ReturnType<typeof useTheme>["colors"];
 }) {
+  const reaction = post.myReaction;
+  const myWorthIt = reaction === "worthit";
+  const mySkip = reaction === "skip";
+  const total = post.worthItCount + post.skipCount;
+  const worthPct = total > 0 ? Math.round((post.worthItCount / total) * 100) : 0;
+
   const handleReact = (type: "worthit" | "skip") => {
-    if (reaction) return;
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onReact(type);
   };
 
-  const myWorthIt = reaction === "worthit";
-  const mySkip = reaction === "skip";
+  const styles = makeCardStyles(colors);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+      {post.imageUrl && (
+        <Image
+          source={{ uri: getObjectUrl(post.imageUrl) }}
+          style={styles.postImage}
+          contentFit="cover"
+        />
+      )}
       <Text style={styles.cardText}>{post.content}</Text>
-      <Text style={styles.cardTime}>{timeAgo(post.createdAt)}</Text>
+      <View style={styles.cardMeta}>
+        <Text style={styles.cardTime}>{timeAgo(post.createdAt)}</Text>
+        {post.commentCount > 0 && (
+          <View style={styles.commentPill}>
+            <Feather name="message-circle" size={11} color={colors.textSecondary} />
+            <Text style={styles.commentCount}>{post.commentCount}</Text>
+          </View>
+        )}
+      </View>
+      {total > 0 && (
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${worthPct}%` as `${number}%` }]} />
+        </View>
+      )}
       <View style={styles.cardActions}>
         <TouchableOpacity
-          style={[
-            styles.actionBtn,
-            myWorthIt && styles.actionBtnWorthItActive,
-          ]}
+          style={[styles.actionBtn, myWorthIt && { backgroundColor: colors.greenDim, borderColor: colors.green }]}
           onPress={() => handleReact("worthit")}
           activeOpacity={0.75}
-          disabled={!!reaction}
         >
-          <Feather
-            name="check"
-            size={14}
-            color={myWorthIt ? Colors.green : Colors.textSecondary}
-          />
-          <Text
-            style={[
-              styles.actionBtnText,
-              myWorthIt && styles.actionBtnTextWorthIt,
-            ]}
-          >
+          <Feather name="check" size={14} color={myWorthIt ? colors.green : colors.textSecondary} />
+          <Text style={[styles.actionBtnText, myWorthIt && { color: colors.green }]}>
             Worth it{"  "}
-            <Text style={[styles.actionCount, myWorthIt && { color: Colors.green }]}>
+            <Text style={[styles.actionCount, myWorthIt && { color: colors.green }]}>
               ({post.worthItCount})
             </Text>
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[
-            styles.actionBtn,
-            mySkip && styles.actionBtnSkipActive,
-          ]}
+          style={[styles.actionBtn, mySkip && { backgroundColor: "rgba(255,59,48,0.1)", borderColor: "#FF3B30" }]}
           onPress={() => handleReact("skip")}
           activeOpacity={0.75}
-          disabled={!!reaction}
         >
-          <Feather
-            name="x"
-            size={14}
-            color={mySkip ? "#FF453A" : Colors.textSecondary}
-          />
-          <Text
-            style={[
-              styles.actionBtnText,
-              mySkip && styles.actionBtnTextSkip,
-            ]}
-          >
+          <Feather name="x" size={14} color={mySkip ? "#FF3B30" : colors.textSecondary} />
+          <Text style={[styles.actionBtnText, mySkip && { color: "#FF3B30" }]}>
             Skip{"  "}
-            <Text style={[styles.actionCount, mySkip && { color: "#FF453A" }]}>
+            <Text style={[styles.actionCount, mySkip && { color: "#FF3B30" }]}>
               ({post.skipCount})
             </Text>
           </Text>
@@ -104,442 +104,378 @@ function PostCard({
   );
 }
 
-function AvatarMenu({
-  visible,
-  onClose,
-  userId,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  userId: string;
-}) {
-  const items = [
-    { icon: "user", label: "Your ID", sub: userId, onPress: () => { onClose(); router.push("/identity"); } },
-    { icon: "settings", label: "Settings", sub: null, onPress: () => { onClose(); router.push("/settings"); } },
-    { icon: "bar-chart-2", label: "Usage Insights", sub: null, onPress: () => { onClose(); router.push("/usage-insights"); } },
-    { icon: "shield", label: "Community Guidelines", sub: null, onPress: () => { onClose(); router.push("/community-guidelines"); } },
-    { icon: "flag", label: "Report Content", sub: null, onPress: () => { onClose(); router.push("/report"); } },
-  ];
-
-  return (
-    <Modal visible={visible} transparent animationType="fade">
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={menuStyles.overlay}>
-          <TouchableWithoutFeedback>
-            <View style={menuStyles.menu}>
-              {/* User badge */}
-              <View style={menuStyles.userBadge}>
-                <View style={menuStyles.avatarSmall}>
-                  <Feather name="smile" size={16} color={Colors.green} />
-                </View>
-                <View>
-                  <Text style={menuStyles.userIdLabel}>Anonymous</Text>
-                  <Text style={menuStyles.userId}>{userId}</Text>
-                </View>
-              </View>
-              <View style={menuStyles.divider} />
-              {items.map((item, idx) => (
-                <React.Fragment key={item.label}>
-                  <TouchableOpacity style={menuStyles.item} onPress={item.onPress} activeOpacity={0.75}>
-                    <View style={menuStyles.itemIcon}>
-                      <Feather name={item.icon as any} size={17} color={Colors.textSecondary} />
-                    </View>
-                    <Text style={menuStyles.itemLabel}>{item.label}</Text>
-                    <Feather name="chevron-right" size={15} color={Colors.textTertiary} />
-                  </TouchableOpacity>
-                  {idx < items.length - 1 && <View style={menuStyles.itemDivider} />}
-                </React.Fragment>
-              ))}
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
-  );
-}
-
 export default function FeedScreen() {
-  const { getActivePosts, reactions, reactToPost, tempUserId } = useApp();
-  const [sort, setSort] = useState<SortMode>("fresh");
-  const [showMenu, setShowMenu] = useState(false);
+  const { colors } = useTheme();
+  const { getActivePosts, reactToPost, refreshFeed, feedLoading, feedError } = useApp();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top;
-  const bottom = isWeb ? 34 : insets.bottom;
+  const bottom = isWeb ? 34 : insets.bottom > 0 ? insets.bottom : 16;
 
-  const posts = getActivePosts(sort);
+  const [sortMode, setSortMode] = useState<SortMode>("fresh");
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const renderItem = useCallback(
-    ({ item }: { item: Post }) => (
-      <PostCard
-        post={item}
-        reaction={reactions[item.id]}
-        onReact={(type) => reactToPost(item.id, type)}
-        onPress={() => router.push({ pathname: "/post/[id]", params: { id: item.id } })}
-      />
-    ),
-    [reactions, reactToPost]
-  );
+  const posts = getActivePosts(sortMode);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshFeed(sortMode);
+    setRefreshing(false);
+  }, [refreshFeed, sortMode]);
+
+  const handleSortChange = useCallback((mode: SortMode) => {
+    setSortMode(mode);
+    refreshFeed(mode);
+  }, [refreshFeed]);
+
+  const handleReact = useCallback((postId: string, type: "worthit" | "skip") => {
+    reactToPost(postId, type);
+  }, [reactToPost]);
+
+  const styles = makeStyles(colors);
 
   return (
-    <View style={[styles.container]}>
+    <View style={[styles.container, { paddingTop: top }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: top }]}>
-        <Text style={styles.headerTitle}>BlindFeed</Text>
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            style={styles.headerIcon}
-            onPress={() => router.push("/search")}
-          >
-            <Feather name="search" size={20} color={Colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Feather name="bell" size={20} color={Colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.avatarBtn}
-            onPress={() => setShowMenu(true)}
-          >
-            <Feather name="smile" size={18} color={Colors.green} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Sort toggle */}
-      <View style={styles.toggleContainer}>
-        <View style={styles.toggle}>
-          <TouchableOpacity
-            style={[styles.toggleOption, sort === "fresh" && styles.toggleOptionActive]}
-            onPress={() => setSort("fresh")}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                sort === "fresh" && styles.toggleTextActive,
-              ]}
-            >
-              Fresh
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleOption, sort === "top" && styles.toggleOptionActive]}
-            onPress={() => setSort("top")}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                sort === "top" && styles.toggleTextActive,
-              ]}
-            >
-              Top
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Feed */}
-      <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: bottom + 90 },
-        ]}
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <View style={styles.emptyIconBg}>
-              <Feather name="eye-off" size={28} color={Colors.textTertiary} />
-            </View>
-            <Text style={styles.emptyText}>No posts yet</Text>
-            <Text style={styles.emptySubText}>Be the first to share something real</Text>
-            <TouchableOpacity
-              style={styles.emptyBtn}
-              onPress={() => router.push("/create")}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.emptyBtnText}>Create Post</Text>
-            </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.avatarBtn}>
+          <View style={styles.avatar}>
+            <Feather name="user" size={16} color={colors.textSecondary} />
           </View>
-        }
-      />
+        </TouchableOpacity>
+
+        <View style={styles.sortToggle}>
+          {(["fresh", "top"] as SortMode[]).map((mode) => (
+            <TouchableOpacity
+              key={mode}
+              style={[styles.sortBtn, sortMode === mode && styles.sortBtnActive]}
+              onPress={() => handleSortChange(mode)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.sortBtnText, sortMode === mode && styles.sortBtnTextActive]}>
+                {mode === "fresh" ? "Fresh" : "Top"}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity onPress={() => router.push("/search")} style={styles.searchBtn}>
+          <Feather name="search" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      {feedLoading && posts.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.green} />
+          <Text style={styles.loadingText}>Loading posts...</Text>
+        </View>
+      ) : feedError ? (
+        <View style={styles.errorContainer}>
+          <Feather name="wifi-off" size={40} color={colors.textTertiary} />
+          <Text style={styles.errorText}>Couldn't load posts</Text>
+          <Text style={styles.errorSub}>{feedError}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refreshFeed(sortMode)}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <PostCard
+              post={item}
+              onReact={(type) => handleReact(item.id, type)}
+              onPress={() => router.push(`/post/${item.id}`)}
+              colors={colors}
+            />
+          )}
+          contentContainerStyle={[styles.list, { paddingBottom: bottom + 80 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.green}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Feather name="wind" size={40} color={colors.textTertiary} />
+              <Text style={styles.emptyTitle}>Nothing here yet</Text>
+              <Text style={styles.emptySub}>Be the first to post something</Text>
+            </View>
+          }
+        />
+      )}
 
       {/* FAB */}
       <TouchableOpacity
-        style={[styles.fab, { bottom: bottom + (isWeb ? 84 : 28) }]}
+        style={[styles.fab, { bottom: bottom + 20 }]}
         onPress={() => router.push("/create")}
         activeOpacity={0.85}
       >
-        <Feather name="plus" size={26} color="#000" />
+        <Feather name="edit-3" size={22} color="#000" />
       </TouchableOpacity>
 
-      {/* Avatar menu */}
-      <AvatarMenu
-        visible={showMenu}
-        onClose={() => setShowMenu(false)}
-        userId={tempUserId}
-      />
+      {/* Avatar Menu */}
+      <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+        <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
+          <View style={styles.menuOverlay} />
+        </TouchableWithoutFeedback>
+        <View style={[styles.menuContainer, { top: top + 56 }]}>
+          {[
+            { label: "Your Identity", icon: "user", route: "/identity" },
+            { label: "Settings", icon: "settings", route: "/settings" },
+            { label: "Usage Insights", icon: "bar-chart-2", route: "/usage-insights" },
+            { label: "Community Guidelines", icon: "book-open", route: "/community-guidelines" },
+            { label: "Report Content", icon: "flag", route: "/report" },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.route}
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                router.push(item.route as never);
+              }}
+            >
+              <Feather name={item.icon as never} size={16} color={colors.text} />
+              <Text style={styles.menuLabel}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Modal>
     </View>
   );
 }
 
-const menuStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-    padding: 16,
-    paddingBottom: 40,
-  },
-  menu: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  userBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 18,
-  },
-  avatarSmall: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.greenDim,
-    borderWidth: 1.5,
-    borderColor: Colors.green,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  userIdLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textTertiary,
-  },
-  userId: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    color: Colors.text,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 18,
-    paddingVertical: 15,
-    gap: 14,
-  },
-  itemIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.surfaceElevated,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  itemLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    color: Colors.text,
-  },
-  itemDivider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginLeft: 64,
-  },
-});
+function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      padding: 16,
+      marginHorizontal: 16,
+      marginBottom: 12,
+      gap: 10,
+    },
+    postImage: {
+      width: "100%",
+      height: 180,
+      borderRadius: 10,
+    },
+    cardText: {
+      fontSize: 16,
+      fontFamily: "Inter_400Regular",
+      color: colors.text,
+      lineHeight: 24,
+    },
+    cardMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    cardTime: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+    },
+    commentPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    commentCount: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+    },
+    progressBar: {
+      height: 3,
+      backgroundColor: colors.border,
+      borderRadius: 2,
+      overflow: "hidden",
+    },
+    progressFill: {
+      height: 3,
+      backgroundColor: colors.green,
+      borderRadius: 2,
+    },
+    cardActions: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    actionBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.buttonBg,
+    },
+    actionBtnText: {
+      fontSize: 13,
+      fontFamily: "Inter_500Medium",
+      color: colors.textSecondary,
+    },
+    actionCount: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+    },
+  });
+}
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    backgroundColor: Colors.background,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontFamily: "Inter_700Bold",
-    color: Colors.text,
-    letterSpacing: -0.5,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  headerIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.greenDim,
-    borderWidth: 1.5,
-    borderColor: Colors.green,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  toggleContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  toggle: {
-    flexDirection: "row",
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 3,
-  },
-  toggleOption: {
-    flex: 1,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  toggleOptionActive: {
-    backgroundColor: Colors.green,
-  },
-  toggleText: {
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textSecondary,
-  },
-  toggleTextActive: {
-    color: "#000000",
-    fontFamily: "Inter_600SemiBold",
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-  },
-  separator: {
-    height: 10,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 18,
-    gap: 10,
-  },
-  cardText: {
-    fontSize: 17,
-    fontFamily: "Inter_400Regular",
-    color: Colors.text,
-    lineHeight: 26,
-  },
-  cardTime: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
-  },
-  cardActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 4,
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    height: 42,
-    borderRadius: 10,
-    backgroundColor: Colors.surfaceElevated,
-  },
-  actionBtnWorthItActive: {
-    backgroundColor: "rgba(61, 219, 133, 0.12)",
-  },
-  actionBtnSkipActive: {
-    backgroundColor: "rgba(255, 69, 58, 0.12)",
-  },
-  actionBtnText: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: Colors.textSecondary,
-  },
-  actionBtnTextWorthIt: {
-    color: Colors.green,
-  },
-  actionBtnTextSkip: {
-    color: "#FF453A",
-  },
-  actionCount: {
-    fontFamily: "Inter_400Regular",
-    color: Colors.textTertiary,
-  },
-  empty: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 100,
-    gap: 12,
-  },
-  emptyIconBg: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    color: Colors.text,
-  },
-  emptySubText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textTertiary,
-    textAlign: "center",
-  },
-  emptyBtn: {
-    marginTop: 8,
-    backgroundColor: Colors.green,
-    borderRadius: 14,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-  },
-  emptyBtnText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#000",
-  },
-  fab: {
-    position: "absolute",
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.green,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: Colors.green,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    avatarBtn: { padding: 4 },
+    avatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    sortToggle: {
+      flexDirection: "row",
+      backgroundColor: colors.surface,
+      borderRadius: 20,
+      padding: 3,
+    },
+    sortBtn: {
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      borderRadius: 17,
+    },
+    sortBtnActive: {
+      backgroundColor: colors.surfaceElevated,
+    },
+    sortBtnText: {
+      fontSize: 14,
+      fontFamily: "Inter_500Medium",
+      color: colors.textSecondary,
+    },
+    sortBtnTextActive: {
+      color: colors.text,
+    },
+    searchBtn: { padding: 4 },
+    list: { paddingTop: 4 },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 16,
+    },
+    loadingText: {
+      fontSize: 15,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 12,
+      paddingHorizontal: 40,
+    },
+    errorText: {
+      fontSize: 18,
+      fontFamily: "Inter_600SemiBold",
+      color: colors.text,
+    },
+    errorSub: {
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+      textAlign: "center",
+    },
+    retryBtn: {
+      marginTop: 8,
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      backgroundColor: colors.surface,
+      borderRadius: 20,
+    },
+    retryText: {
+      fontSize: 14,
+      fontFamily: "Inter_500Medium",
+      color: colors.green,
+    },
+    empty: {
+      paddingTop: 80,
+      alignItems: "center",
+      gap: 12,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      fontFamily: "Inter_600SemiBold",
+      color: colors.textSecondary,
+    },
+    emptySub: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: colors.textTertiary,
+    },
+    fab: {
+      position: "absolute",
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: "#3DDB85",
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#3DDB85",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.4,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    menuOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0,0,0,0.5)",
+    },
+    menuContainer: {
+      position: "absolute",
+      left: 16,
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      overflow: "hidden",
+      minWidth: 220,
+    },
+    menuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 18,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    menuLabel: {
+      fontSize: 15,
+      fontFamily: "Inter_500Medium",
+      color: colors.text,
+    },
+  });
+}

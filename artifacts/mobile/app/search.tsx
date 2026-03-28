@@ -11,13 +11,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
 import { timeAgo } from "@/utils/time";
 
 const SUGGESTIONS = ["Popular today", "Trending", "Random", "Most reacted", "New voices"];
 
 export default function SearchScreen() {
+  const { colors } = useTheme();
   const { getActivePosts } = useApp();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
@@ -34,17 +35,12 @@ export default function SearchScreen() {
 
   const allPosts = getActivePosts("fresh");
   const results = query.trim().length > 0
-    ? allPosts.filter((p) =>
-        p.content.toLowerCase().includes(query.toLowerCase())
-      )
+    ? allPosts.filter((p) => p.content.toLowerCase().includes(query.toLowerCase()))
     : [];
 
   const handleSearch = (text: string) => {
     if (!text.trim()) return;
-    setRecentSearches((prev) => {
-      const filtered = prev.filter((s) => s !== text);
-      return [text, ...filtered].slice(0, 5);
-    });
+    setRecentSearches((prev) => [text, ...prev.filter((s) => s !== text)].slice(0, 5));
     setQuery(text);
   };
 
@@ -54,21 +50,21 @@ export default function SearchScreen() {
 
   const showResults = query.trim().length > 0;
   const showEmpty = showResults && results.length === 0;
+  const styles = makeStyles(colors);
 
   return (
     <View style={[styles.container, { paddingTop: top }]}>
-      {/* Header with search bar */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={Colors.text} />
+          <Feather name="arrow-left" size={20} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.searchBar}>
-          <Feather name="search" size={16} color={Colors.textTertiary} />
+          <Feather name="search" size={16} color={colors.textTertiary} />
           <TextInput
             ref={inputRef}
             style={styles.searchInput}
             placeholder="Search posts..."
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={() => handleSearch(query)}
@@ -78,7 +74,7 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery("")}>
-              <Feather name="x-circle" size={16} color={Colors.textTertiary} />
+              <Feather name="x-circle" size={16} color={colors.textTertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -92,36 +88,25 @@ export default function SearchScreen() {
         ListHeaderComponent={
           !showResults ? (
             <View style={styles.suggestions}>
-              {/* Suggestion chips */}
               <Text style={styles.sectionLabel}>Explore</Text>
               <View style={styles.chips}>
                 {SUGGESTIONS.map((s) => (
-                  <TouchableOpacity
-                    key={s}
-                    style={styles.chip}
-                    onPress={() => handleSearch(s)}
-                    activeOpacity={0.8}
-                  >
+                  <TouchableOpacity key={s} style={styles.chip} onPress={() => handleSearch(s)} activeOpacity={0.8}>
                     <Text style={styles.chipText}>{s}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-
-              {/* Recent searches */}
               {recentSearches.length > 0 && (
                 <>
                   <Text style={[styles.sectionLabel, { marginTop: 24 }]}>Recent</Text>
                   {recentSearches.map((term) => (
                     <View key={term} style={styles.recentRow}>
-                      <Feather name="clock" size={15} color={Colors.textTertiary} />
-                      <TouchableOpacity
-                        style={styles.recentTerm}
-                        onPress={() => setQuery(term)}
-                      >
+                      <Feather name="clock" size={15} color={colors.textTertiary} />
+                      <TouchableOpacity style={styles.recentTerm} onPress={() => setQuery(term)}>
                         <Text style={styles.recentText}>{term}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => clearRecent(term)}>
-                        <Feather name="x" size={15} color={Colors.textTertiary} />
+                        <Feather name="x" size={15} color={colors.textTertiary} />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -130,7 +115,7 @@ export default function SearchScreen() {
             </View>
           ) : showEmpty ? (
             <View style={styles.emptyState}>
-              <Feather name="search" size={40} color={Colors.textTertiary} />
+              <Feather name="search" size={40} color={colors.textTertiary} />
               <Text style={styles.emptyTitle}>No results found</Text>
               <Text style={styles.emptySub}>Try different keywords</Text>
             </View>
@@ -148,9 +133,9 @@ export default function SearchScreen() {
             <View style={styles.resultMeta}>
               <Text style={styles.resultTime}>{timeAgo(item.createdAt)}</Text>
               <View style={styles.resultReactions}>
-                <Feather name="check" size={12} color={Colors.green} />
+                <Feather name="check" size={12} color={colors.green} />
                 <Text style={styles.resultCount}>{item.worthItCount}</Text>
-                <Feather name="x" size={12} color={Colors.textTertiary} style={{ marginLeft: 8 }} />
+                <Feather name="x" size={12} color={colors.textTertiary} style={{ marginLeft: 8 }} />
                 <Text style={styles.resultCount}>{item.skipCount}</Text>
               </View>
             </View>
@@ -162,137 +147,30 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    height: 46,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    color: Colors.text,
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  suggestions: {
-    paddingBottom: 8,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.textTertiary,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    marginBottom: 12,
-    marginLeft: 2,
-  },
-  chips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  chip: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  chipText: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    color: Colors.text,
-  },
-  recentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    gap: 12,
-  },
-  recentTerm: {
-    flex: 1,
-  },
-  recentText: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingTop: 80,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.textSecondary,
-  },
-  emptySub: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textTertiary,
-  },
-  resultCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    gap: 10,
-  },
-  resultText: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    color: Colors.text,
-    lineHeight: 23,
-  },
-  resultMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  resultTime: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textTertiary,
-  },
-  resultReactions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  resultCount: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textTertiary,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
+    backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
+    searchBar: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: 14, height: 46 },
+    searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", color: colors.text },
+    listContent: { paddingHorizontal: 16, paddingTop: 8 },
+    suggestions: { paddingBottom: 8 },
+    sectionLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: colors.textTertiary, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 12, marginLeft: 2 },
+    chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    chip: { backgroundColor: colors.surface, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 9, borderWidth: 1, borderColor: colors.border },
+    chipText: { fontSize: 14, fontFamily: "Inter_500Medium", color: colors.text },
+    recentRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 },
+    recentTerm: { flex: 1 },
+    recentText: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.textSecondary },
+    emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
+    emptyTitle: { fontSize: 18, fontFamily: "Inter_600SemiBold", color: colors.textSecondary },
+    emptySub: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textTertiary },
+    resultCard: { backgroundColor: colors.surface, borderRadius: 14, padding: 16, gap: 10 },
+    resultText: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.text, lineHeight: 23 },
+    resultMeta: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    resultTime: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textTertiary },
+    resultReactions: { flexDirection: "row", alignItems: "center", gap: 4 },
+    resultCount: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textTertiary },
+  });
+}

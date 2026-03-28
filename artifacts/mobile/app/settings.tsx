@@ -1,8 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
 import {
   Alert,
+  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -13,64 +15,21 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-function SectionHeader({ title }: { title: string }) {
-  return <Text style={styles.sectionHeader}>{title}</Text>;
-}
-
-function SettingRow({
-  label,
-  subtitle,
-  value,
-  onToggle,
-  onPress,
-  destructive,
-  rightText,
-}: {
-  label: string;
-  subtitle?: string;
-  value?: boolean;
-  onToggle?: (v: boolean) => void;
-  onPress?: () => void;
-  destructive?: boolean;
-  rightText?: string;
-}) {
+function SectionHeader({ title, colors }: { title: string; colors: ReturnType<typeof useTheme>["colors"] }) {
   return (
-    <TouchableOpacity
-      style={styles.settingRow}
-      onPress={onPress}
-      disabled={!onPress && onToggle === undefined}
-      activeOpacity={onPress ? 0.7 : 1}
-    >
-      <View style={styles.settingLeft}>
-        <Text style={[styles.settingLabel, destructive && styles.destructiveLabel]}>
-          {label}
-        </Text>
-        {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
-      </View>
-      {onToggle !== undefined && value !== undefined && (
-        <Switch
-          value={value}
-          onValueChange={onToggle}
-          trackColor={{ false: Colors.surfaceElevated, true: Colors.green }}
-          thumbColor={Colors.text}
-          ios_backgroundColor={Colors.surfaceElevated}
-        />
-      )}
-      {onPress && onToggle === undefined && !rightText && (
-        <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
-      )}
-      {rightText && (
-        <Text style={styles.rightText}>{rightText}</Text>
-      )}
-    </TouchableOpacity>
+    <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.6, marginLeft: 16, marginBottom: 6, marginTop: 20 }}>
+      {title}
+    </Text>
   );
 }
 
 export default function SettingsScreen() {
-  const { settings, updateSetting, resetUserId, clearAllData } = useApp();
+  const { colors, isDark, setDark } = useTheme();
+  const { settings, updateSetting, resetUserId, clearAllData, tempUserId } = useApp();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top;
@@ -78,194 +37,281 @@ export default function SettingsScreen() {
 
   const [showClearModal, setShowClearModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showFeedModal, setShowFeedModal] = useState(false);
 
-  const handleClearData = async () => {
-    await clearAllData();
+  const styles = makeStyles(colors);
+
+  const handleClearCache = async () => {
     setShowClearModal(false);
+    await clearAllData();
+    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert("Done", "Cache cleared successfully.");
   };
 
   const handleResetId = async () => {
-    await resetUserId();
     setShowResetModal(false);
+    await resetUserId();
+    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert("Done", "Your anonymous ID has been reset.");
   };
+
+  const handleDeleteAccount = async () => {
+    setShowDeleteModal(false);
+    await AsyncStorage.clear();
+    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.replace("/");
+  };
+
+  const handleRateApp = () => {
+    const url = Platform.OS === "ios"
+      ? "https://apps.apple.com/app/blindfeed"
+      : "https://play.google.com/store/apps/details?id=com.blindfeed";
+    Linking.openURL(url).catch(() => Alert.alert("Error", "Could not open the app store."));
+  };
+
+  const handleFeedback = () => {
+    Linking.openURL("mailto:feedback@blindfeed.app?subject=BlindFeed Feedback").catch(() =>
+      Alert.alert("Error", "Could not open email client.")
+    );
+  };
+
+  const feedPrefLabel = { all: "All posts", text: "Text only", images: "Images only" };
+
+  const SettingRow = ({
+    label,
+    subtitle,
+    value,
+    onToggle,
+    onPress,
+    destructive,
+    rightText,
+    chevron = true,
+  }: {
+    label: string;
+    subtitle?: string;
+    value?: boolean;
+    onToggle?: (v: boolean) => void;
+    onPress?: () => void;
+    destructive?: boolean;
+    rightText?: string;
+    chevron?: boolean;
+  }) => (
+    <TouchableOpacity
+      style={styles.settingRow}
+      onPress={onPress}
+      disabled={!onPress && onToggle === undefined}
+      activeOpacity={onPress ? 0.7 : 1}
+    >
+      <View style={styles.settingLeft}>
+        <Text style={[styles.settingLabel, destructive && { color: "#FF3B30" }]}>{label}</Text>
+        {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
+      </View>
+      {onToggle !== undefined && value !== undefined ? (
+        <Switch
+          value={value}
+          onValueChange={onToggle}
+          trackColor={{ false: colors.surfaceElevated, true: colors.green }}
+          thumbColor={colors.text}
+          ios_backgroundColor={colors.surfaceElevated}
+        />
+      ) : (
+        <View style={styles.settingRight}>
+          {rightText && <Text style={styles.settingRightText}>{rightText}</Text>}
+          {onPress && chevron && <Feather name="chevron-right" size={16} color={colors.textTertiary} />}
+        </View>
+      )}
+    </TouchableOpacity>
+  );
 
   return (
     <View style={[styles.container, { paddingTop: top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={Colors.text} />
+      <View style={styles.headerBar}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Feather name="arrow-left" size={20} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
-        <View style={{ width: 38 }} />
+        <View style={{ width: 32 }} />
       </View>
 
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingBottom: bottom + 24 }]}
+        contentContainerStyle={{ paddingBottom: bottom + 24 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Appearance */}
-        <SectionHeader title="APPEARANCE" />
-        <View style={styles.card}>
+        <SectionHeader title="Appearance" colors={colors} />
+        <View style={styles.section}>
           <SettingRow
             label="Dark mode"
-            value={settings.darkMode}
-            onToggle={(v) => updateSetting("darkMode", v)}
+            subtitle={isDark ? "Currently dark" : "Currently light"}
+            value={isDark}
+            onToggle={(v) => setDark(v)}
           />
         </View>
 
         {/* Content */}
-        <SectionHeader title="CONTENT" />
-        <View style={styles.card}>
+        <SectionHeader title="Content" colors={colors} />
+        <View style={styles.section}>
           <SettingRow
             label="Content filter"
+            subtitle="Filter potentially sensitive content"
             value={settings.contentFilter}
             onToggle={(v) => updateSetting("contentFilter", v)}
           />
-          <View style={styles.divider} />
           <SettingRow
-            label="Feed preferences"
-            onPress={() => {}}
-          />
-          <View style={styles.divider} />
-          <SettingRow
-            label="Content filter settings"
-            onPress={() => {}}
-          />
-          <View style={styles.divider} />
-          <SettingRow
-            label="Report content"
-            onPress={() => router.push("/report")}
+            label="Feed preference"
+            subtitle={feedPrefLabel[settings.feedPreference ?? "all"]}
+            onPress={() => setShowFeedModal(true)}
           />
         </View>
 
         {/* Notifications */}
-        <SectionHeader title="NOTIFICATIONS" />
-        <View style={styles.card}>
+        <SectionHeader title="Notifications" colors={colors} />
+        <View style={styles.section}>
           <SettingRow
             label="Notification settings"
+            subtitle="Daily reminders, post activity"
             onPress={() => router.push("/notifications")}
           />
         </View>
 
         {/* Data & Privacy */}
-        <SectionHeader title="DATA & PRIVACY" />
-        <View style={styles.card}>
+        <SectionHeader title="Data & Privacy" colors={colors} />
+        <View style={styles.section}>
           <SettingRow
-            label="Data transparency"
+            label="Your anonymous ID"
+            subtitle={tempUserId}
             onPress={() => router.push("/identity")}
           />
-          <View style={styles.divider} />
+          <SettingRow
+            label="Data transparency"
+            subtitle="Review what we store"
+            onPress={() => router.push("/terms")}
+          />
           <SettingRow
             label="Clear cache"
+            subtitle="Clear local cached data"
             onPress={() => setShowClearModal(true)}
           />
-          <View style={styles.divider} />
           <SettingRow
-            label="Delete all data"
-            onPress={() => setShowClearModal(true)}
+            label="Reset anonymous ID"
+            subtitle="Get a new temporary identity"
+            onPress={() => setShowResetModal(true)}
+          />
+          <SettingRow
+            label="Delete account"
+            subtitle="Permanently remove all your data"
+            onPress={() => setShowDeleteModal(true)}
             destructive
           />
         </View>
 
         {/* About */}
-        <SectionHeader title="ABOUT" />
-        <View style={styles.card}>
+        <SectionHeader title="About" colors={colors} />
+        <View style={styles.section}>
           <SettingRow
             label="Community guidelines"
             onPress={() => router.push("/community-guidelines")}
           />
-          <View style={styles.divider} />
           <SettingRow
             label="Terms & Privacy"
             onPress={() => router.push("/terms")}
           />
-          <View style={styles.divider} />
-          <SettingRow
-            label="Send feedback"
-            onPress={() => {}}
-          />
-          <View style={styles.divider} />
           <SettingRow
             label="Rate BlindFeed"
-            onPress={() => {}}
+            onPress={handleRateApp}
           />
-          <View style={styles.divider} />
+          <SettingRow
+            label="Send feedback"
+            onPress={handleFeedback}
+          />
           <SettingRow
             label="Version"
             rightText="1.0.0"
+            chevron={false}
           />
         </View>
-
-        {/* Reset ID */}
-        <TouchableOpacity
-          style={styles.resetBtn}
-          onPress={() => setShowResetModal(true)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.resetBtnText}>Reset Anonymous ID</Text>
-        </TouchableOpacity>
       </ScrollView>
 
-      {/* Clear cache modal */}
-      <Modal visible={showClearModal} transparent animationType="fade">
+      {/* Clear Cache Modal */}
+      <Modal visible={showClearModal} transparent animationType="fade" onRequestClose={() => setShowClearModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalIcon}>
-              <Feather name="trash-2" size={26} color={Colors.textSecondary} />
-            </View>
-            <Text style={styles.modalTitle}>Clear app data?</Text>
-            <Text style={styles.modalSub}>
-              This will remove cached content and reset your preferences
-            </Text>
-            <View style={styles.modalBtns}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setShowClearModal(false)}
-                activeOpacity={0.8}
-              >
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Clear Cache?</Text>
+            <Text style={styles.modalBody}>This will clear locally cached data. Your posts on the feed are not affected.</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowClearModal(false)}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalDestructiveBtn}
-                onPress={handleClearData}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalDestructiveText}>Clear</Text>
+              <TouchableOpacity style={styles.modalConfirm} onPress={handleClearCache}>
+                <Text style={styles.modalConfirmText}>Clear</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* Reset ID modal */}
-      <Modal visible={showResetModal} transparent animationType="fade">
+      {/* Reset ID Modal */}
+      <Modal visible={showResetModal} transparent animationType="fade" onRequestClose={() => setShowResetModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={[styles.modalIcon, styles.modalIconDestructive]}>
-              <Feather name="refresh-cw" size={26} color="#FF453A" />
-            </View>
-            <Text style={styles.modalTitle}>Reset your anonymous ID?</Text>
-            <Text style={styles.modalSub}>
-              You will lose your posting history and streak.{"\n"}This cannot be undone.
-            </Text>
-            <View style={styles.modalBtns}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setShowResetModal(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalCancelText}>Keep my ID</Text>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Reset Anonymous ID?</Text>
+            <Text style={styles.modalBody}>You'll get a new temporary ID. Your previous posts will no longer appear as yours in the app.</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowResetModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalDestructiveBtn}
-                onPress={handleResetId}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalDestructiveText}>Reset anyway</Text>
+              <TouchableOpacity style={styles.modalConfirm} onPress={handleResetId}>
+                <Text style={styles.modalConfirmText}>Reset</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Account Modal */}
+      <Modal visible={showDeleteModal} transparent animationType="fade" onRequestClose={() => setShowDeleteModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Delete Account?</Text>
+            <Text style={styles.modalBody}>This will permanently delete all your local data and sign you out. This action cannot be undone.</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowDeleteModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalConfirm, { backgroundColor: "#FF3B30" }]} onPress={handleDeleteAccount}>
+                <Text style={styles.modalConfirmText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Feed Preference Modal */}
+      <Modal visible={showFeedModal} transparent animationType="fade" onRequestClose={() => setShowFeedModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Feed Preference</Text>
+            {(["all", "text", "images"] as const).map((pref) => (
+              <TouchableOpacity
+                key={pref}
+                style={styles.feedPrefOption}
+                onPress={() => {
+                  updateSetting("feedPreference", pref);
+                  setShowFeedModal(false);
+                }}
+              >
+                <Text style={[styles.feedPrefLabel, settings.feedPreference === pref && { color: colors.green }]}>
+                  {feedPrefLabel[pref]}
+                </Text>
+                {settings.feedPreference === pref && (
+                  <Feather name="check" size={16} color={colors.green} />
+                )}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setShowFeedModal(false)}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -273,173 +319,139 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 17,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.text,
-  },
-  scroll: { flex: 1 },
-  content: {
-    paddingHorizontal: 16,
-    gap: 6,
-  },
-  sectionHeader: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.textTertiary,
-    letterSpacing: 0.8,
-    marginTop: 20,
-    marginBottom: 4,
-    marginLeft: 4,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    overflow: "hidden",
-  },
-  settingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 52,
-  },
-  settingLeft: {
-    flex: 1,
-    gap: 2,
-  },
-  settingLabel: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    color: Colors.text,
-  },
-  settingSubtitle: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textTertiary,
-  },
-  destructiveLabel: {
-    color: "#FF453A",
-  },
-  rightText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textTertiary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginLeft: 16,
-  },
-  resetBtn: {
-    marginTop: 28,
-    backgroundColor: "rgba(255,69,58,0.1)",
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,69,58,0.2)",
-  },
-  resetBtnText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#FF453A",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  modalCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 28,
-    width: "100%",
-    maxWidth: 340,
-    alignItems: "center",
-    gap: 12,
-  },
-  modalIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.surfaceElevated,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  modalIconDestructive: {
-    backgroundColor: "rgba(255,69,58,0.12)",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    color: Colors.text,
-    textAlign: "center",
-  },
-  modalSub: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textSecondary,
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  modalBtns: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-    width: "100%",
-  },
-  modalCancelBtn: {
-    flex: 1,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: Colors.surfaceElevated,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalCancelText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.text,
-  },
-  modalDestructiveBtn: {
-    flex: 1,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,69,58,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(255,69,58,0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalDestructiveText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#FF453A",
-  },
-});
+function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    headerBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    backBtn: { padding: 4 },
+    headerTitle: {
+      fontSize: 17,
+      fontFamily: "Inter_600SemiBold",
+      color: colors.text,
+    },
+    section: {
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      marginHorizontal: 16,
+      overflow: "hidden",
+    },
+    sectionHeader: {
+      fontSize: 12,
+      fontFamily: "Inter_600SemiBold",
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      marginLeft: 16,
+      marginBottom: 6,
+      marginTop: 20,
+    },
+    settingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 13,
+      paddingHorizontal: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    settingLeft: { flex: 1, gap: 2, marginRight: 12 },
+    settingLabel: {
+      fontSize: 15,
+      fontFamily: "Inter_500Medium",
+      color: colors.text,
+    },
+    settingSubtitle: {
+      fontSize: 12,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+    },
+    settingRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    settingRightText: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 32,
+    },
+    modal: {
+      backgroundColor: colors.surface,
+      borderRadius: 18,
+      padding: 24,
+      width: "100%",
+      gap: 12,
+    },
+    modalTitle: {
+      fontSize: 17,
+      fontFamily: "Inter_700Bold",
+      color: colors.text,
+      textAlign: "center",
+    },
+    modalBody: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+      textAlign: "center",
+      lineHeight: 20,
+    },
+    modalActions: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 8,
+    },
+    modalCancel: {
+      flex: 1,
+      paddingVertical: 13,
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: 12,
+      alignItems: "center",
+    },
+    modalCancelText: {
+      fontSize: 15,
+      fontFamily: "Inter_500Medium",
+      color: colors.text,
+    },
+    modalConfirm: {
+      flex: 1,
+      paddingVertical: 13,
+      backgroundColor: colors.green,
+      borderRadius: 12,
+      alignItems: "center",
+    },
+    modalConfirmText: {
+      fontSize: 15,
+      fontFamily: "Inter_600SemiBold",
+      color: "#000",
+    },
+    feedPrefOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    feedPrefLabel: {
+      fontSize: 15,
+      fontFamily: "Inter_500Medium",
+      color: colors.text,
+    },
+  });
+}

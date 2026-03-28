@@ -10,21 +10,23 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
 
 export default function NotificationsScreen() {
+  const { colors } = useTheme();
   const { settings, updateSetting } = useApp();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top;
 
+  const styles = makeStyles(colors);
+
   return (
     <View style={[styles.container, { paddingTop: top }]}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={Colors.text} />
+          <Feather name="arrow-left" size={20} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <View style={{ width: 38 }} />
@@ -40,9 +42,9 @@ export default function NotificationsScreen() {
             <Switch
               value={settings.dailyReminder}
               onValueChange={(v) => updateSetting("dailyReminder", v)}
-              trackColor={{ false: Colors.surfaceElevated, true: Colors.green }}
-              thumbColor={Colors.text}
-              ios_backgroundColor={Colors.surfaceElevated}
+              trackColor={{ false: colors.surfaceElevated, true: colors.green }}
+              thumbColor={colors.text}
+              ios_backgroundColor={colors.surfaceElevated}
             />
           </View>
           <View style={styles.divider} />
@@ -54,9 +56,9 @@ export default function NotificationsScreen() {
             <Switch
               value={settings.postPerformance}
               onValueChange={(v) => updateSetting("postPerformance", v)}
-              trackColor={{ false: Colors.surfaceElevated, true: Colors.green }}
-              thumbColor={Colors.text}
-              ios_backgroundColor={Colors.surfaceElevated}
+              trackColor={{ false: colors.surfaceElevated, true: colors.green }}
+              thumbColor={colors.text}
+              ios_backgroundColor={colors.surfaceElevated}
             />
           </View>
         </View>
@@ -65,64 +67,18 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 17,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.text,
-  },
-  content: {
-    padding: 16,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    overflow: "hidden",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  rowLeft: {
-    flex: 1,
-    gap: 3,
-  },
-  rowLabel: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    color: Colors.text,
-  },
-  rowSub: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: Colors.textTertiary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginLeft: 16,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
+    backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
+    headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.text },
+    content: { padding: 16 },
+    card: { backgroundColor: colors.surface, borderRadius: 14, overflow: "hidden" },
+    row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 16 },
+    rowLeft: { flex: 1, gap: 3 },
+    rowLabel: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.text },
+    rowSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textTertiary },
+    divider: { height: 1, backgroundColor: colors.border, marginLeft: 16 },
+  });
+}

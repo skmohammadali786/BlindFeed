@@ -7,60 +7,81 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { api, ApiPost } from "@/utils/api";
 
 export interface Post {
   id: string;
   content: string;
+  imageUrl?: string | null;
   createdAt: number;
   expiresAt: number;
   worthItCount: number;
   skipCount: number;
   tempUserId: string;
+  myReaction: string | null;
+  commentCount: number;
+  isOwn: boolean;
 }
 
 export interface AppSettings {
-  darkMode: boolean;
   contentFilter: boolean;
   dailyReminder: boolean;
   postPerformance: boolean;
+  feedPreference: "all" | "text" | "images";
 }
 
 interface AppContextType {
   posts: Post[];
-  reactions: Record<string, "worthit" | "skip">;
   tempUserId: string;
+  anonymousId: string;
+  registered: boolean;
   onboarded: boolean;
+  appInitialized: boolean;
   settings: AppSettings;
   sessionSeconds: number;
+  drafts: DraftPost[];
+  feedLoading: boolean;
+  feedError: string | null;
   setOnboarded: () => void;
-  addPost: (content: string) => void;
-  reactToPost: (postId: string, type: "worthit" | "skip") => void;
+  setRegistered: (id: string) => void;
+  addPost: (content: string, imageUrl?: string | null, isDraft?: boolean) => Promise<Post | null>;
+  publishDraft: (draftId: string) => Promise<void>;
+  deleteDraft: (draftId: string) => void;
+  reactToPost: (postId: string, type: "worthit" | "skip") => Promise<void>;
+  refreshFeed: (sort?: "fresh" | "top") => Promise<void>;
   getActivePosts: (sort?: "fresh" | "top") => Post[];
   getMyPosts: () => Post[];
-  updateSetting: (key: keyof AppSettings, value: boolean) => void;
+  updateSetting: (key: keyof AppSettings, value: boolean | string) => void;
   resetUserId: () => Promise<void>;
   clearAllData: () => Promise<void>;
+}
+
+export interface DraftPost {
+  id: string;
+  content: string;
+  imageUrl?: string | null;
+  createdAt: number;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
 const STORAGE_KEYS = {
-  POSTS: "bf_posts",
-  REACTIONS: "bf_reactions",
   USER_ID: "bf_user_id",
   USER_CREATED: "bf_user_created",
   ONBOARDED: "bf_onboarded",
   SETTINGS: "bf_settings",
+  ANONYMOUS_ID: "bf_anonymous_id",
+  REGISTERED: "bf_registered",
+  DRAFTS: "bf_drafts",
 };
 
-const POST_EXPIRY_MS = 48 * 60 * 60 * 1000;
 const USER_RESET_MS = 7 * 24 * 60 * 60 * 1000;
 
 const DEFAULT_SETTINGS: AppSettings = {
-  darkMode: true,
   contentFilter: true,
   dailyReminder: true,
   postPerformance: false,
+  feedPreference: "all",
 };
 
 function generateId(): string {
@@ -72,65 +93,34 @@ function generateUserId(): string {
   return `User${num}`;
 }
 
-const SEED_POSTS: Omit<Post, "id" | "expiresAt" | "tempUserId">[] = [
-  {
-    content:
-      "Just finished a 10-mile run. The silence at 5 AM hits different when nobody knows who you are.",
-    createdAt: Date.now() - 1000 * 60 * 120,
-    worthItCount: 47,
-    skipCount: 3,
-  },
-  {
-    content:
-      "Unpopular opinion: Most productivity advice is just procrastination in disguise.",
-    createdAt: Date.now() - 1000 * 60 * 240,
-    worthItCount: 128,
-    skipCount: 12,
-  },
-  {
-    content:
-      "Been learning to cook without following recipes. Failed spectacularly tonight but it was fun.",
-    createdAt: Date.now() - 1000 * 60 * 360,
-    worthItCount: 89,
-    skipCount: 6,
-  },
-  {
-    content:
-      "The best ideas don't need a face behind them. They just need to be heard.",
-    createdAt: Date.now() - 1000 * 60 * 480,
-    worthItCount: 212,
-    skipCount: 18,
-  },
-  {
-    content:
-      "We spend more time curating our online identity than actually living. What if we just... stopped?",
-    createdAt: Date.now() - 1000 * 60 * 600,
-    worthItCount: 67,
-    skipCount: 11,
-  },
-  {
-    content:
-      "Silence is underrated. Not every moment needs to be documented, shared, and validated.",
-    createdAt: Date.now() - 1000 * 60 * 720,
-    worthItCount: 38,
-    skipCount: 7,
-  },
-  {
-    content:
-      "Hot take: most 'thought leaders' are just people who got lucky and learned to talk confidently about it.",
-    createdAt: Date.now() - 1000 * 60 * 900,
-    worthItCount: 102,
-    skipCount: 44,
-  },
-];
+function mapApiPost(p: ApiPost): Post {
+  return {
+    id: String(p.id),
+    content: p.content,
+    imageUrl: p.imageUrl,
+    createdAt: new Date(p.createdAt).getTime(),
+    expiresAt: new Date(p.expiresAt).getTime(),
+    worthItCount: p.worthItCount,
+    skipCount: p.skipCount,
+    tempUserId: p.anonymousId,
+    myReaction: p.myReaction,
+    commentCount: p.commentCount,
+    isOwn: p.isOwn,
+  };
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [reactions, setReactions] = useState<Record<string, "worthit" | "skip">>({});
+  const [sortMode, setSortMode] = useState<"fresh" | "top">("fresh");
   const [tempUserId, setTempUserId] = useState<string>("User0000");
+  const [anonymousId, setAnonymousId] = useState<string>("");
+  const [registered, setRegisteredState] = useState<boolean>(false);
   const [onboarded, setOnboardedState] = useState<boolean>(false);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [drafts, setDrafts] = useState<DraftPost[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [feedError, setFeedError] = useState<string | null>(null);
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const sessionStart = useRef(Date.now());
 
@@ -144,22 +134,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const loadData = async () => {
     try {
-      const [postsRaw, reactionsRaw, userIdRaw, userCreatedRaw, onboardedRaw, settingsRaw] =
+      const [onboardedRaw, settingsRaw, userIdRaw, userCreatedRaw, anonIdRaw, registeredRaw, draftsRaw] =
         await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEYS.POSTS),
-          AsyncStorage.getItem(STORAGE_KEYS.REACTIONS),
-          AsyncStorage.getItem(STORAGE_KEYS.USER_ID),
-          AsyncStorage.getItem(STORAGE_KEYS.USER_CREATED),
           AsyncStorage.getItem(STORAGE_KEYS.ONBOARDED),
           AsyncStorage.getItem(STORAGE_KEYS.SETTINGS),
+          AsyncStorage.getItem(STORAGE_KEYS.USER_ID),
+          AsyncStorage.getItem(STORAGE_KEYS.USER_CREATED),
+          AsyncStorage.getItem(STORAGE_KEYS.ANONYMOUS_ID),
+          AsyncStorage.getItem(STORAGE_KEYS.REGISTERED),
+          AsyncStorage.getItem(STORAGE_KEYS.DRAFTS),
         ]);
 
       setOnboardedState(onboardedRaw === "true");
+      const isReg = registeredRaw === "true";
+      setRegisteredState(isReg);
 
       if (settingsRaw) {
-        try {
-          setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(settingsRaw) });
-        } catch (_) {}
+        try { setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(settingsRaw) }); } catch (_) {}
       }
 
       let userId = userIdRaw;
@@ -171,86 +162,123 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       setTempUserId(userId);
 
-      const parsedReactions = reactionsRaw ? JSON.parse(reactionsRaw) : {};
-      setReactions(parsedReactions);
-
-      let parsedPosts: Post[] = postsRaw ? JSON.parse(postsRaw) : [];
-      const now = Date.now();
-      parsedPosts = parsedPosts.filter((p) => p.expiresAt > now);
-
-      if (parsedPosts.length === 0) {
-        parsedPosts = SEED_POSTS.map((seed) => ({
-          ...seed,
-          id: generateId(),
-          expiresAt: seed.createdAt + POST_EXPIRY_MS,
-          tempUserId: generateUserId(),
-        }));
-        await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(parsedPosts));
+      if (anonIdRaw) {
+        setAnonymousId(anonIdRaw);
       }
 
-      parsedPosts.sort((a, b) => b.createdAt - a.createdAt);
-      setPosts(parsedPosts);
+      if (draftsRaw) {
+        try { setDrafts(JSON.parse(draftsRaw)); } catch (_) {}
+      }
     } catch (_) {}
     setLoaded(true);
   };
+
+  const refreshFeed = useCallback(async (sort: "fresh" | "top" = "fresh") => {
+    setSortMode(sort);
+    setFeedLoading(true);
+    setFeedError(null);
+    try {
+      const data = await api.get<ApiPost[]>(`/posts?sort=${sort}`);
+      setPosts(data.map(mapApiPost));
+    } catch (err: unknown) {
+      setFeedError(err instanceof Error ? err.message : "Failed to load posts");
+    } finally {
+      setFeedLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loaded) refreshFeed("fresh");
+  }, [loaded, refreshFeed]);
 
   const setOnboarded = useCallback(async () => {
     setOnboardedState(true);
     await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDED, "true");
   }, []);
 
-  const addPost = useCallback(
-    (content: string) => {
-      const newPost: Post = {
+  const setRegistered = useCallback(async (anonId: string) => {
+    setRegisteredState(true);
+    setAnonymousId(anonId);
+    await AsyncStorage.setItem(STORAGE_KEYS.REGISTERED, "true");
+    await AsyncStorage.setItem(STORAGE_KEYS.ANONYMOUS_ID, anonId);
+  }, []);
+
+  const addPost = useCallback(async (content: string, imageUrl?: string | null, isDraft?: boolean): Promise<Post | null> => {
+    if (isDraft) {
+      const draft: DraftPost = {
         id: generateId(),
         content,
+        imageUrl: imageUrl ?? null,
         createdAt: Date.now(),
-        expiresAt: Date.now() + POST_EXPIRY_MS,
-        worthItCount: 0,
-        skipCount: 0,
-        tempUserId,
       };
-      setPosts((prev) => {
-        const updated = [newPost, ...prev];
-        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updated));
+      setDrafts((prev) => {
+        const updated = [draft, ...prev];
+        AsyncStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(updated));
         return updated;
       });
-    },
-    [tempUserId]
-  );
+      return null;
+    }
 
-  const reactToPost = useCallback(
-    (postId: string, type: "worthit" | "skip") => {
-      if (reactions[postId]) return;
-      setReactions((prev) => {
-        const updated = { ...prev, [postId]: type };
-        AsyncStorage.setItem(STORAGE_KEYS.REACTIONS, JSON.stringify(updated));
-        return updated;
-      });
-      setPosts((prev) => {
-        const updated = prev.map((p) => {
-          if (p.id !== postId) return p;
-          return {
-            ...p,
-            worthItCount: type === "worthit" ? p.worthItCount + 1 : p.worthItCount,
-            skipCount: type === "skip" ? p.skipCount + 1 : p.skipCount,
-          };
-        });
-        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updated));
-        return updated;
-      });
-    },
-    [reactions]
-  );
+    try {
+      const apiPost = await api.post<ApiPost>("/posts", { content, imageUrl: imageUrl ?? null });
+      const newPost = mapApiPost(apiPost);
+      setPosts((prev) => [newPost, ...prev]);
+      return newPost;
+    } catch (err) {
+      throw err;
+    }
+  }, []);
+
+  const publishDraft = useCallback(async (draftId: string) => {
+    const draft = drafts.find((d) => d.id === draftId);
+    if (!draft) return;
+    await addPost(draft.content, draft.imageUrl);
+    setDrafts((prev) => {
+      const updated = prev.filter((d) => d.id !== draftId);
+      AsyncStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(updated));
+      return updated;
+    });
+  }, [drafts, addPost]);
+
+  const deleteDraft = useCallback((draftId: string) => {
+    setDrafts((prev) => {
+      const updated = prev.filter((d) => d.id !== draftId);
+      AsyncStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const reactToPost = useCallback(async (postId: string, type: "worthit" | "skip") => {
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        const wasReacted = p.myReaction === type;
+        return {
+          ...p,
+          myReaction: wasReacted ? null : type,
+          worthItCount: type === "worthit"
+            ? p.worthItCount + (wasReacted ? -1 : 1)
+            : p.worthItCount + (p.myReaction === "worthit" ? -1 : 0),
+          skipCount: type === "skip"
+            ? p.skipCount + (wasReacted ? -1 : 1)
+            : p.skipCount + (p.myReaction === "skip" ? -1 : 0),
+        };
+      })
+    );
+    try {
+      const updated = await api.post<ApiPost>(`/posts/${postId}/react`, { type });
+      setPosts((prev) => prev.map((p) => (p.id === postId ? mapApiPost(updated) : p)));
+    } catch (_) {
+      await refreshFeed(sortMode);
+    }
+  }, [refreshFeed, sortMode]);
 
   const getActivePosts = useCallback(
     (sort: "fresh" | "top" = "fresh") => {
       const now = Date.now();
       const active = posts.filter((p) => p.expiresAt > now);
       if (sort === "top") {
-        return [...active].sort(
-          (a, b) => b.worthItCount + b.skipCount - (a.worthItCount + a.skipCount)
-        );
+        return [...active].sort((a, b) => b.worthItCount - a.worthItCount);
       }
       return active;
     },
@@ -258,19 +286,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const getMyPosts = useCallback(() => {
-    return posts.filter((p) => p.tempUserId === tempUserId);
-  }, [posts, tempUserId]);
+    return posts.filter((p) => p.isOwn);
+  }, [posts]);
 
-  const updateSetting = useCallback(
-    async (key: keyof AppSettings, value: boolean) => {
-      setSettings((prev) => {
-        const updated = { ...prev, [key]: value };
-        AsyncStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
-        return updated;
-      });
-    },
-    []
-  );
+  const updateSetting = useCallback(async (key: keyof AppSettings, value: boolean | string) => {
+    setSettings((prev) => {
+      const updated = { ...prev, [key]: value };
+      AsyncStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   const resetUserId = useCallback(async () => {
     const newId = generateUserId();
@@ -280,37 +305,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clearAllData = useCallback(async () => {
-    await AsyncStorage.multiRemove([
-      STORAGE_KEYS.POSTS,
-      STORAGE_KEYS.REACTIONS,
-      STORAGE_KEYS.SETTINGS,
-    ]);
-    setReactions({});
+    await AsyncStorage.multiRemove([STORAGE_KEYS.SETTINGS, STORAGE_KEYS.DRAFTS]);
+    setDrafts([]);
     setSettings(DEFAULT_SETTINGS);
-    const seedPosts = SEED_POSTS.map((seed) => ({
-      ...seed,
-      id: generateId(),
-      expiresAt: seed.createdAt + POST_EXPIRY_MS,
-      tempUserId: generateUserId(),
-    }));
-    setPosts(seedPosts);
-    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(seedPosts));
-  }, []);
-
-  if (!loaded) return null;
+    await refreshFeed("fresh");
+  }, [refreshFeed]);
 
   return (
     <AppContext.Provider
       value={{
         posts,
-        reactions,
         tempUserId,
+        anonymousId,
+        registered,
         onboarded,
+        appInitialized: loaded,
         settings,
         sessionSeconds,
+        drafts,
+        feedLoading,
+        feedError,
         setOnboarded,
+        setRegistered,
         addPost,
+        publishDraft,
+        deleteDraft,
         reactToPost,
+        refreshFeed,
         getActivePosts,
         getMyPosts,
         updateSetting,
