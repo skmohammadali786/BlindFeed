@@ -123,8 +123,8 @@ router.patch("/admin/reports/:id", async (req, res) => {
   if (isNaN(reportId)) return res.status(400).json({ error: "Invalid report id" });
 
   const { action, adminNote } = req.body;
-  if (!action || !["dismiss", "warn", "remove"].includes(action)) {
-    return res.status(400).json({ error: "action must be dismiss, warn, or remove" });
+  if (!action || !["dismiss", "warn", "remove", "sensitive"].includes(action)) {
+    return res.status(400).json({ error: "action must be dismiss, warn, remove, or sensitive" });
   }
 
   try {
@@ -147,9 +147,11 @@ router.patch("/admin/reports/:id", async (req, res) => {
         const violation = adminNote?.trim() || "It violated our community guidelines.";
         let actionMsg: string;
         if (action === "warn") {
-          actionMsg = `⚠️ Content Warning: Your post received a moderation warning.\n\nReason: ${violation}\n\nIf you believe this was a mistake, you can submit an appeal below.`;
+          actionMsg = `Content Warning: Your post received a moderation warning.\n\nReason: ${violation}\n\nIf you believe this was a mistake, you can submit an appeal below.`;
+        } else if (action === "sensitive") {
+          actionMsg = `Sensitive Content: Your post has been flagged as sensitive content. It will remain visible but viewers will see a warning before reading it.\n\nReason: ${violation}`;
         } else {
-          actionMsg = `🚫 Post Removed: Your post has been removed by our moderation team.\n\nReason: ${violation}\n\nIf you believe this was a mistake, you can submit an appeal to have your case reviewed.`;
+          actionMsg = `Post Removed: Your post has been removed by our moderation team.\n\nReason: ${violation}\n\nIf you believe this was a mistake, you can submit an appeal to have your case reviewed.`;
         }
 
         await db.insert(notificationsTable).values({
@@ -163,6 +165,8 @@ router.patch("/admin/reports/:id", async (req, res) => {
 
         if (action === "remove") {
           await db.update(postsTable).set({ expiresAt: new Date() }).where(eq(postsTable.id, report.postId)).catch(() => {});
+        } else if (action === "sensitive") {
+          await db.update(postsTable).set({ isSensitive: true }).where(eq(postsTable.id, report.postId)).catch(() => {});
         }
       }
     }

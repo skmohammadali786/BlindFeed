@@ -23,6 +23,7 @@ export interface Post {
   myReaction: string | null;
   commentCount: number;
   isOwn: boolean;
+  isSensitive: boolean;
 }
 
 export interface AppSettings {
@@ -54,6 +55,7 @@ interface AppContextType {
   deleteDraft: (draftId: string) => void;
   reactToPost: (postId: string, type: "worthit" | "skip") => Promise<void>;
   refreshFeed: (sort?: "fresh" | "top") => Promise<void>;
+  resetFeed: () => Promise<void>;
   getActivePosts: (sort?: "fresh" | "top") => Post[];
   getMyPosts: () => Post[];
   updateSetting: (key: keyof AppSettings, value: boolean | string) => void;
@@ -119,6 +121,7 @@ function mapApiPost(p: ApiPost): Post {
     myReaction: p.myReaction,
     commentCount: p.commentCount,
     isOwn: p.isOwn,
+    isSensitive: p.isSensitive ?? false,
   };
 }
 
@@ -223,6 +226,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (_) {}
     setLoaded(true);
   };
+
+  const resetFeed = useCallback(async () => {
+    setPosts([]);
+    try {
+      const data = await api.get<ApiPost[]>("/posts?sort=fresh&limit=50");
+      setPosts(data.map(mapApiPost));
+    } catch (_) {}
+  }, []);
 
   const refreshFeed = useCallback(async (sort: "fresh" | "top" = "fresh") => {
     setSortMode(sort);
@@ -429,6 +440,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         deleteDraft,
         reactToPost,
         refreshFeed,
+        resetFeed,
         getActivePosts,
         getMyPosts,
         updateSetting,

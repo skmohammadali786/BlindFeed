@@ -25,6 +25,7 @@ router.get("/posts", async (req, res) => {
         skipCount: postsTable.skipCount,
         expiresAt: postsTable.expiresAt,
         createdAt: postsTable.createdAt,
+        isSensitive: postsTable.isSensitive,
       })
       .from(postsTable)
       .where(and(
@@ -67,6 +68,7 @@ router.get("/posts", async (req, res) => {
       myReaction: userReactions[p.id] ?? null,
       commentCount: commentCountMap[p.id] ?? 0,
       isOwn: p.anonymousId === anonymousId,
+      isSensitive: p.isSensitive ?? false,
     }));
 
     return res.json(enriched);

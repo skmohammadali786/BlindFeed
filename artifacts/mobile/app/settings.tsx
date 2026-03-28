@@ -30,7 +30,7 @@ function SectionHeader({ title, colors }: { title: string; colors: ReturnType<ty
 
 export default function SettingsScreen() {
   const { colors, isDark, setDark } = useTheme();
-  const { settings, updateSetting, resetUserId, clearAllData, tempUserId, logout } = useApp();
+  const { settings, updateSetting, resetUserId, clearAllData, tempUserId, logout, resetFeed } = useApp();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top;
@@ -41,6 +41,7 @@ export default function SettingsScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showFeedModal, setShowFeedModal] = useState(false);
+  const [showResetFeedModal, setShowResetFeedModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const styles = makeStyles(colors);
@@ -185,6 +186,11 @@ export default function SettingsScreen() {
                 subtitle={feedPrefLabel[settings.feedPreference ?? "all"]}
                 onPress={() => setShowFeedModal(true)}
               />
+              <SettingRow
+                label="Reset feed"
+                subtitle="Reload fresh posts from the beginning"
+                onPress={() => setShowResetFeedModal(true)}
+              />
             </View>
           </AnimatedListItem>
 
@@ -279,6 +285,32 @@ export default function SettingsScreen() {
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.modalConfirm, { backgroundColor: "#FF3B30" }]} onPress={handleResetId}>
+                <Text style={styles.modalConfirmText}>Reset</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Reset Feed Modal */}
+      <Modal visible={showResetFeedModal} transparent animationType="fade" onRequestClose={() => setShowResetFeedModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Reset Feed?</Text>
+            <Text style={styles.modalBody}>This will clear your current feed and reload fresh posts from the beginning.</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowResetFeedModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirm, { backgroundColor: colors.green }]}
+                onPress={async () => {
+                  setShowResetFeedModal(false);
+                  await resetFeed();
+                  showToastMsg("Feed reset!");
+                  router.back();
+                }}
+              >
                 <Text style={styles.modalConfirmText}>Reset</Text>
               </TouchableOpacity>
             </View>

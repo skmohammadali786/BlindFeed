@@ -285,6 +285,7 @@ export default function FeedScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [newPostsBanner, setNewPostsBanner] = useState(false);
+  const [sensitivePost, setSensitivePost] = useState<Post | null>(null);
   const lastPostCountRef = useRef<number>(0);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -416,7 +417,13 @@ export default function FeedScreen() {
                 post={item}
                 index={index}
                 onReact={(type) => handleReact(item.id, type)}
-                onPress={() => router.push(`/post/${item.id}`)}
+                onPress={() => {
+                  if (item.isSensitive) {
+                    setSensitivePost(item);
+                  } else {
+                    router.push(`/post/${item.id}`);
+                  }
+                }}
                 colors={colors}
               />
             )}
@@ -469,6 +476,34 @@ export default function FeedScreen() {
                 </TouchableOpacity>
               </AnimatedListItem>
             ))}
+          </View>
+        </Modal>
+
+        {/* Sensitive Content Warning Modal */}
+        <Modal visible={!!sensitivePost} transparent animationType="fade" onRequestClose={() => setSensitivePost(null)}>
+          <View style={styles.sensitiveOverlay}>
+            <View style={[styles.sensitiveModal, { backgroundColor: colors.cardBg }]}>
+              <View style={[styles.sensitiveIconWrap, { backgroundColor: "#FF3B3022" }]}>
+                <Feather name="alert-triangle" size={28} color="#FF3B30" />
+              </View>
+              <Text style={[styles.sensitiveTitle, { color: colors.text }]}>Sensitive Content</Text>
+              <Text style={[styles.sensitiveBody, { color: colors.textSecondary }]}>
+                This post has been flagged as potentially sensitive. It may contain content some people find upsetting.
+              </Text>
+              <TouchableOpacity
+                style={[styles.sensitiveContinue, { backgroundColor: colors.green }]}
+                onPress={() => {
+                  const id = sensitivePost?.id;
+                  setSensitivePost(null);
+                  if (id) router.push(`/post/${id}`);
+                }}
+              >
+                <Text style={styles.sensitiveContinueText}>Continue anyway</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.sensitiveBack} onPress={() => setSensitivePost(null)}>
+                <Text style={[styles.sensitiveBackText, { color: colors.textSecondary }]}>Go back</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </Modal>
       </View>
@@ -670,5 +705,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderBottomColor: colors.border,
     },
     menuLabel: { fontSize: 15, fontFamily: "Inter_500Medium", color: colors.text },
+    sensitiveOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 32 },
+    sensitiveModal: { borderRadius: 20, padding: 28, alignItems: "center", width: "100%", maxWidth: 340 },
+    sensitiveIconWrap: { width: 60, height: 60, borderRadius: 30, justifyContent: "center", alignItems: "center", marginBottom: 16 },
+    sensitiveTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 10, textAlign: "center" },
+    sensitiveBody: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20, marginBottom: 24 },
+    sensitiveContinue: { width: "100%", paddingVertical: 14, borderRadius: 12, alignItems: "center", marginBottom: 10 },
+    sensitiveContinueText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#fff" },
+    sensitiveBack: { paddingVertical: 10, alignItems: "center" },
+    sensitiveBackText: { fontSize: 14, fontFamily: "Inter_500Medium" },
   });
 }

@@ -98,6 +98,7 @@ export interface ApiPost {
   myReaction: string | null;
   commentCount: number;
   isOwn: boolean;
+  isSensitive: boolean;
 }
 
 export interface ApiComment {
