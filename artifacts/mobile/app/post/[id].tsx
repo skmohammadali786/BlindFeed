@@ -95,11 +95,38 @@ export default function PostDetailScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [deleteCommentId, setDeleteCommentId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [remotePost, setRemotePost] = useState<import("@/context/AppContext").Post | null>(null);
+  const [postLoading, setPostLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const listRef = useRef<FlatList>(null);
 
-  const post = posts.find((p) => p.id === id);
+  const localPost = posts.find((p) => p.id === id);
+  const post = localPost ?? remotePost;
   const reaction = post?.myReaction ?? null;
+
+  useEffect(() => {
+    if (!localPost && id) {
+      setPostLoading(true);
+      api.get<import("@/utils/api").ApiPost>(`/posts/${id}`)
+        .then((data) => {
+          setRemotePost({
+            id: String(data.id),
+            content: data.content,
+            imageUrl: data.imageUrl,
+            createdAt: new Date(data.createdAt).getTime(),
+            expiresAt: new Date(data.expiresAt).getTime(),
+            worthItCount: data.worthItCount,
+            skipCount: data.skipCount,
+            tempUserId: data.anonymousId,
+            myReaction: data.myReaction,
+            commentCount: data.commentCount,
+            isOwn: data.isOwn,
+          });
+        })
+        .catch(() => {})
+        .finally(() => setPostLoading(false));
+    }
+  }, [id, localPost]);
 
   const fetchComments = useCallback(async () => {
     if (!id) return;
@@ -175,11 +202,17 @@ export default function PostDetailScreen() {
         <TouchableOpacity style={styles.backBtnStandalone} onPress={() => router.back()}>
           <Feather name="arrow-left" size={20} color={colors.text} />
         </TouchableOpacity>
-        <View style={styles.notFound}>
-          <Feather name="alert-circle" size={40} color={colors.textTertiary} />
-          <Text style={styles.notFoundText}>Post not found</Text>
-          <Text style={styles.notFoundSub}>It may have expired or been deleted</Text>
-        </View>
+        {postLoading ? (
+          <View style={styles.notFound}>
+            <ActivityIndicator size="large" color={colors.green} />
+          </View>
+        ) : (
+          <View style={styles.notFound}>
+            <Feather name="alert-circle" size={40} color={colors.textTertiary} />
+            <Text style={styles.notFoundText}>Post not found</Text>
+            <Text style={styles.notFoundSub}>It may have expired or been deleted</Text>
+          </View>
+        )}
       </View>
     );
   }

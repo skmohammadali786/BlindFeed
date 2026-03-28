@@ -92,6 +92,7 @@ export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<ApiNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [appealReportId, setAppealReportId] = useState<number | null>(null);
   const [appealNotifId, setAppealNotifId] = useState<number | null>(null);
   const [appealText, setAppealText] = useState("");
@@ -99,11 +100,13 @@ export default function NotificationsScreen() {
 
   const load = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
+    setLoadError(false);
     try {
       const data = await api.get<ApiNotification[]>("/notifications");
       setNotifications(data);
-    } catch (_) {}
-    finally {
+    } catch (_) {
+      if (!refresh) setLoadError(true);
+    } finally {
       setLoading(false);
       setRefreshing(false);
     }
@@ -178,6 +181,17 @@ export default function NotificationsScreen() {
         {loading ? (
           <View style={styles.center}>
             <ActivityIndicator color={colors.green} />
+          </View>
+        ) : loadError ? (
+          <View style={styles.center}>
+            <View style={styles.emptyIcon}>
+              <Feather name="wifi-off" size={32} color={colors.textTertiary} />
+            </View>
+            <Text style={styles.emptyTitle}>Couldn't load</Text>
+            <Text style={styles.emptySubtitle}>Pull down to try again.</Text>
+            <TouchableOpacity onPress={() => load()} style={{ marginTop: 16 }}>
+              <Text style={{ color: colors.green, fontFamily: "Inter_600SemiBold", fontSize: 14 }}>Retry</Text>
+            </TouchableOpacity>
           </View>
         ) : notifications.length === 0 ? (
           <View style={styles.center}>

@@ -33,18 +33,23 @@ async function getAnonymousId(): Promise<string | null> {
   return AsyncStorage.getItem("bf_user_id");
 }
 
+async function getPermanentId(): Promise<string | null> {
+  return AsyncStorage.getItem("bf_anonymous_id");
+}
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
 ): Promise<T> {
   const base = getApiBase();
-  const anonymousId = await getAnonymousId();
+  const [anonymousId, permanentId] = await Promise.all([getAnonymousId(), getPermanentId()]);
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
   if (anonymousId) headers["x-anonymous-id"] = anonymousId;
+  if (permanentId && permanentId !== anonymousId) headers["x-perm-id"] = permanentId;
 
   let res: Response;
   try {
