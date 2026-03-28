@@ -6,9 +6,12 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   FlatList,
   KeyboardAvoidingView,
   Modal,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,6 +20,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
@@ -24,12 +35,12 @@ import { api, ApiComment, getObjectUrl } from "@/utils/api";
 import { timeAgo } from "@/utils/time";
 import {
   ScreenTransition,
-  FadeSlide,
   AnimatedListItem,
   AnimatedPressable,
   useReactionAnim,
 } from "@/components/Animations";
-import Animated from "react-native-reanimated";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 function parseImageUrls(imageUrl: string | null | undefined): string[] {
   if (!imageUrl) return [];
@@ -54,69 +65,260 @@ function useTick(intervalMs: number) {
   }, [intervalMs]);
 }
 
-function CommentAvatar({ anonymousId, size = 30 }: { anonymousId: string; size?: number }) {
-  const bg = hashColor(anonymousId);
-  const initials = (anonymousId.slice(0, 2) || "??").toUpperCase();
+function timeUntil(ms: number): string {
+  const diff = ms - Date.now();
+  if (diff <= 0) return "Expired";
+  const h = Math.floor(diff / 3_600_000);
+  const m = Math.floor((diff % 3_600_000) / 60_000);
+  if (h >= 48) return `${Math.floor(h / 24)}d left`;
+  if (h >= 1) return `${h}h ${m}m left`;
+  return `${m}m left`;
+}
+
+function AnonymousAvatar({ seed, size = 40 }: { seed: string; size?: number }) {
+  const bg = hashColor(seed);
+  const initials = (seed.slice(0, 2) || "??").toUpperCase();
+  const fontSize = size * 0.36;
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, justifyContent: "center", alignItems: "center" }}>
-      <Text style={{ fontSize: size * 0.36, fontFamily: "Inter_700Bold", color: "#000" }}>{initials}</Text>
+    <View style={{
+      width: size, height: size, borderRadius: size / 2,
+      backgroundColor: bg, justifyContent: "center", alignItems: "center",
+      shadowColor: bg, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4,
+    }}>
+      <Text style={{ fontSize, fontFamily: "Inter_700Bold", color: "#000" }}>{initials}</Text>
     </View>
   );
 }
 
+function ImageCarousel({ urls }: { urls: string[] }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const { colors } = useTheme();
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 32));
+    setActiveIdx(idx);
+  };
+
+  if (urls.length === 1) {
+    return (
+      <Animated.View entering={FadeIn.duration(400)} style={styles.singleImageWrap}>
+        <Image source={{ uri: getObjectUrl(urls[0]) }} style={styles.singleImage} contentFit="cover" />
+      </Animated.View>
+    );
+  }
+
+  return (
+    <View style={styles.carouselWrap}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        snapToInterval={SCREEN_WIDTH - 32}
+        decelerationRate="fast"
+        contentContainerStyle={{ gap: 0 }}
+      >
+        {urls.map((url, i) => (
+          <Image
+            key={i}
+            source={{ uri: getObjectUrl(url) }}
+            style={[styles.carouselImage, { width: SCREEN_WIDTH - 32 }]}
+            contentFit="cover"
+          />
+        ))}
+      </ScrollView>
+      <View style={[styles.dotsRow, { backgroundColor: colors.background }]}>
+        {urls.map((_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.dot,
+              { backgroundColor: i === activeIdx ? colors.green : colors.border, width: i === activeIdx ? 16 : 6 },
+            ]}
+          />
+        ))}
+        <Text style={[styles.dotsCount, { color: colors.textSecondary }]}>{activeIdx + 1}/{urls.length}</Text>
+      </View>
+    </View>
+  );
+}
+
+function VoteBar({ worthPct, colors }: { worthPct: number; colors: ReturnType<typeof useTheme>["colors"] }) {
+  const anim = useSharedValue(0);
+  useEffect(() => {
+    anim.value = withTiming(worthPct / 100, { duration: 700 });
+  }, [worthPct]);
+  const greenStyle = useAnimatedStyle(() => ({ flex: anim.value === 0 ? 0 : anim.value }));
+  const redStyle = useAnimatedStyle(() => ({ flex: anim.value === 1 ? 0 : 1 - anim.value }));
+
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={styles.splitBar}>
+        <Animated.View style={[styles.splitGreen, greenStyle]} />
+        <Animated.View style={[styles.splitRed, redStyle]} />
+      </View>
+      <View style={styles.splitLabels}>
+        <Text style={[styles.splitLabel, { color: colors.green }]}>{worthPct}% Worth it</Text>
+        <Text style={[styles.splitLabel, { color: "#FF3B30" }]}>{100 - worthPct}% Skip</Text>
+      </View>
+    </View>
+  );
+}
+
+function StatCard({ value, label, color, sub }: { value: string | number; label: string; color: string; sub?: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={[statCardStyles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text style={[statCardStyles.value, { color }]}>{value}</Text>
+      <Text style={[statCardStyles.label, { color: colors.textSecondary }]}>{label}</Text>
+      {sub && <Text style={[statCardStyles.sub, { color: colors.textTertiary }]}>{sub}</Text>}
+    </View>
+  );
+}
+const statCardStyles = StyleSheet.create({
+  card: { flex: 1, alignItems: "center", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 8, borderWidth: 1, gap: 3 },
+  value: { fontSize: 22, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
+  label: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase", letterSpacing: 0.5 },
+  sub: { fontSize: 10, fontFamily: "Inter_400Regular" },
+});
+
 function ReactionBtn({
-  active, activeColor, icon, label, count, onPress, colors,
+  active, activeColor, icon, emoji, label, count, onPress, colors,
 }: {
-  active: boolean; activeColor: string; icon: string; label: string;
+  active: boolean; activeColor: string; icon: string; emoji: string; label: string;
   count: number; onPress: () => void; colors: ReturnType<typeof useTheme>["colors"];
 }) {
   const { style: animStyle, trigger } = useReactionAnim();
+  const scale = useSharedValue(1);
+  const scaleStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   return (
     <Animated.View style={[{ flex: 1 }, animStyle]}>
       <TouchableOpacity
         style={[
-          reactionStyles.btn,
+          rxStyles.btn,
           {
             borderColor: active ? activeColor : colors.border,
-            backgroundColor: active ? activeColor : colors.surface,
+            backgroundColor: active ? activeColor + "18" : colors.surface,
           },
         ]}
         onPress={() => { trigger(); onPress(); }}
-        activeOpacity={0.8}
+        activeOpacity={0.75}
       >
-        <View style={[reactionStyles.iconCircle, { backgroundColor: active ? "rgba(255,255,255,0.22)" : `${activeColor}18` }]}>
-          <Feather name={icon as any} size={16} color={active ? "#fff" : activeColor} />
+        <Animated.View style={[rxStyles.emojiWrap, scaleStyle, { backgroundColor: active ? activeColor + "25" : colors.background }]}>
+          <Text style={rxStyles.emoji}>{emoji}</Text>
+        </Animated.View>
+        <View style={rxStyles.labelCol}>
+          <Text style={[rxStyles.label, { color: active ? activeColor : colors.text }]}>{label}</Text>
+          <Text style={[rxStyles.count, { color: active ? activeColor + "AA" : colors.textTertiary }]}>
+            {count.toLocaleString()}
+          </Text>
         </View>
-        <View style={reactionStyles.btnLabels}>
-          <Text style={[reactionStyles.label, { color: active ? "#fff" : colors.text }]}>{label}</Text>
-          <Text style={[reactionStyles.count, { color: active ? "rgba(255,255,255,0.75)" : colors.textSecondary }]}>{count} votes</Text>
-        </View>
+        {active && (
+          <Animated.View entering={FadeIn.duration(200)} style={rxStyles.activeDot}>
+            <Feather name="check-circle" size={16} color={activeColor} />
+          </Animated.View>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );
 }
-
-const reactionStyles = StyleSheet.create({
+const rxStyles = StyleSheet.create({
   btn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    borderWidth: 1.5,
+    flex: 1, flexDirection: "row", alignItems: "center", gap: 12,
+    paddingVertical: 14, paddingHorizontal: 16, borderRadius: 18, borderWidth: 1.5,
   },
-  iconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  btnLabels: { flex: 1, gap: 2 },
-  label: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  emojiWrap: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
+  emoji: { fontSize: 22 },
+  labelCol: { flex: 1, gap: 2 },
+  label: { fontSize: 15, fontFamily: "Inter_700Bold" },
   count: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  activeDot: { marginLeft: "auto" },
+});
+
+function CommentItem({
+  comment,
+  isReply,
+  colors,
+  onReply,
+  onDelete,
+}: {
+  comment: ApiComment;
+  isReply: boolean;
+  colors: ReturnType<typeof useTheme>["colors"];
+  onReply?: () => void;
+  onDelete?: () => void;
+}) {
+  const avatarColor = hashColor(comment.anonymousId);
+  const isOwn = comment.isOwn;
+
+  return (
+    <View style={[cmtStyles.row, isReply && cmtStyles.replyRow]}>
+      {isReply && (
+        <View style={cmtStyles.threadLineWrap}>
+          <View style={[cmtStyles.threadLine, { backgroundColor: avatarColor + "55" }]} />
+        </View>
+      )}
+      <AnonymousAvatar seed={comment.anonymousId} size={isReply ? 26 : 34} />
+      <View style={cmtStyles.bubble}>
+        <View style={[cmtStyles.bubbleInner, {
+          backgroundColor: isOwn ? colors.green + "15" : colors.surface,
+          borderColor: isOwn ? colors.green + "40" : colors.border,
+        }]}>
+          <View style={cmtStyles.metaRow}>
+            <Text style={[cmtStyles.userId, { color: isOwn ? colors.green : colors.textSecondary }]} numberOfLines={1}>
+              {isOwn ? "You" : comment.anonymousId}
+            </Text>
+            {isOwn && (
+              <View style={[cmtStyles.ownBadge, { backgroundColor: colors.green + "25" }]}>
+                <Text style={[cmtStyles.ownBadgeText, { color: colors.green }]}>Author</Text>
+              </View>
+            )}
+            <Text style={[cmtStyles.dot, { color: colors.textTertiary }]}>·</Text>
+            <Text style={[cmtStyles.time, { color: colors.textTertiary }]}>
+              {timeAgo(new Date(comment.createdAt).getTime())}
+            </Text>
+          </View>
+          <Text style={[cmtStyles.text, { color: colors.text }]}>{comment.content}</Text>
+        </View>
+
+        <View style={cmtStyles.actionsRow}>
+          {!isReply && onReply && (
+            <TouchableOpacity onPress={onReply} style={cmtStyles.actionBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="corner-down-right" size={13} color={colors.textTertiary} />
+              <Text style={[cmtStyles.actionText, { color: colors.textTertiary }]}>Reply</Text>
+            </TouchableOpacity>
+          )}
+          {isOwn && onDelete && (
+            <TouchableOpacity onPress={onDelete} style={[cmtStyles.actionBtn, cmtStyles.deleteBtn]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="trash-2" size={13} color="#FF3B30" />
+              <Text style={[cmtStyles.actionText, { color: "#FF3B30" }]}>Delete</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}
+const cmtStyles = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingHorizontal: 16, paddingVertical: 6 },
+  replyRow: { paddingLeft: 32, gap: 8 },
+  threadLineWrap: { width: 12, alignSelf: "stretch", alignItems: "center" },
+  threadLine: { width: 2, flex: 1, borderRadius: 1, marginTop: 4, marginBottom: 4 },
+  bubble: { flex: 1, gap: 6 },
+  bubbleInner: { borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14, gap: 6, borderWidth: 1 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 5, flexWrap: "wrap" },
+  userId: { fontSize: 12, fontFamily: "Inter_700Bold", flexShrink: 1 },
+  ownBadge: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  ownBadgeText: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  dot: { fontSize: 10 },
+  time: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  text: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 21 },
+  actionsRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 4 },
+  actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 2 },
+  deleteBtn: { marginLeft: "auto" as any },
+  actionText: { fontSize: 12, fontFamily: "Inter_500Medium" },
 });
 
 export default function PostDetailScreen() {
@@ -140,6 +342,8 @@ export default function PostDetailScreen() {
   const [deleting, setDeleting] = useState(false);
   const [remotePost, setRemotePost] = useState<import("@/context/AppContext").Post | null>(null);
   const [postLoading, setPostLoading] = useState(false);
+  const [sortNewest, setSortNewest] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const listRef = useRef<FlatList>(null);
 
@@ -186,7 +390,7 @@ export default function PostDetailScreen() {
 
   const handleReact = (type: "worthit" | "skip") => {
     if (!post) return;
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     reactToPost(post.id, type);
   };
 
@@ -194,6 +398,7 @@ export default function PostDetailScreen() {
     if (!post) return;
     await Clipboard.setStringAsync(post.content);
     setCopied(true);
+    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -247,18 +452,26 @@ export default function PostDetailScreen() {
   if (!post) {
     return (
       <View style={[styles.container, { paddingTop: top }]}>
-        <TouchableOpacity style={styles.backBtnStandalone} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={20} color={colors.text} />
-        </TouchableOpacity>
+        <View style={styles.navBar}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.navBtn}>
+            <Feather name="arrow-left" size={20} color={colors.text} />
+          </TouchableOpacity>
+        </View>
         {postLoading ? (
-          <View style={styles.notFound}>
+          <View style={styles.center}>
             <ActivityIndicator size="large" color={colors.green} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading post…</Text>
           </View>
         ) : (
-          <View style={styles.notFound}>
-            <Feather name="alert-circle" size={40} color={colors.textTertiary} />
-            <Text style={styles.notFoundText}>Post not found</Text>
-            <Text style={styles.notFoundSub}>It may have expired or been deleted</Text>
+          <View style={styles.center}>
+            <View style={[styles.emptyIcon, { backgroundColor: colors.surface }]}>
+              <Feather name="file-text" size={32} color={colors.textTertiary} />
+            </View>
+            <Text style={styles.notFoundTitle}>Post not found</Text>
+            <Text style={styles.notFoundSub}>It may have expired or been removed</Text>
+            <TouchableOpacity style={[styles.backHomeBtn, { backgroundColor: colors.surface }]} onPress={() => router.replace("/feed")}>
+              <Text style={[styles.backHomeBtnText, { color: colors.text }]}>Back to feed</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -269,15 +482,27 @@ export default function PostDetailScreen() {
   const worthPct = total > 0 ? Math.round((post.worthItCount / total) * 100) : 0;
   const myWorthIt = reaction === "worthit";
   const mySkip = reaction === "skip";
+  const imageUrls = parseImageUrls(post.imageUrl);
+  const CONTENT_LIMIT = 300;
+  const isLong = post.content.length > CONTENT_LIMIT;
+  const displayContent = isLong && !expanded ? post.content.slice(0, CONTENT_LIMIT) + "…" : post.content;
+
+  const sortedComments = sortNewest
+    ? [...comments].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    : [...comments].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   type ListItem =
     | { type: "header" }
     | { type: "comment"; data: ApiComment }
-    | { type: "reply"; data: ApiComment; parent: ApiComment };
+    | { type: "reply"; data: ApiComment; parent: ApiComment }
+    | { type: "reactions" }
+    | { type: "no-comments" };
 
   const allItems: ListItem[] = [
     { type: "header" },
-    ...comments.flatMap((c) => [
+    { type: "reactions" },
+    ...(comments.length === 0 && !commentsLoading ? [{ type: "no-comments" as const }] : []),
+    ...sortedComments.flatMap((c) => [
       { type: "comment" as const, data: c },
       ...c.replies.map((r) => ({ type: "reply" as const, data: r, parent: c })),
     ]),
@@ -286,124 +511,215 @@ export default function PostDetailScreen() {
   const renderItem = ({ item, index }: { item: ListItem; index: number }) => {
     if (item.type === "header") {
       return (
-        <View style={styles.postSection}>
-          <View style={styles.postTopBar}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <Animated.View entering={FadeInDown.duration(350)} style={styles.postCard}>
+          {/* Nav bar */}
+          <View style={styles.navBar}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.navBtn}>
               <Feather name="arrow-left" size={20} color={colors.text} />
             </TouchableOpacity>
-            <Text style={styles.postDetailLabel}>Post detail</Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <TouchableOpacity onPress={handleCopy} style={styles.copyBtn}>
-                <Feather name={copied ? "check" : "copy"} size={16} color={copied ? colors.green : colors.textSecondary} />
-                {copied && <Text style={styles.copiedLabel}>Copied</Text>}
+            <Text style={styles.navTitle}>Post</Text>
+            <View style={styles.navActions}>
+              <TouchableOpacity onPress={handleCopy} style={[styles.navBtn, copied && { backgroundColor: colors.greenDim }]}>
+                <Feather name={copied ? "check" : "copy"} size={17} color={copied ? colors.green : colors.textSecondary} />
               </TouchableOpacity>
               {!post.isOwn && (
                 <TouchableOpacity
-                  style={styles.copyBtn}
+                  style={styles.navBtn}
                   onPress={() => router.push({ pathname: "/report", params: { postId: post.id } } as any)}
                 >
-                  <Feather name="flag" size={16} color={colors.textSecondary} />
+                  <Feather name="flag" size={17} color={colors.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
           </View>
 
-          {(() => {
-            const imgs = parseImageUrls(post.imageUrl);
-            if (imgs.length === 0) return null;
-            if (imgs.length === 1) {
-              return <Image source={{ uri: getObjectUrl(imgs[0]) }} style={styles.postImage} contentFit="cover" />;
-            }
-            return (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }} contentContainerStyle={{ gap: 8 }}>
-                {imgs.map((url, i) => (
-                  <Image key={i} source={{ uri: getObjectUrl(url) }} style={styles.multiImage} contentFit="cover" />
-                ))}
-              </ScrollView>
-            );
-          })()}
+          {/* Author strip */}
+          <View style={styles.authorStrip}>
+            <AnonymousAvatar seed={post.tempUserId || "anon"} size={42} />
+            <View style={styles.authorInfo}>
+              <View style={styles.authorRow}>
+                <Text style={[styles.authorId, { color: colors.text }]} numberOfLines={1}>
+                  {post.isOwn ? "You" : (post.tempUserId || "Anonymous")}
+                </Text>
+                {post.isOwn && (
+                  <View style={[styles.ownBadge, { backgroundColor: colors.green }]}>
+                    <Text style={styles.ownBadgeText}>Your post</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.authorMeta}>
+                <Feather name="clock" size={11} color={colors.textTertiary} />
+                <Text style={[styles.authorMetaText, { color: colors.textTertiary }]}>{timeAgo(post.createdAt)}</Text>
+                {post.expiresAt && (
+                  <>
+                    <Text style={[styles.authorMetaText, { color: colors.textTertiary }]}>·</Text>
+                    <Feather name="eye-off" size={11} color={colors.textTertiary} />
+                    <Text style={[styles.authorMetaText, { color: colors.textTertiary }]}>
+                      {timeUntil(post.expiresAt)}
+                    </Text>
+                  </>
+                )}
+              </View>
+            </View>
+            <View style={[styles.anonChip, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Feather name="shield" size={11} color={colors.textSecondary} />
+              <Text style={[styles.anonChipText, { color: colors.textSecondary }]}>Anonymous</Text>
+            </View>
+          </View>
 
+          {/* Images */}
+          {imageUrls.length > 0 && (
+            <View style={styles.mediaWrap}>
+              <ImageCarousel urls={imageUrls} />
+            </View>
+          )}
+
+          {/* Video */}
           {post.videoUrl && (
-            <View style={styles.videoContainer}>
-              <Feather name="play-circle" size={40} color="#fff" />
-              <Text style={styles.videoNote}>Video attached — open in app to play</Text>
+            <View style={[styles.videoContainer, { backgroundColor: colors.surfaceElevated }]}>
+              <View style={[styles.videoPlayBtn, { backgroundColor: colors.green }]}>
+                <Feather name="play" size={22} color="#000" />
+              </View>
+              <Text style={[styles.videoNote, { color: colors.textSecondary }]}>Video attached</Text>
             </View>
           )}
 
-          <Text style={styles.postContent}>{post.content}</Text>
-
-          <Text style={styles.postTime}>{timeAgo(post.createdAt)}</Text>
-
-          <View style={styles.statsRow}>
-            {[
-              { value: post.worthItCount, label: "Worth it", color: colors.green },
-              { value: post.skipCount, label: "Skip", color: "#FF3B30" },
-              { value: `${worthPct}%`, label: "Positive", color: colors.text },
-              { value: comments.length, label: "Comments", color: colors.text },
-            ].map((s, i) => (
-              <React.Fragment key={s.label}>
-                {i > 0 && <View style={styles.statDivider} />}
-                <View style={styles.statItem}>
-                  <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-                  <Text style={styles.statLabel}>{s.label}</Text>
-                </View>
-              </React.Fragment>
-            ))}
+          {/* Content */}
+          <View style={styles.contentWrap}>
+            <Text style={[styles.postContent, { color: colors.text }]}>
+              {displayContent}
+            </Text>
+            {isLong && (
+              <TouchableOpacity onPress={() => setExpanded((v) => !v)} style={styles.readMoreBtn}>
+                <Text style={[styles.readMoreText, { color: colors.green }]}>
+                  {expanded ? "Show less" : "Read more"}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
+          {/* Stats cards */}
+          <View style={styles.statsGrid}>
+            <StatCard
+              value={post.worthItCount}
+              label="Worth it"
+              color={colors.green}
+              sub={total > 0 ? `${worthPct}%` : undefined}
+            />
+            <StatCard
+              value={post.skipCount}
+              label="Skip"
+              color="#FF3B30"
+              sub={total > 0 ? `${100 - worthPct}%` : undefined}
+            />
+            <StatCard
+              value={comments.length}
+              label="Comments"
+              color={colors.text}
+            />
+          </View>
+
+          {/* Vote bar */}
           {total > 0 && (
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${worthPct}%` as `${number}%` }]} />
+            <View style={styles.voteBarWrap}>
+              <VoteBar worthPct={worthPct} colors={colors} />
+              <Text style={[styles.voteBarSummary, { color: colors.textSecondary }]}>
+                {total.toLocaleString()} vote{total !== 1 ? "s" : ""} total
+              </Text>
             </View>
           )}
 
-          <View style={styles.commentsHeaderRow}>
-            <Text style={styles.commentsHeader}>Comments</Text>
+          {/* Manage own post */}
+          {post.isOwn && (
+            <TouchableOpacity
+              style={[styles.managePostBtn, { backgroundColor: colors.greenDim, borderColor: colors.green + "40" }]}
+              onPress={() => { router.back(); router.push("/my-posts"); }}
+              activeOpacity={0.8}
+            >
+              <Feather name="layers" size={15} color={colors.green} />
+              <Text style={[styles.managePostText, { color: colors.green }]}>Manage in My Posts</Text>
+              <Feather name="chevron-right" size={15} color={colors.green} />
+            </TouchableOpacity>
+          )}
+
+          {/* Comments header */}
+          <View style={styles.commentsHeader}>
+            <Feather name="message-circle" size={16} color={colors.text} />
+            <Text style={[styles.commentsTitle, { color: colors.text }]}>
+              Comments {comments.length > 0 ? `(${comments.length})` : ""}
+            </Text>
             {commentsLoading && <ActivityIndicator size="small" color={colors.green} />}
+            {comments.length > 1 && (
+              <TouchableOpacity
+                style={[styles.sortToggle, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => setSortNewest((v) => !v)}
+              >
+                <Feather name={sortNewest ? "arrow-down" : "arrow-up"} size={12} color={colors.textSecondary} />
+                <Text style={[styles.sortToggleText, { color: colors.textSecondary }]}>
+                  {sortNewest ? "Newest" : "Oldest"}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
+        </Animated.View>
+      );
+    }
 
-          {!commentsLoading && comments.length === 0 && (
-            <View style={styles.noCommentsRow}>
-              <Feather name="message-circle" size={20} color={colors.textTertiary} />
-              <Text style={styles.noComments}>Be the first to comment</Text>
-            </View>
-          )}
+    if (item.type === "reactions") {
+      if (post.isOwn) return null;
+      return (
+        <Animated.View entering={FadeInDown.delay(120).duration(350)} style={styles.reactionsBlock}>
+          <Text style={[styles.reactionsLabel, { color: colors.textSecondary }]}>
+            {reaction ? "Your vote is recorded" : "What do you think?"}
+          </Text>
+          <View style={styles.reactionRow}>
+            <ReactionBtn
+              active={myWorthIt}
+              activeColor={colors.green}
+              icon="check"
+              emoji="✅"
+              label="Worth it"
+              count={post.worthItCount}
+              onPress={() => handleReact("worthit")}
+              colors={colors}
+            />
+            <ReactionBtn
+              active={mySkip}
+              activeColor="#FF3B30"
+              icon="x"
+              emoji="⏭️"
+              label="Skip"
+              count={post.skipCount}
+              onPress={() => handleReact("skip")}
+              colors={colors}
+            />
+          </View>
+        </Animated.View>
+      );
+    }
+
+    if (item.type === "no-comments") {
+      return (
+        <View style={styles.noCommentsBlock}>
+          <Text style={styles.noCommentsEmoji}>💬</Text>
+          <Text style={[styles.noCommentsTitle, { color: colors.text }]}>No comments yet</Text>
+          <Text style={[styles.noCommentsSub, { color: colors.textSecondary }]}>Be the first to share your thoughts</Text>
         </View>
       );
     }
 
     const isReply = item.type === "reply";
     const comment = item.data;
-    const avatarColor = hashColor(comment.anonymousId);
 
     return (
       <AnimatedListItem index={index}>
-        <View style={[styles.commentRow, isReply && styles.replyRow]}>
-          {isReply && <View style={[styles.replyThreadLine, { backgroundColor: avatarColor + "55" }]} />}
-          <CommentAvatar anonymousId={comment.anonymousId} size={isReply ? 26 : 32} />
-          <View style={styles.commentBubble}>
-            <View style={styles.commentMeta}>
-              <Text style={styles.commentUserId} numberOfLines={1}>
-                {comment.isOwn ? "You" : comment.anonymousId}
-              </Text>
-              <Text style={styles.commentDot}>·</Text>
-              <Text style={styles.commentTime}>{timeAgo(new Date(comment.createdAt).getTime())}</Text>
-              <View style={{ flex: 1 }} />
-              {!isReply && (
-                <TouchableOpacity onPress={() => handleReply(comment)} style={styles.replyBtn}>
-                  <Feather name="corner-down-right" size={12} color={colors.textSecondary} />
-                  <Text style={styles.replyBtnText}>Reply</Text>
-                </TouchableOpacity>
-              )}
-              {comment.isOwn && (
-                <TouchableOpacity onPress={() => handleDeleteComment(comment.id)} style={styles.deleteBtn}>
-                  <Feather name="trash-2" size={13} color="#FF3B30" />
-                </TouchableOpacity>
-              )}
-            </View>
-            <Text style={[styles.commentText, comment.isOwn && styles.commentTextOwn]}>{comment.content}</Text>
-          </View>
-        </View>
+        <CommentItem
+          comment={comment}
+          isReply={isReply}
+          colors={colors}
+          onReply={!isReply ? () => handleReply(comment) : undefined}
+          onDelete={comment.isOwn ? () => handleDeleteComment(comment.id) : undefined}
+        />
       </AnimatedListItem>
     );
   };
@@ -420,14 +736,17 @@ export default function PostDetailScreen() {
           data={allItems}
           keyExtractor={(item, i) =>
             item.type === "header" ? "header" :
+            item.type === "reactions" ? "reactions" :
+            item.type === "no-comments" ? "no-comments" :
             item.type === "reply" ? `reply-${item.data.id}` :
             `comment-${item.data.id}-${i}`
           }
           renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 12 }}
+          contentContainerStyle={{ paddingBottom: 16 }}
           showsVerticalScrollIndicator={false}
         />
 
+        {/* Delete comment modal */}
         <Modal
           visible={deleteCommentId !== null}
           transparent
@@ -435,25 +754,28 @@ export default function PostDetailScreen() {
           onRequestClose={() => setDeleteCommentId(null)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modal}>
-              <Text style={styles.modalTitle}>Delete comment?</Text>
-              <Text style={styles.modalBody}>This action cannot be undone.</Text>
+            <View style={[styles.modal, { backgroundColor: colors.surface }]}>
+              <View style={[styles.modalIconWrap, { backgroundColor: "rgba(255,59,48,0.12)" }]}>
+                <Feather name="trash-2" size={24} color="#FF3B30" />
+              </View>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Delete comment?</Text>
+              <Text style={[styles.modalBody, { color: colors.textSecondary }]}>This action cannot be undone.</Text>
               <View style={styles.modalActions}>
                 <TouchableOpacity
-                  style={styles.modalCancel}
+                  style={[styles.modalCancel, { backgroundColor: colors.background, borderColor: colors.border }]}
                   onPress={() => setDeleteCommentId(null)}
                 >
-                  <Text style={styles.modalCancelText}>Cancel</Text>
+                  <Text style={[styles.modalCancelText, { color: colors.text }]}>Keep it</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.modalConfirm, { backgroundColor: "#FF3B30" }]}
+                  style={styles.modalConfirm}
                   onPress={confirmDeleteComment}
                   disabled={deleting}
                 >
                   {deleting ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text style={[styles.modalConfirmText, { color: "#fff" }]}>Delete</Text>
+                    <Text style={styles.modalConfirmText}>Delete</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -461,87 +783,59 @@ export default function PostDetailScreen() {
           </View>
         </Modal>
 
-        <View style={[styles.footer, { paddingBottom: bottom || 12 }]}>
-          {post.isOwn ? (
-            <TouchableOpacity
-              style={styles.managePostBtn}
-              onPress={() => { router.back(); router.push("/my-posts"); }}
-              activeOpacity={0.8}
-            >
-              <Feather name="layers" size={16} color={colors.green} />
-              <Text style={styles.managePostText}>Manage this post in My Posts</Text>
-              <Feather name="arrow-right" size={16} color={colors.green} />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.reactionRow}>
-              <ReactionBtn
-                active={myWorthIt}
-                activeColor={colors.green}
-                icon="check"
-                label="Worth it"
-                count={post.worthItCount}
-                onPress={() => handleReact("worthit")}
-                colors={colors}
-              />
-              <ReactionBtn
-                active={mySkip}
-                activeColor="#FF3B30"
-                icon="x"
-                label="Skip"
-                count={post.skipCount}
-                onPress={() => handleReact("skip")}
-                colors={colors}
-              />
-            </View>
-          )}
-
-          <View style={styles.footerDivider} />
-
+        {/* Footer: comment input */}
+        <View style={[styles.footer, { paddingBottom: bottom, backgroundColor: colors.background, borderTopColor: colors.border }]}>
           {replyingTo && (
-            <View style={styles.replyingToBar}>
+            <Animated.View entering={FadeInDown.duration(200)} style={[styles.replyBar, { backgroundColor: colors.greenDim, borderColor: colors.green + "40" }]}>
               <Feather name="corner-down-right" size={13} color={colors.green} />
-              <Text style={styles.replyingToText} numberOfLines={1}>
-                Replying: "{replyingTo.content.slice(0, 60)}{replyingTo.content.length > 60 ? "…" : ""}"
+              <Text style={[styles.replyBarText, { color: colors.green }]} numberOfLines={1}>
+                Replying to: "{replyingTo.content.slice(0, 50)}{replyingTo.content.length > 50 ? "…" : ""}"
               </Text>
-              <TouchableOpacity onPress={() => setReplyingTo(null)} style={styles.cancelReplyBtn}>
-                <Feather name="x" size={14} color={colors.textSecondary} />
+              <TouchableOpacity onPress={() => setReplyingTo(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x" size={14} color={colors.green} />
               </TouchableOpacity>
-            </View>
+            </Animated.View>
           )}
 
           {commentError && (
-            <View style={styles.commentErrorRow}>
+            <View style={[styles.errorBar, { backgroundColor: "rgba(255,59,48,0.1)" }]}>
               <Feather name="alert-circle" size={13} color="#FF3B30" />
-              <Text style={styles.commentErrorText}>{commentError}</Text>
+              <Text style={styles.errorText}>{commentError}</Text>
               <TouchableOpacity onPress={() => setCommentError(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Feather name="x" size={13} color="#FF3B30" />
               </TouchableOpacity>
             </View>
           )}
 
-          <View style={styles.inputRow}>
+          <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <TextInput
               ref={inputRef}
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               value={commentText}
               onChangeText={(t) => { setCommentText(t); if (commentError) setCommentError(null); }}
-              placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
+              placeholder={replyingTo ? "Write a reply…" : "Add a comment…"}
               placeholderTextColor={colors.textTertiary}
               multiline
               maxLength={300}
-              returnKeyType="default"
             />
             <AnimatedPressable
               scaleTo={0.88}
               onPress={handleSubmitComment}
-              style={[styles.sendBtn, (!commentText.trim() || submitting) && styles.sendBtnDisabled]}
+              style={[styles.sendBtn, { backgroundColor: commentText.trim() ? colors.green : colors.border }]}
             >
               {submitting ? (
                 <ActivityIndicator size="small" color="#000" />
               ) : (
-                <Feather name="send" size={16} color={commentText.trim() ? "#000" : colors.textTertiary} />
+                <Feather name="send" size={15} color={commentText.trim() ? "#000" : colors.textTertiary} />
               )}
             </AnimatedPressable>
+          </View>
+
+          <View style={[styles.anonFooterNote, { borderTopColor: colors.border }]}>
+            <Feather name="eye-off" size={11} color={colors.textTertiary} />
+            <Text style={[styles.anonFooterText, { color: colors.textTertiary }]}>
+              Comments are anonymous — no one knows it's you
+            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -549,246 +843,171 @@ export default function PostDetailScreen() {
   );
 }
 
+const styles = StyleSheet.create({} as any);
+
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
 
-    backBtnStandalone: { margin: 16, padding: 4 },
-
-    postSection: { paddingHorizontal: 16, paddingBottom: 8 },
-    postTopBar: {
+    navBar: {
       flexDirection: "row",
       alignItems: "center",
+      paddingHorizontal: 12,
       paddingVertical: 10,
-      marginBottom: 4,
     },
-    backBtn: { padding: 4, marginRight: 8 },
-    postDetailLabel: {
-      flex: 1,
-      fontSize: 16,
-      fontFamily: "Inter_600SemiBold",
+    navBtn: {
+      width: 36, height: 36, borderRadius: 18,
+      justifyContent: "center", alignItems: "center",
+      backgroundColor: colors.surface,
+    },
+    navTitle: {
+      flex: 1, textAlign: "center",
+      fontSize: 16, fontFamily: "Inter_600SemiBold",
       color: colors.text,
     },
-    copyBtn: { flexDirection: "row", alignItems: "center", gap: 5, padding: 4 },
-    copiedLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.green },
+    navActions: { flexDirection: "row", gap: 8 },
 
-    postImage: { width: "100%", height: 220, borderRadius: 14, marginBottom: 14 },
-    multiImage: { width: 200, height: 200, borderRadius: 12 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, paddingHorizontal: 32 },
+    emptyIcon: { width: 72, height: 72, borderRadius: 36, justifyContent: "center", alignItems: "center" },
+    notFoundTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: colors.text },
+    notFoundSub: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary, textAlign: "center" },
+    backHomeBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14, marginTop: 8 },
+    backHomeBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+    loadingText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+
+    postCard: { paddingBottom: 8 },
+
+    authorStrip: {
+      flexDirection: "row", alignItems: "center", gap: 12,
+      paddingHorizontal: 16, paddingVertical: 14,
+    },
+    authorInfo: { flex: 1, gap: 4 },
+    authorRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    authorId: { fontSize: 14, fontFamily: "Inter_700Bold", flexShrink: 1 },
+    ownBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+    ownBadgeText: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#000" },
+    authorMeta: { flexDirection: "row", alignItems: "center", gap: 5, flexWrap: "wrap" },
+    authorMetaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
+    anonChip: {
+      flexDirection: "row", alignItems: "center", gap: 4,
+      paddingHorizontal: 10, paddingVertical: 5,
+      borderRadius: 20, borderWidth: 1,
+    },
+    anonChipText: { fontSize: 11, fontFamily: "Inter_500Medium" },
+
+    mediaWrap: { paddingHorizontal: 16, marginBottom: 14 },
+
     videoContainer: {
-      backgroundColor: "#1C1C1E",
-      borderRadius: 14,
-      height: 140,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: 14,
-      gap: 8,
+      marginHorizontal: 16, borderRadius: 16, height: 160,
+      justifyContent: "center", alignItems: "center", gap: 12, marginBottom: 14,
     },
-    videoNote: { color: "#8E8E93", fontSize: 13, fontFamily: "Inter_400Regular" },
-    postContent: {
-      fontSize: 20,
-      fontFamily: "Inter_400Regular",
-      color: colors.text,
-      lineHeight: 30,
-      letterSpacing: -0.2,
-      marginBottom: 12,
-    },
-    postTime: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.textSecondary, marginBottom: 14 },
+    videoPlayBtn: { width: 56, height: 56, borderRadius: 28, justifyContent: "center", alignItems: "center" },
+    videoNote: { fontSize: 13, fontFamily: "Inter_400Regular" },
 
-    statsRow: {
-      flexDirection: "row",
-      backgroundColor: colors.surface,
-      borderRadius: 14,
-      padding: 14,
-      marginBottom: 10,
-      alignItems: "center",
-    },
-    statItem: { flex: 1, alignItems: "center", gap: 3 },
-    statValue: { fontSize: 17, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
-    statLabel: { fontSize: 10, fontFamily: "Inter_400Regular", color: colors.textSecondary },
-    statDivider: { width: 1, height: 30, backgroundColor: colors.border },
+    contentWrap: { paddingHorizontal: 16, marginBottom: 16, gap: 8 },
+    postContent: { fontSize: 19, fontFamily: "Inter_400Regular", lineHeight: 29, letterSpacing: -0.2 },
+    readMoreBtn: { alignSelf: "flex-start" },
+    readMoreText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
 
-    progressBar: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: "hidden", marginBottom: 16 },
-    progressFill: { height: 4, backgroundColor: colors.green },
+    statsGrid: { flexDirection: "row", gap: 10, paddingHorizontal: 16, marginBottom: 12 },
 
-    commentsHeaderRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4, marginBottom: 8 },
-    commentsHeader: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: colors.text },
-    noCommentsRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12 },
-    noComments: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary },
+    voteBarWrap: { paddingHorizontal: 16, marginBottom: 16, gap: 6 },
+    voteBarSummary: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center" },
 
-    commentRow: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: 10,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
+    managePostBtn: {
+      flexDirection: "row", alignItems: "center", gap: 10,
+      marginHorizontal: 16, marginBottom: 14,
+      paddingHorizontal: 16, paddingVertical: 13,
+      borderRadius: 14, borderWidth: 1,
     },
-    replyRow: {
-      paddingLeft: 36,
-      gap: 8,
+    managePostText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium" },
+
+    commentsHeader: {
+      flexDirection: "row", alignItems: "center", gap: 8,
+      paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12,
+      borderTopWidth: 1, borderTopColor: colors.border,
     },
-    replyThreadLine: {
-      width: 2,
-      alignSelf: "stretch",
-      borderRadius: 1,
-      minHeight: 20,
-      marginTop: 4,
+    commentsTitle: { flex: 1, fontSize: 15, fontFamily: "Inter_700Bold" },
+    sortToggle: {
+      flexDirection: "row", alignItems: "center", gap: 4,
+      paddingHorizontal: 10, paddingVertical: 5,
+      borderRadius: 12, borderWidth: 1,
     },
-    commentBubble: {
-      flex: 1,
-      backgroundColor: colors.surface,
-      borderRadius: 14,
-      padding: 12,
-      gap: 6,
-    },
-    commentMeta: { flexDirection: "row", alignItems: "center", gap: 5 },
-    commentUserId: {
-      fontSize: 11,
-      fontFamily: "Inter_600SemiBold",
-      color: colors.green,
-      flexShrink: 1,
-    },
-    commentDot: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary },
-    commentTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textSecondary },
-    replyBtn: { flexDirection: "row", alignItems: "center", gap: 3 },
-    replyBtnText: { fontSize: 11, fontFamily: "Inter_500Medium", color: colors.textSecondary },
-    deleteBtn: { padding: 2 },
-    commentText: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.text, lineHeight: 20 },
-    commentTextOwn: { color: colors.text },
+    sortToggleText: { fontSize: 11, fontFamily: "Inter_500Medium" },
+
+    reactionsBlock: { paddingHorizontal: 16, paddingBottom: 16, gap: 10 },
+    reactionsLabel: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+    reactionRow: { flexDirection: "row", gap: 12 },
+
+    noCommentsBlock: { alignItems: "center", paddingVertical: 32, gap: 8 },
+    noCommentsEmoji: { fontSize: 36 },
+    noCommentsTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
+    noCommentsSub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
 
     footer: {
-      backgroundColor: colors.background,
       borderTopWidth: 1,
-      borderTopColor: colors.border,
       paddingTop: 10,
       paddingHorizontal: 12,
       gap: 8,
     },
-    reactionRow: { flexDirection: "row", gap: 10 },
-    managePostBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      backgroundColor: colors.greenDim,
-      borderRadius: 14,
-      paddingVertical: 14,
+    replyBar: {
+      flexDirection: "row", alignItems: "center", gap: 8,
+      paddingHorizontal: 12, paddingVertical: 8,
+      borderRadius: 10, borderWidth: 1,
     },
-    managePostText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: colors.green, flex: 1, textAlign: "center" },
-    footerDivider: { height: 1, backgroundColor: colors.border, marginHorizontal: -12 },
-
-    replyingToBar: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      backgroundColor: colors.greenDim,
-      borderRadius: 8,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
+    replyBarText: { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium" },
+    errorBar: {
+      flexDirection: "row", alignItems: "center", gap: 8,
+      paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
     },
-    replyingToText: {
-      flex: 1,
-      fontSize: 12,
-      fontFamily: "Inter_400Regular",
-      color: colors.text,
+    errorText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF3B30" },
+    inputRow: {
+      flexDirection: "row", alignItems: "flex-end", gap: 10,
+      borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
+      borderWidth: 1, minHeight: 46,
     },
-    cancelReplyBtn: { padding: 2 },
-
-    inputRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingTop: 2 },
     input: {
-      flex: 1,
-      backgroundColor: colors.surface,
-      borderRadius: 20,
-      paddingHorizontal: 14,
-      paddingVertical: 9,
-      fontSize: 14,
-      fontFamily: "Inter_400Regular",
-      color: colors.text,
-      maxHeight: 90,
+      flex: 1, fontSize: 15, fontFamily: "Inter_400Regular",
+      maxHeight: 100, paddingTop: 4,
     },
     sendBtn: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      backgroundColor: colors.green,
-      justifyContent: "center",
-      alignItems: "center",
+      width: 36, height: 36, borderRadius: 18,
+      justifyContent: "center", alignItems: "center",
     },
-    sendBtnDisabled: { backgroundColor: colors.surface },
+    anonFooterNote: {
+      flexDirection: "row", alignItems: "center", gap: 5,
+      justifyContent: "center", paddingTop: 8, borderTopWidth: 1,
+    },
+    anonFooterText: { fontSize: 11, fontFamily: "Inter_400Regular" },
 
-    commentErrorRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 7,
-      backgroundColor: "rgba(255,59,48,0.08)",
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-    },
-    commentErrorText: {
-      flex: 1,
-      fontSize: 13,
-      fontFamily: "Inter_400Regular",
-      color: "#FF3B30",
-    },
-
-    notFound: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
-    notFoundText: { fontSize: 18, fontFamily: "Inter_600SemiBold", color: colors.text },
-    notFoundSub: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary },
-
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.6)",
-      justifyContent: "center",
-      alignItems: "center",
-      paddingHorizontal: 32,
-    },
-    modal: {
-      backgroundColor: colors.surface,
-      borderRadius: 18,
-      padding: 24,
-      width: "100%",
-      gap: 12,
-    },
-    modalTitle: {
-      fontSize: 17,
-      fontFamily: "Inter_700Bold",
-      color: colors.text,
-      textAlign: "center",
-    },
-    modalBody: {
-      fontSize: 14,
-      fontFamily: "Inter_400Regular",
-      color: colors.textSecondary,
-      textAlign: "center",
-      lineHeight: 20,
-    },
-    modalActions: {
-      flexDirection: "row",
-      gap: 10,
-      marginTop: 8,
-    },
-    modalCancel: {
-      flex: 1,
-      paddingVertical: 13,
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: 12,
-      alignItems: "center",
-    },
-    modalCancelText: {
-      fontSize: 15,
-      fontFamily: "Inter_500Medium",
-      color: colors.text,
-    },
-    modalConfirm: {
-      flex: 1,
-      paddingVertical: 13,
-      borderRadius: 12,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    modalConfirmText: {
-      fontSize: 15,
-      fontFamily: "Inter_600SemiBold",
-    },
+    modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 24 },
+    modal: { width: "100%", borderRadius: 20, padding: 24, gap: 8 },
+    modalIconWrap: { alignSelf: "center", width: 56, height: 56, borderRadius: 28, justifyContent: "center", alignItems: "center", marginBottom: 4 },
+    modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", textAlign: "center" },
+    modalBody: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 21, marginBottom: 8 },
+    modalActions: { flexDirection: "row", gap: 10 },
+    modalCancel: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: "center", borderWidth: 1 },
+    modalCancelText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+    modalConfirm: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: "center", backgroundColor: "#FF3B30" },
+    modalConfirmText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#fff" },
   });
 }
+
+const styles2 = StyleSheet.create({
+  singleImageWrap: { borderRadius: 16, overflow: "hidden", marginBottom: 0 },
+  singleImage: { width: "100%", height: 260, borderRadius: 16 },
+  carouselWrap: { marginBottom: 0 },
+  carouselImage: { height: 260, borderRadius: 16 },
+  dotsRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 10 },
+  dot: { height: 6, borderRadius: 3 },
+  dotsCount: { fontSize: 11, fontFamily: "Inter_400Regular", marginLeft: 6 },
+  splitBar: { flexDirection: "row", height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: "#FF3B3022" },
+  splitGreen: { backgroundColor: "#3DDB85" },
+  splitRed: { backgroundColor: "#FF3B30" },
+  splitLabels: { flexDirection: "row", justifyContent: "space-between" },
+  splitLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+});
+
+const { singleImageWrap, singleImage, carouselWrap, carouselImage, dotsRow, dot, dotsCount, splitBar, splitGreen, splitRed, splitLabels, splitLabel } = styles2;
+
+Object.assign(styles, styles2);
