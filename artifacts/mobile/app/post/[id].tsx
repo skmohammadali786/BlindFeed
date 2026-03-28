@@ -101,14 +101,14 @@ function ImageCarousel({ urls }: { urls: string[] }) {
 
   if (urls.length === 1) {
     return (
-      <Animated.View entering={FadeIn.duration(400)} style={styles.singleImageWrap}>
-        <Image source={{ uri: getObjectUrl(urls[0]) }} style={styles.singleImage} contentFit="cover" />
+      <Animated.View entering={FadeIn.duration(400)} style={carouselStyles.singleImageWrap}>
+        <Image source={{ uri: getObjectUrl(urls[0]) }} style={carouselStyles.singleImage} contentFit="cover" />
       </Animated.View>
     );
   }
 
   return (
-    <View style={styles.carouselWrap}>
+    <View style={carouselStyles.carouselWrap}>
       <ScrollView
         horizontal
         pagingEnabled
@@ -123,22 +123,22 @@ function ImageCarousel({ urls }: { urls: string[] }) {
           <Image
             key={i}
             source={{ uri: getObjectUrl(url) }}
-            style={[styles.carouselImage, { width: SCREEN_WIDTH - 32 }]}
+            style={[carouselStyles.carouselImage, { width: SCREEN_WIDTH - 32 }]}
             contentFit="cover"
           />
         ))}
       </ScrollView>
-      <View style={[styles.dotsRow, { backgroundColor: colors.background }]}>
+      <View style={[carouselStyles.dotsRow, { backgroundColor: colors.background }]}>
         {urls.map((_, i) => (
           <View
             key={i}
             style={[
-              styles.dot,
+              carouselStyles.dot,
               { backgroundColor: i === activeIdx ? colors.green : colors.border, width: i === activeIdx ? 16 : 6 },
             ]}
           />
         ))}
-        <Text style={[styles.dotsCount, { color: colors.textSecondary }]}>{activeIdx + 1}/{urls.length}</Text>
+        <Text style={[carouselStyles.dotsCount, { color: colors.textSecondary }]}>{activeIdx + 1}/{urls.length}</Text>
       </View>
     </View>
   );
@@ -154,13 +154,13 @@ function VoteBar({ worthPct, colors }: { worthPct: number; colors: ReturnType<ty
 
   return (
     <View style={{ gap: 6 }}>
-      <View style={styles.splitBar}>
-        <Animated.View style={[styles.splitGreen, greenStyle]} />
-        <Animated.View style={[styles.splitRed, redStyle]} />
+      <View style={[voteBarStyles.splitBar, { backgroundColor: colors.border }]}>
+        <Animated.View style={[voteBarStyles.splitGreen, greenStyle]} />
+        <Animated.View style={[voteBarStyles.splitRed, redStyle]} />
       </View>
-      <View style={styles.splitLabels}>
-        <Text style={[styles.splitLabel, { color: colors.green }]}>{worthPct}% Worth it</Text>
-        <Text style={[styles.splitLabel, { color: "#FF3B30" }]}>{100 - worthPct}% Skip</Text>
+      <View style={voteBarStyles.splitLabels}>
+        <Text style={[voteBarStyles.splitLabel, { color: colors.green }]}>{worthPct}% Worth it</Text>
+        <Text style={[voteBarStyles.splitLabel, { color: "#FF3B30" }]}>{100 - worthPct}% Skip</Text>
       </View>
     </View>
   );
@@ -843,7 +843,23 @@ export default function PostDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({} as any);
+const carouselStyles = StyleSheet.create({
+  singleImageWrap: { borderRadius: 16, overflow: "hidden" },
+  singleImage: { width: "100%", height: 260, borderRadius: 16 },
+  carouselWrap: {},
+  carouselImage: { height: 260, borderRadius: 16 },
+  dotsRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 10 },
+  dot: { height: 6, borderRadius: 3 },
+  dotsCount: { fontSize: 11, fontFamily: "Inter_400Regular", marginLeft: 6 },
+});
+
+const voteBarStyles = StyleSheet.create({
+  splitBar: { flexDirection: "row", height: 8, borderRadius: 4, overflow: "hidden" },
+  splitGreen: { backgroundColor: "#3DDB85" },
+  splitRed: { backgroundColor: "#FF3B30" },
+  splitLabels: { flexDirection: "row", justifyContent: "space-between" },
+  splitLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+});
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
@@ -993,21 +1009,3 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   });
 }
 
-const styles2 = StyleSheet.create({
-  singleImageWrap: { borderRadius: 16, overflow: "hidden", marginBottom: 0 },
-  singleImage: { width: "100%", height: 260, borderRadius: 16 },
-  carouselWrap: { marginBottom: 0 },
-  carouselImage: { height: 260, borderRadius: 16 },
-  dotsRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 10 },
-  dot: { height: 6, borderRadius: 3 },
-  dotsCount: { fontSize: 11, fontFamily: "Inter_400Regular", marginLeft: 6 },
-  splitBar: { flexDirection: "row", height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: "#FF3B3022" },
-  splitGreen: { backgroundColor: "#3DDB85" },
-  splitRed: { backgroundColor: "#FF3B30" },
-  splitLabels: { flexDirection: "row", justifyContent: "space-between" },
-  splitLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
-});
-
-const { singleImageWrap, singleImage, carouselWrap, carouselImage, dotsRow, dot, dotsCount, splitBar, splitGreen, splitRed, splitLabels, splitLabel } = styles2;
-
-Object.assign(styles, styles2);
