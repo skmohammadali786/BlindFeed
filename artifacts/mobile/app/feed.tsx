@@ -421,10 +421,10 @@ export default function FeedScreen() {
 
   return (
     <ScreenTransition>
-      <View style={[styles.container, { paddingTop: top }]}>
+      <View style={styles.container}>
 
         {/* Animated header — slides away on scroll down, back on scroll up */}
-        <Animated.View style={[styles.header, headerAnimStyle]}>
+        <Animated.View style={[styles.header, headerAnimStyle, { top }]}>
           <AnimatedPressable scaleTo={0.88} onPress={() => setMenuVisible(true)} style={styles.avatarBtn}>
             <View style={styles.avatar}>
               <Feather name="user" size={16} color={colors.textSecondary} />
@@ -452,7 +452,7 @@ export default function FeedScreen() {
         </Animated.View>
 
         {newPostsBanner && (
-          <Animated.View entering={FadeInDown.duration(350).springify().damping(14)} exiting={FadeOutUp.duration(220)} style={styles.newPostsBannerWrap}>
+          <Animated.View entering={FadeInDown.duration(350).springify().damping(14)} exiting={FadeOutUp.duration(220)} style={[styles.newPostsBannerWrap, { top: top + HEADER_HEIGHT + 10 }]}>
             <TouchableOpacity style={styles.newPostsBanner} onPress={handleRefresh} activeOpacity={0.88}>
               <View style={[styles.newPostsBannerIcon, { backgroundColor: colors.greenDim }]}>
                 <Feather name="refresh-cw" size={16} color={colors.green} />
@@ -473,12 +473,12 @@ export default function FeedScreen() {
         )}
 
         {feedLoading && activePosts.length === 0 ? (
-          <FadeSlide delay={100} style={styles.loadingContainer}>
+          <FadeSlide delay={100} style={[styles.loadingContainer, { paddingTop: top + HEADER_HEIGHT }]}>
             <ActivityIndicator size="large" color={colors.green} />
             <Text style={styles.loadingText}>Loading posts...</Text>
           </FadeSlide>
         ) : feedError ? (
-          <FadeSlide delay={100} style={styles.errorContainer}>
+          <FadeSlide delay={100} style={[styles.errorContainer, { paddingTop: top + HEADER_HEIGHT }]}>
             <Feather
               name={feedError.toLowerCase().includes("internet") || feedError.toLowerCase().includes("connection") ? "wifi-off" : "alert-circle"}
               size={44}
@@ -519,7 +519,7 @@ export default function FeedScreen() {
                 colors={colors}
               />
             )}
-            contentContainerStyle={[styles.list, { paddingBottom: bottom + 100 }]}
+            contentContainerStyle={[styles.list, { paddingBottom: bottom + 100, paddingTop: top + HEADER_HEIGHT + 4 }]}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.green} />
@@ -731,16 +731,15 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     sortBtnText: { fontSize: 14, fontFamily: "Inter_500Medium", color: colors.textSecondary },
     sortBtnTextActive: { color: colors.text },
     searchBtn: { padding: 4 },
-    list: { paddingTop: HEADER_HEIGHT + 4 },
+    list: {},
     loadingContainer: {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
       gap: 16,
-      paddingTop: HEADER_HEIGHT,
     },
     loadingText: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.textSecondary },
-    errorContainer: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, paddingHorizontal: 40, paddingTop: HEADER_HEIGHT },
+    errorContainer: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, paddingHorizontal: 40 },
     errorText: { fontSize: 18, fontFamily: "Inter_600SemiBold", color: colors.text },
     errorSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.textSecondary, textAlign: "center" },
     retryBtn: {
@@ -777,7 +776,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     newPostsBannerWrap: {
       position: "absolute",
-      top: HEADER_HEIGHT + 10,
       left: 16,
       right: 16,
       zIndex: 9,
