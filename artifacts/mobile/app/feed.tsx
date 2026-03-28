@@ -140,26 +140,43 @@ function PostCard({
             <View style={[styles.progressFill, { width: `${worthPct}%` as `${number}%` }]} />
           </View>
         )}
-        <View style={styles.cardActions}>
-          <ReactionBtn
-            active={myWorthIt}
-            activeColor={colors.green}
-            icon="check"
-            label="Worth it"
-            count={post.worthItCount}
-            onPress={() => handleReact("worthit")}
-            colors={colors}
-          />
-          <ReactionBtn
-            active={mySkip}
-            activeColor="#FF3B30"
-            icon="x"
-            label="Skip"
-            count={post.skipCount}
-            onPress={() => handleReact("skip")}
-            colors={colors}
-          />
-        </View>
+        {post.isOwn ? (
+          <TouchableOpacity
+            style={styles.ownPostBanner}
+            onPress={(e) => { e.stopPropagation?.(); router.push("/my-posts"); }}
+            activeOpacity={0.75}
+          >
+            <View style={styles.ownPostLeft}>
+              <Feather name="user" size={13} color={colors.green} />
+              <Text style={styles.ownPostLabel}>Your post</Text>
+            </View>
+            <View style={styles.ownPostRight}>
+              <Text style={styles.ownPostManage}>Manage</Text>
+              <Feather name="arrow-right" size={13} color={colors.green} />
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.cardActions}>
+            <ReactionBtn
+              active={myWorthIt}
+              activeColor={colors.green}
+              icon="check"
+              label="Worth it"
+              count={post.worthItCount}
+              onPress={() => handleReact("worthit")}
+              colors={colors}
+            />
+            <ReactionBtn
+              active={mySkip}
+              activeColor="#FF3B30"
+              icon="x"
+              label="Skip"
+              count={post.skipCount}
+              onPress={() => handleReact("skip")}
+              colors={colors}
+            />
+          </View>
+        )}
       </TouchableOpacity>
     </AnimatedListItem>
   );
@@ -389,6 +406,19 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     progressBar: { height: 3, backgroundColor: colors.border, borderRadius: 2, overflow: "hidden" },
     progressFill: { height: 3, backgroundColor: colors.green, borderRadius: 2 },
     cardActions: { flexDirection: "row", gap: 8 },
+    ownPostBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: colors.greenDim,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+    },
+    ownPostLeft: { flexDirection: "row", alignItems: "center", gap: 6 },
+    ownPostLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.green },
+    ownPostRight: { flexDirection: "row", alignItems: "center", gap: 4 },
+    ownPostManage: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.green },
   });
 }
 

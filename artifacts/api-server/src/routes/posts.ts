@@ -317,6 +317,7 @@ router.post("/posts/:id/react", async (req, res) => {
 
     const [post] = await db.select().from(postsTable).where(eq(postsTable.id, postId)).limit(1);
     if (!post) return res.status(404).json({ error: "Post not found" });
+    if (post.anonymousId === anonymousId) return res.status(403).json({ error: "You cannot react to your own post" });
 
     if (existing) {
       if (existing.type === type) {

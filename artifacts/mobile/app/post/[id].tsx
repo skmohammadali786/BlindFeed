@@ -370,26 +370,38 @@ export default function PostDetailScreen() {
         </Modal>
 
         <View style={[styles.footer, { paddingBottom: bottom || 12 }]}>
-          <View style={styles.reactionRow}>
-            <ReactionBtn
-              active={myWorthIt}
-              activeColor={colors.green}
-              icon="check"
-              label="Worth it"
-              count={post.worthItCount}
-              onPress={() => handleReact("worthit")}
-              colors={colors}
-            />
-            <ReactionBtn
-              active={mySkip}
-              activeColor="#FF3B30"
-              icon="x"
-              label="Skip"
-              count={post.skipCount}
-              onPress={() => handleReact("skip")}
-              colors={colors}
-            />
-          </View>
+          {post.isOwn ? (
+            <TouchableOpacity
+              style={styles.managePostBtn}
+              onPress={() => { router.back(); router.push("/my-posts"); }}
+              activeOpacity={0.8}
+            >
+              <Feather name="layers" size={16} color={colors.green} />
+              <Text style={styles.managePostText}>Manage this post in My Posts</Text>
+              <Feather name="arrow-right" size={16} color={colors.green} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.reactionRow}>
+              <ReactionBtn
+                active={myWorthIt}
+                activeColor={colors.green}
+                icon="check"
+                label="Worth it"
+                count={post.worthItCount}
+                onPress={() => handleReact("worthit")}
+                colors={colors}
+              />
+              <ReactionBtn
+                active={mySkip}
+                activeColor="#FF3B30"
+                icon="x"
+                label="Skip"
+                count={post.skipCount}
+                onPress={() => handleReact("skip")}
+                colors={colors}
+              />
+            </View>
+          )}
 
           <View style={styles.footerDivider} />
 
@@ -547,6 +559,16 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       gap: 8,
     },
     reactionRow: { flexDirection: "row", gap: 10 },
+    managePostBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      backgroundColor: colors.greenDim,
+      borderRadius: 14,
+      paddingVertical: 14,
+    },
+    managePostText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: colors.green, flex: 1, textAlign: "center" },
     footerDivider: { height: 1, backgroundColor: colors.border, marginHorizontal: -12 },
 
     replyingToBar: {
