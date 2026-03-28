@@ -50,6 +50,31 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 ## Packages
 
+### `artifacts/mobile` (`@workspace/mobile`)
+
+BlindFeed — anonymous social media Expo mobile app. Dark mode only. Pure frontend, no backend.
+
+**Design system**: `#000` bg, `#1C1C1E` surface, `#3DDB85` green, `#8E8E93` textSecondary
+
+**Screens built:**
+- `app/index.tsx` — Entry/splash with "Continue anonymously"
+- `app/onboarding.tsx` — 3-slide onboarding
+- `app/feed.tsx` — Main feed with Fresh/Top toggle, avatar dropdown menu, FAB
+- `app/create.tsx` — New post modal with "Your post is live" success screen
+- `app/post/[id].tsx` — Post detail with large text, Worth it/Skip pinned buttons, stats
+- `app/search.tsx` — Search with suggestion chips and recent searches
+- `app/settings.tsx` — Full settings with toggles, modals (clear cache, reset ID)
+- `app/identity.tsx` — Temp user ID card with Copy ID
+- `app/usage-insights.tsx` — Activity stats (posts, reactions, session time)
+- `app/report.tsx` — Report content with 4 reasons + success state
+- `app/notifications.tsx` — Daily reminder + post performance toggles
+- `app/community-guidelines.tsx` — Shield icon + 4 rules + "I understand"
+- `app/terms.tsx` — Terms of Service + Privacy Policy + "I Understand"
+
+**Context**: `context/AppContext.tsx` — Posts, reactions, settings, tempUserId (7-day rotation), session timer
+
+**Key packages**: `expo-router`, `expo-haptics`, `expo-image`, `expo-clipboard`, `@react-native-async-storage/async-storage`, `react-native-safe-area-context`
+
 ### `artifacts/api-server` (`@workspace/api-server`)
 
 Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.

@@ -34,6 +34,15 @@ function RootLayoutNav() {
           animation: "slide_from_bottom",
         }}
       />
+      <Stack.Screen name="post/[id]" options={{ headerShown: false, animation: "slide_from_right" }} />
+      <Stack.Screen name="search" options={{ headerShown: false, animation: "slide_from_right" }} />
+      <Stack.Screen name="settings" options={{ headerShown: false, animation: "slide_from_right" }} />
+      <Stack.Screen name="identity" options={{ headerShown: false, animation: "slide_from_right" }} />
+      <Stack.Screen name="usage-insights" options={{ headerShown: false, animation: "slide_from_right" }} />
+      <Stack.Screen name="report" options={{ headerShown: false, animation: "slide_from_bottom", presentation: "modal" }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false, animation: "slide_from_right" }} />
+      <Stack.Screen name="community-guidelines" options={{ headerShown: false, animation: "slide_from_right" }} />
+      <Stack.Screen name="terms" options={{ headerShown: false, animation: "slide_from_right" }} />
     </Stack>
   );
 }

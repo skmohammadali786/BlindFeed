@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -17,15 +18,28 @@ export interface Post {
   tempUserId: string;
 }
 
+export interface AppSettings {
+  darkMode: boolean;
+  contentFilter: boolean;
+  dailyReminder: boolean;
+  postPerformance: boolean;
+}
+
 interface AppContextType {
   posts: Post[];
   reactions: Record<string, "worthit" | "skip">;
   tempUserId: string;
   onboarded: boolean;
+  settings: AppSettings;
+  sessionSeconds: number;
   setOnboarded: () => void;
   addPost: (content: string) => void;
   reactToPost: (postId: string, type: "worthit" | "skip") => void;
   getActivePosts: (sort?: "fresh" | "top") => Post[];
+  getMyPosts: () => Post[];
+  updateSetting: (key: keyof AppSettings, value: boolean) => void;
+  resetUserId: () => Promise<void>;
+  clearAllData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -36,22 +50,26 @@ const STORAGE_KEYS = {
   USER_ID: "bf_user_id",
   USER_CREATED: "bf_user_created",
   ONBOARDED: "bf_onboarded",
+  SETTINGS: "bf_settings",
 };
 
 const POST_EXPIRY_MS = 48 * 60 * 60 * 1000;
 const USER_RESET_MS = 7 * 24 * 60 * 60 * 1000;
+
+const DEFAULT_SETTINGS: AppSettings = {
+  darkMode: true,
+  contentFilter: true,
+  dailyReminder: true,
+  postPerformance: false,
+};
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
 }
 
 function generateUserId(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let id = "#";
-  for (let i = 0; i < 6; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return id;
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `User${num}`;
 }
 
 const SEED_POSTS: Omit<Post, "id" | "expiresAt" | "tempUserId">[] = [
@@ -109,26 +127,40 @@ const SEED_POSTS: Omit<Post, "id" | "expiresAt" | "tempUserId">[] = [
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [reactions, setReactions] = useState<Record<string, "worthit" | "skip">>({});
-  const [tempUserId, setTempUserId] = useState<string>("#------");
+  const [tempUserId, setTempUserId] = useState<string>("User0000");
   const [onboarded, setOnboardedState] = useState<boolean>(false);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
+  const [sessionSeconds, setSessionSeconds] = useState(0);
+  const sessionStart = useRef(Date.now());
 
   useEffect(() => {
     loadData();
+    const interval = setInterval(() => {
+      setSessionSeconds(Math.floor((Date.now() - sessionStart.current) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
     try {
-      const [postsRaw, reactionsRaw, userIdRaw, userCreatedRaw, onboardedRaw] =
+      const [postsRaw, reactionsRaw, userIdRaw, userCreatedRaw, onboardedRaw, settingsRaw] =
         await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.POSTS),
           AsyncStorage.getItem(STORAGE_KEYS.REACTIONS),
           AsyncStorage.getItem(STORAGE_KEYS.USER_ID),
           AsyncStorage.getItem(STORAGE_KEYS.USER_CREATED),
           AsyncStorage.getItem(STORAGE_KEYS.ONBOARDED),
+          AsyncStorage.getItem(STORAGE_KEYS.SETTINGS),
         ]);
 
       setOnboardedState(onboardedRaw === "true");
+
+      if (settingsRaw) {
+        try {
+          setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(settingsRaw) });
+        } catch (_) {}
+      }
 
       let userId = userIdRaw;
       const userCreated = userCreatedRaw ? parseInt(userCreatedRaw) : null;
@@ -225,6 +257,46 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [posts]
   );
 
+  const getMyPosts = useCallback(() => {
+    return posts.filter((p) => p.tempUserId === tempUserId);
+  }, [posts, tempUserId]);
+
+  const updateSetting = useCallback(
+    async (key: keyof AppSettings, value: boolean) => {
+      setSettings((prev) => {
+        const updated = { ...prev, [key]: value };
+        AsyncStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
+        return updated;
+      });
+    },
+    []
+  );
+
+  const resetUserId = useCallback(async () => {
+    const newId = generateUserId();
+    setTempUserId(newId);
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, newId);
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_CREATED, Date.now().toString());
+  }, []);
+
+  const clearAllData = useCallback(async () => {
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.POSTS,
+      STORAGE_KEYS.REACTIONS,
+      STORAGE_KEYS.SETTINGS,
+    ]);
+    setReactions({});
+    setSettings(DEFAULT_SETTINGS);
+    const seedPosts = SEED_POSTS.map((seed) => ({
+      ...seed,
+      id: generateId(),
+      expiresAt: seed.createdAt + POST_EXPIRY_MS,
+      tempUserId: generateUserId(),
+    }));
+    setPosts(seedPosts);
+    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(seedPosts));
+  }, []);
+
   if (!loaded) return null;
 
   return (
@@ -234,10 +306,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         reactions,
         tempUserId,
         onboarded,
+        settings,
+        sessionSeconds,
         setOnboarded,
         addPost,
         reactToPost,
         getActivePosts,
+        getMyPosts,
+        updateSetting,
+        resetUserId,
+        clearAllData,
       }}
     >
       {children}

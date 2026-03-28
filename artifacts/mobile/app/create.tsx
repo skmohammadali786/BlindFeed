@@ -46,25 +46,16 @@ export default function CreateScreen() {
       <View style={[styles.container, { paddingTop: top }]}>
         <View style={styles.successContainer}>
           <View style={styles.successIcon}>
-            <Feather name="check" size={32} color={Colors.green} />
+            <Feather name="check" size={36} color="#000" />
           </View>
-          <Text style={styles.successTitle}>Posted anonymously</Text>
-          <Text style={styles.successSub}>
-            Your thought is out there.{"\n"}No name. No pressure. Expires in 48h.
-          </Text>
+          <Text style={styles.successTitle}>Your post is live</Text>
+          <Text style={styles.successSub}>Anonymous and real</Text>
           <TouchableOpacity
             style={styles.feedBtn}
             onPress={() => router.replace("/feed")}
             activeOpacity={0.85}
           >
-            <Text style={styles.feedBtnText}>See the feed</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.anotherBtn}
-            onPress={() => setSubmitted(false)}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.anotherBtnText}>Write another</Text>
+            <Text style={styles.feedBtnText}>Back to feed</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -269,55 +260,39 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   successIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.greenDim,
-    borderWidth: 1.5,
-    borderColor: Colors.green,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: Colors.green,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
   },
   successTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontFamily: "Inter_700Bold",
     color: Colors.text,
     textAlign: "center",
   },
   successSub: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: "Inter_400Regular",
     color: Colors.textSecondary,
     textAlign: "center",
-    lineHeight: 24,
   },
   feedBtn: {
-    marginTop: 16,
-    backgroundColor: Colors.green,
-    borderRadius: 14,
-    paddingHorizontal: 32,
+    marginTop: 24,
+    backgroundColor: Colors.surface,
+    borderRadius: 28,
+    paddingHorizontal: 36,
     paddingVertical: 16,
-    width: "100%",
-    alignItems: "center",
-  },
-  feedBtnText: {
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-    color: "#000",
-  },
-  anotherBtn: {
-    borderRadius: 14,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    width: "100%",
     alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  anotherBtnText: {
+  feedBtnText: {
     fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-    color: Colors.textSecondary,
+    fontFamily: "Inter_500Medium",
+    color: Colors.text,
   },
 });
