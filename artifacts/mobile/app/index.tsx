@@ -80,6 +80,13 @@ export default function EntryScreen() {
           <Text style={styles.ctaText}>Continue anonymously</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity onPress={() => router.push("/login")} activeOpacity={0.75}>
+          <Text style={styles.loginText}>
+            Already have an account?{" "}
+            <Text style={[styles.loginText, { color: "#4ade80", fontFamily: "Inter_600SemiBold" }]}>Log in</Text>
+          </Text>
+        </TouchableOpacity>
+
         <View style={styles.pillsRow}>
           <View style={styles.pill}>
             <Feather name="eye-off" size={11} color={colors.textSecondary} />
@@ -180,6 +187,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     pillDot: {
       fontSize: 13,
       color: colors.textTertiary,
+    },
+    loginText: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+      textAlign: "center",
     },
   });
 }

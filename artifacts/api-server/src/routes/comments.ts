@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { commentsTable } from "@workspace/db/schema";
+import { commentsTable, postsTable, notificationsTable } from "@workspace/db/schema";
 
 const router = Router();
 
@@ -70,7 +70,46 @@ router.post("/posts/:id/comments", async (req, res) => {
         parentId: parentId ?? null,
       })
       .returning();
-    return res.status(201).json({ ...comment, replies: [] });
+
+    const preview = content.trim().slice(0, 60) + (content.trim().length > 60 ? "…" : "");
+
+    if (parentId) {
+      const [parentComment] = await db
+        .select({ anonymousId: commentsTable.anonymousId })
+        .from(commentsTable)
+        .where(eq(commentsTable.id, parentId))
+        .limit(1);
+
+      if (parentComment && parentComment.anonymousId !== anonymousId) {
+        await db.insert(notificationsTable).values({
+          recipientAnonymousId: parentComment.anonymousId,
+          type: "reply",
+          postId,
+          commentId: comment.id,
+          message: `Someone replied to your comment: "${preview}"`,
+          isRead: false,
+        }).catch(() => {});
+      }
+    } else {
+      const [post] = await db
+        .select({ anonymousId: postsTable.anonymousId })
+        .from(postsTable)
+        .where(eq(postsTable.id, postId))
+        .limit(1);
+
+      if (post && post.anonymousId !== anonymousId) {
+        await db.insert(notificationsTable).values({
+          recipientAnonymousId: post.anonymousId,
+          type: "comment",
+          postId,
+          commentId: comment.id,
+          message: `Someone commented on your post: "${preview}"`,
+          isRead: false,
+        }).catch(() => {});
+      }
+    }
+
+    return res.status(201).json({ ...comment, isOwn: true, replies: [] });
   } catch (err) {
     req.log.error(err, "Error creating comment");
     return res.status(500).json({ error: "Failed to create comment" });

@@ -95,6 +95,17 @@ export interface ApiMyPost extends ApiPost {
   latestComment: { content: string; createdAt: string } | null;
 }
 
+export interface ApiNotification {
+  id: number;
+  recipientAnonymousId: string;
+  type: "comment" | "reply";
+  postId: number | null;
+  commentId: number | null;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export async function requestUploadUrl(
   name: string,
   size: number,

@@ -137,15 +137,21 @@ export default function MyPostsScreen() {
   const [posts, setPosts] = useState<ApiMyPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const styles = makeStyles(colors);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       const data = await fetchMyPosts();
       setPosts(data);
-    } catch (_) {}
-    finally { setLoading(false); setRefreshing(false); }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load posts");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [fetchMyPosts]);
 
   useEffect(() => { load(); }, [load]);
@@ -200,6 +206,14 @@ export default function MyPostsScreen() {
           <FadeSlide delay={80} style={styles.center}>
             <ActivityIndicator size="large" color={colors.green} />
             <Text style={styles.loadingText}>Loading your posts...</Text>
+          </FadeSlide>
+        ) : error ? (
+          <FadeSlide delay={80} style={styles.center}>
+            <Feather name="alert-circle" size={40} color={colors.textTertiary} />
+            <Text style={[styles.loadingText, { marginTop: 12 }]}>{error}</Text>
+            <TouchableOpacity onPress={load} style={{ marginTop: 16 }}>
+              <Text style={{ color: colors.green, fontFamily: "Inter_500Medium", fontSize: 15 }}>Try again</Text>
+            </TouchableOpacity>
           </FadeSlide>
         ) : (
           <FlatList

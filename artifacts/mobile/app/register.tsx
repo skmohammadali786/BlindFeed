@@ -44,10 +44,16 @@ export default function RegisterScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
 
-  const canProceed = name.trim().length >= 2 && email.includes("@") && phone.trim().length >= 6;
+  const canProceed =
+    name.trim().length >= 2 &&
+    email.includes("@") &&
+    phone.trim().length >= 6 &&
+    password.length >= 6;
 
   const handleRegister = async () => {
     if (!canProceed || loading) return;
@@ -63,6 +69,7 @@ export default function RegisterScreen() {
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
+        password,
       });
       await setRegistered(anonymousId);
 
@@ -127,6 +134,15 @@ export default function RegisterScreen() {
               <Text style={styles.btnText}>I understand, continue</Text>
             </AnimatedPressable>
           </FadeSlide>
+
+          <FadeSlide delay={340}>
+            <TouchableOpacity style={styles.loginRow} onPress={() => router.push("/login")}>
+              <Text style={styles.loginText}>
+                Already have an account?{" "}
+                <Text style={styles.loginLink}>Log in</Text>
+              </Text>
+            </TouchableOpacity>
+          </FadeSlide>
         </View>
       </ScreenTransition>
     );
@@ -153,7 +169,7 @@ export default function RegisterScreen() {
           <FadeSlide delay={60}>
             <Text style={styles.title}>Create account</Text>
             <Text style={styles.formSubtitle}>
-              This information is <Text style={styles.highlight}>private</Text> and only used for content moderation.
+              Your personal info is <Text style={styles.highlight}>private</Text> and used only for content moderation.
             </Text>
           </FadeSlide>
 
@@ -167,16 +183,18 @@ export default function RegisterScreen() {
               keyboardType: "default" as const,
               autoCapitalize: "words" as const,
               autoComplete: "name" as const,
+              secureTextEntry: false,
             },
             {
               label: "Email address",
               value: email,
               onChange: setEmail,
               placeholder: "you@example.com",
-              note: "For account recovery and moderation contact only",
+              note: "For account login and moderation contact only",
               keyboardType: "email-address" as const,
               autoCapitalize: "none" as const,
               autoComplete: "email" as const,
+              secureTextEntry: false,
             },
             {
               label: "Phone number",
@@ -187,6 +205,7 @@ export default function RegisterScreen() {
               keyboardType: "phone-pad" as const,
               autoCapitalize: "none" as const,
               autoComplete: "tel" as const,
+              secureTextEntry: false,
             },
           ].map((field, i) => (
             <AnimatedListItem key={field.label} index={i}>
@@ -206,6 +225,32 @@ export default function RegisterScreen() {
               </View>
             </AnimatedListItem>
           ))}
+
+          <AnimatedListItem index={3}>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordRow}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="At least 6 characters"
+                  placeholderTextColor={colors.textTertiary}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoComplete="new-password"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  style={styles.eyeBtn}
+                  onPress={() => setShowPassword((v) => !v)}
+                >
+                  <Feather name={showPassword ? "eye-off" : "eye"} size={18} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.fieldNote}>Used to log back into your account. Never visible to anyone.</Text>
+            </View>
+          </AnimatedListItem>
 
           <FadeSlide delay={300}>
             <View style={styles.noteBox}>
@@ -306,6 +351,19 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       fontFamily: "Inter_600SemiBold",
       color: "#000",
     },
+    loginRow: {
+      alignItems: "center",
+      marginTop: 20,
+    },
+    loginText: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+    },
+    loginLink: {
+      color: colors.green,
+      fontFamily: "Inter_600SemiBold",
+    },
     backRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -343,6 +401,21 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       fontSize: 16,
       fontFamily: "Inter_400Regular",
       color: colors.text,
+    },
+    passwordRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    eyeBtn: {
+      width: 48,
+      height: 52,
+      backgroundColor: colors.inputBg,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      justifyContent: "center",
+      alignItems: "center",
     },
     fieldNote: {
       fontSize: 12,
