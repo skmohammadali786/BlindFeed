@@ -98,6 +98,14 @@ const styles_reaction = StyleSheet.create({
   count: { fontSize: 12, fontFamily: "Inter_400Regular" },
 });
 
+function useTick(intervalMs: number) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+}
+
 function PostCard({
   post,
   index,
@@ -111,6 +119,7 @@ function PostCard({
   onPress: () => void;
   colors: ReturnType<typeof useTheme>["colors"];
 }) {
+  useTick(30_000);
   const myWorthIt = post.myReaction === "worthit";
   const mySkip = post.myReaction === "skip";
   const total = post.worthItCount + post.skipCount;
@@ -150,16 +159,23 @@ function PostCard({
             <Text style={styles.videoIndicatorText}>Video</Text>
           </View>
         )}
+        <View style={styles.posterRow}>
+          <Feather name="user" size={12} color={colors.textTertiary} />
+          <Text style={styles.posterIdText} numberOfLines={1}>
+            {post.isOwn ? "You" : post.tempUserId}
+          </Text>
+          <Text style={styles.posterDot}>·</Text>
+          <Text style={styles.posterTime}>{timeAgo(post.createdAt)}</Text>
+        </View>
         <Text style={styles.cardText}>{post.content}</Text>
-        <View style={styles.cardMeta}>
-          <Text style={styles.cardTime}>{timeAgo(post.createdAt)}</Text>
-          {post.commentCount > 0 && (
+        {post.commentCount > 0 && (
+          <View style={styles.cardMeta}>
             <View style={styles.commentPill}>
               <Feather name="message-circle" size={11} color={colors.textSecondary} />
               <Text style={styles.commentCount}>{post.commentCount}</Text>
             </View>
-          )}
-        </View>
+          </View>
+        )}
         {total > 0 && (
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: `${worthPct}%` as `${number}%` }]} />
@@ -444,9 +460,12 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingVertical: 4,
     },
     videoIndicatorText: { color: "#fff", fontSize: 12, fontFamily: "Inter_500Medium" },
+    posterRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+    posterIdText: { fontSize: 12, fontFamily: "Inter_500Medium", color: colors.textTertiary, flex: 1 },
+    posterDot: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textTertiary },
+    posterTime: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textTertiary },
     cardText: { fontSize: 16, fontFamily: "Inter_400Regular", color: colors.text, lineHeight: 24 },
     cardMeta: { flexDirection: "row", alignItems: "center", gap: 10 },
-    cardTime: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textSecondary },
     commentPill: { flexDirection: "row", alignItems: "center", gap: 4 },
     commentCount: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textSecondary },
     progressBar: { height: 3, backgroundColor: colors.border, borderRadius: 2, overflow: "hidden" },
