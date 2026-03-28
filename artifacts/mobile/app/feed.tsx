@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -165,6 +165,8 @@ function PostCard({
   );
 }
 
+const POLL_INTERVAL_MS = 30_000;
+
 export default function FeedScreen() {
   const { colors } = useTheme();
   const { getActivePosts, reactToPost, refreshFeed, feedLoading, feedError } = useApp();
@@ -176,18 +178,50 @@ export default function FeedScreen() {
   const [sortMode, setSortMode] = useState<SortMode>("fresh");
   const [menuVisible, setMenuVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [newPostsBanner, setNewPostsBanner] = useState(false);
+  const lastPostCountRef = useRef<number>(0);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const posts = getActivePosts(sortMode);
+  const activePosts = getActivePosts(sortMode);
+
+  useEffect(() => {
+    lastPostCountRef.current = activePosts.length;
+  }, []);
+
+  useEffect(() => {
+    pollingRef.current = setInterval(async () => {
+      if (sortMode !== "fresh") return;
+      try {
+        const prev = lastPostCountRef.current;
+        await refreshFeed(sortMode);
+        const next = getActivePosts("fresh").length;
+        if (next > prev) {
+          setNewPostsBanner(true);
+        }
+      } catch (_) {}
+    }, POLL_INTERVAL_MS);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [sortMode]);
+
+  const handleBannerPress = useCallback(() => {
+    setNewPostsBanner(false);
+    lastPostCountRef.current = activePosts.length;
+  }, [activePosts.length]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
+    setNewPostsBanner(false);
     await refreshFeed(sortMode);
+    lastPostCountRef.current = getActivePosts(sortMode).length;
     setRefreshing(false);
-  }, [refreshFeed, sortMode]);
+  }, [refreshFeed, sortMode, getActivePosts]);
 
   const handleSortChange = useCallback(
     (mode: SortMode) => {
       setSortMode(mode);
+      setNewPostsBanner(false);
       refreshFeed(mode);
     },
     [refreshFeed],
@@ -234,7 +268,14 @@ export default function FeedScreen() {
           </View>
         </FadeSlide>
 
-        {feedLoading && posts.length === 0 ? (
+        {newPostsBanner && (
+          <TouchableOpacity style={styles.newPostsBanner} onPress={handleBannerPress} activeOpacity={0.85}>
+            <Feather name="arrow-up" size={13} color="#000" />
+            <Text style={styles.newPostsBannerText}>New posts available — tap to dismiss</Text>
+          </TouchableOpacity>
+        )}
+
+        {feedLoading && activePosts.length === 0 ? (
           <FadeSlide delay={100} style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.green} />
             <Text style={styles.loadingText}>Loading posts...</Text>
@@ -262,7 +303,7 @@ export default function FeedScreen() {
           </FadeSlide>
         ) : (
           <FlatList
-            data={posts}
+            data={activePosts}
             keyExtractor={(item) => item.id}
             renderItem={({ item, index }) => (
               <PostCard
@@ -273,7 +314,7 @@ export default function FeedScreen() {
                 colors={colors}
               />
             )}
-            contentContainerStyle={[styles.list, { paddingBottom: bottom + 80 }]}
+            contentContainerStyle={[styles.list, { paddingBottom: bottom + 100 }]}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.green} />
@@ -289,8 +330,10 @@ export default function FeedScreen() {
         )}
 
         <BounceFab style={[styles.fabWrapper, { bottom: bottom + 20 }]}>
-          <AnimatedPressable scaleTo={0.9} onPress={() => router.push("/create")} style={styles.fab}>
-            <Feather name="edit-3" size={22} color="#000" />
+          <AnimatedPressable scaleTo={0.88} onPress={() => router.push("/create")} style={styles.fab}>
+            <View style={styles.fabInner}>
+              <Feather name="edit-2" size={20} color="#000" />
+            </View>
           </AnimatedPressable>
         </BounceFab>
 
@@ -398,17 +441,41 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     emptySub: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textTertiary },
     fabWrapper: { position: "absolute", right: 20 },
     fab: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
+      width: 62,
+      height: 62,
+      borderRadius: 31,
       backgroundColor: "#3DDB85",
       justifyContent: "center",
       alignItems: "center",
       shadowColor: "#3DDB85",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.45,
-      shadowRadius: 10,
-      elevation: 10,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.55,
+      shadowRadius: 16,
+      elevation: 14,
+    },
+    fabInner: {
+      width: 62,
+      height: 62,
+      borderRadius: 31,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    newPostsBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      marginHorizontal: 60,
+      marginBottom: 6,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: "#3DDB85",
+      borderRadius: 20,
+    },
+    newPostsBannerText: {
+      fontSize: 12,
+      fontFamily: "Inter_600SemiBold",
+      color: "#000",
     },
     menuOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)" },
     menuContainer: {

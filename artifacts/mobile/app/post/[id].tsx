@@ -6,9 +6,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -93,6 +93,8 @@ export default function PostDetailScreen() {
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ApiComment | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteCommentId, setDeleteCommentId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const listRef = useRef<FlatList>(null);
 
@@ -141,22 +143,23 @@ export default function PostDetailScreen() {
     finally { setSubmitting(false); }
   };
 
-  const handleDeleteComment = async (commentId: number) => {
-    Alert.alert("Delete comment?", "This action cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(`/comments/${commentId}`);
-            await fetchComments();
-          } catch {
-            Alert.alert("Error", "Could not delete comment.");
-          }
-        },
-      },
-    ]);
+  const handleDeleteComment = (commentId: number) => {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDeleteCommentId(commentId);
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!deleteCommentId || deleting) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/comments/${deleteCommentId}`);
+      setDeleteCommentId(null);
+      await fetchComments();
+    } catch {
+      setDeleteCommentId(null);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleReply = (comment: ApiComment) => {
@@ -332,6 +335,39 @@ export default function PostDetailScreen() {
           contentContainerStyle={{ paddingBottom: 12 }}
           showsVerticalScrollIndicator={false}
         />
+
+        <Modal
+          visible={deleteCommentId !== null}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setDeleteCommentId(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>Delete comment?</Text>
+              <Text style={styles.modalBody}>This action cannot be undone.</Text>
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalCancel}
+                  onPress={() => setDeleteCommentId(null)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalConfirm, { backgroundColor: "#FF3B30" }]}
+                  onPress={confirmDeleteComment}
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={[styles.modalConfirmText, { color: "#fff" }]}>Delete</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         <View style={[styles.footer, { paddingBottom: bottom || 12 }]}>
           <View style={styles.reactionRow}>
@@ -555,5 +591,61 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     notFound: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
     notFoundText: { fontSize: 18, fontFamily: "Inter_600SemiBold", color: colors.text },
     notFoundSub: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary },
+
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 32,
+    },
+    modal: {
+      backgroundColor: colors.surface,
+      borderRadius: 18,
+      padding: 24,
+      width: "100%",
+      gap: 12,
+    },
+    modalTitle: {
+      fontSize: 17,
+      fontFamily: "Inter_700Bold",
+      color: colors.text,
+      textAlign: "center",
+    },
+    modalBody: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: colors.textSecondary,
+      textAlign: "center",
+      lineHeight: 20,
+    },
+    modalActions: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 8,
+    },
+    modalCancel: {
+      flex: 1,
+      paddingVertical: 13,
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: 12,
+      alignItems: "center",
+    },
+    modalCancelText: {
+      fontSize: 15,
+      fontFamily: "Inter_500Medium",
+      color: colors.text,
+    },
+    modalConfirm: {
+      flex: 1,
+      paddingVertical: 13,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    modalConfirmText: {
+      fontSize: 15,
+      fontFamily: "Inter_600SemiBold",
+    },
   });
 }

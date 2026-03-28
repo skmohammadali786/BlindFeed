@@ -73,11 +73,7 @@ export default function SettingsScreen() {
   };
 
   const handleRateApp = () => {
-    Alert.alert(
-      "Rate BlindFeed",
-      "We're not on the App Store yet, but your support means a lot! Once we launch, you'll be able to rate us here.",
-      [{ text: "Got it", style: "default" }]
-    );
+    router.push("/rate");
   };
 
   const handleFeedback = () => {

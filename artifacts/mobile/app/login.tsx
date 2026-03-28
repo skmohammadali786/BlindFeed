@@ -21,7 +21,7 @@ import { AnimatedPressable, FadeSlide, ScreenTransition } from "@/components/Ani
 
 export default function LoginScreen() {
   const { colors } = useTheme();
-  const { setRegistered, onboarded } = useApp();
+  const { setRegistered, setOnboarded } = useApp();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top + 8;
@@ -46,13 +46,9 @@ export default function LoginScreen() {
       });
 
       await setRegistered(result.anonymousId);
+      await setOnboarded();
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      if (onboarded) {
-        router.replace("/feed");
-      } else {
-        router.replace("/onboarding");
-      }
+      router.replace("/feed");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Login failed. Please try again.";
       Alert.alert("Login failed", message);

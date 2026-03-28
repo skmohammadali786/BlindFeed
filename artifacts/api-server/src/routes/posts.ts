@@ -365,4 +365,55 @@ router.post("/posts/:id/react", async (req, res) => {
   }
 });
 
+router.get("/users/:anonymousId/posts", async (req, res) => {
+  const viewerAnonymousId = req.headers["x-anonymous-id"] as string;
+  const { anonymousId } = req.params;
+
+  try {
+    const now = new Date();
+    const posts = await db
+      .select({
+        id: postsTable.id,
+        anonymousId: postsTable.anonymousId,
+        content: postsTable.content,
+        imageUrl: postsTable.imageUrl,
+        worthItCount: postsTable.worthItCount,
+        skipCount: postsTable.skipCount,
+        expiresAt: postsTable.expiresAt,
+        createdAt: postsTable.createdAt,
+      })
+      .from(postsTable)
+      .where(
+        and(
+          eq(postsTable.anonymousId, anonymousId),
+          eq(postsTable.isDraft, false),
+          gt(postsTable.expiresAt, now),
+        ),
+      )
+      .orderBy(desc(postsTable.createdAt))
+      .limit(50);
+
+    const commentCounts = await db
+      .select({
+        postId: commentsTable.postId,
+        count: sql<number>`cast(count(*) as int)`,
+      })
+      .from(commentsTable)
+      .groupBy(commentsTable.postId);
+    const commentCountMap = Object.fromEntries(commentCounts.map((c) => [c.postId, c.count]));
+
+    const enriched = posts.map((p) => ({
+      ...p,
+      myReaction: null,
+      commentCount: commentCountMap[p.id] ?? 0,
+      isOwn: p.anonymousId === viewerAnonymousId,
+    }));
+
+    return res.json(enriched);
+  } catch (err) {
+    req.log.error(err, "Error fetching user posts");
+    return res.status(500).json({ error: "Failed to fetch user posts" });
+  }
+});
+
 export default router;
