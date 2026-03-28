@@ -228,22 +228,24 @@ function PostCard({
         )}
 
         {post.isOwn ? (
-          <TouchableOpacity
-            style={styles.ownPostBanner}
-            onPress={(e) => { e.stopPropagation?.(); router.push("/my-posts"); }}
-            activeOpacity={0.75}
-          >
-            <View style={styles.ownPostLeft}>
-              <View style={[styles.ownPostDot, { backgroundColor: colors.green }]} />
-              <Text style={styles.ownPostLabel}>Your post</Text>
-            </View>
-            <View style={styles.ownPostRight}>
-              <Text style={styles.ownPostManage}>Manage</Text>
-              <Feather name="arrow-right" size={13} color={colors.green} />
-            </View>
-          </TouchableOpacity>
+          <View onStartShouldSetResponder={() => true}>
+            <TouchableOpacity
+              style={styles.ownPostBanner}
+              onPress={() => router.push("/my-posts")}
+              activeOpacity={0.75}
+            >
+              <View style={styles.ownPostLeft}>
+                <View style={[styles.ownPostDot, { backgroundColor: colors.green }]} />
+                <Text style={styles.ownPostLabel}>Your post</Text>
+              </View>
+              <View style={styles.ownPostRight}>
+                <Text style={styles.ownPostManage}>Manage</Text>
+                <Feather name="arrow-right" size={13} color={colors.green} />
+              </View>
+            </TouchableOpacity>
+          </View>
         ) : (
-          <View style={styles.cardActions}>
+          <View style={styles.cardActions} onStartShouldSetResponder={() => true}>
             <ReactionBtn
               active={myWorthIt}
               activeColor={colors.green}

@@ -191,9 +191,6 @@ export default function SearchScreen() {
   const [searching, setSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
-  const [trending, setTrending] = useState<string[]>([]);
-  const [trendingLoading, setTrendingLoading] = useState(true);
-
   const [userIdQuery, setUserIdQuery] = useState("");
   const [userPosts, setUserPosts] = useState<ApiPost[]>([]);
   const [userLoading, setUserLoading] = useState(false);
@@ -211,11 +208,6 @@ export default function SearchScreen() {
         } catch (_) {}
       }
     });
-    api
-      .get<{ topics: string[] }>("/posts/trending")
-      .then((data) => setTrending(data.topics))
-      .catch(() => {})
-      .finally(() => setTrendingLoading(false));
   }, []);
 
   useEffect(() => {
@@ -467,39 +459,6 @@ export default function SearchScreen() {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
               >
-                {/* Trending section */}
-                <FadeSlide delay={60}>
-                  <View style={styles.section}>
-                    <View style={styles.sectionRow}>
-                      <View style={styles.sectionLabelRow}>
-                        <Feather name="trending-up" size={14} color={colors.textSecondary} />
-                        <Text style={styles.sectionLabel}>Trending now</Text>
-                      </View>
-                    </View>
-                    {trendingLoading ? (
-                      <View style={{ paddingVertical: 16, alignItems: "center" }}>
-                        <ActivityIndicator size="small" color={colors.green} />
-                      </View>
-                    ) : (
-                      <View style={styles.chips}>
-                        {(trending.length > 0
-                          ? trending
-                          : ["thoughts", "today", "anonymous", "opinion", "work", "life"]
-                        ).map((topic) => (
-                          <TouchableOpacity
-                            key={topic}
-                            style={styles.chip}
-                            onPress={() => setQuery(topic)}
-                            activeOpacity={0.8}
-                          >
-                            <Text style={styles.chipText}>{topic}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                </FadeSlide>
-
                 {/* Recent searches */}
                 {history.length > 0 && (
                   <FadeSlide delay={100}>
