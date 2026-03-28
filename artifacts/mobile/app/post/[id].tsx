@@ -46,6 +46,14 @@ function hashColor(str: string): string {
   return palette[h % palette.length];
 }
 
+function useTick(intervalMs: number) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+}
+
 function CommentAvatar({ anonymousId, size = 30 }: { anonymousId: string; size?: number }) {
   const bg = hashColor(anonymousId);
   const initials = (anonymousId.slice(0, 2) || "??").toUpperCase();
@@ -120,6 +128,7 @@ export default function PostDetailScreen() {
   const top = isWeb ? 67 : insets.top;
   const bottom = isWeb ? 34 : insets.bottom > 0 ? insets.bottom : 16;
 
+  useTick(30_000);
   const [copied, setCopied] = useState(false);
   const [comments, setComments] = useState<ApiComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
@@ -374,11 +383,10 @@ export default function PostDetailScreen() {
           <CommentAvatar anonymousId={comment.anonymousId} size={isReply ? 26 : 32} />
           <View style={styles.commentBubble}>
             <View style={styles.commentMeta}>
-              {comment.isOwn && (
-                <View style={styles.youBadge}>
-                  <Text style={styles.youBadgeText}>You</Text>
-                </View>
-              )}
+              <Text style={styles.commentUserId} numberOfLines={1}>
+                {comment.isOwn ? "You" : comment.anonymousId}
+              </Text>
+              <Text style={styles.commentDot}>·</Text>
               <Text style={styles.commentTime}>{timeAgo(new Date(comment.createdAt).getTime())}</Text>
               <View style={{ flex: 1 }} />
               {!isReply && (
@@ -632,19 +640,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       padding: 12,
       gap: 6,
     },
-    commentMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
-    youBadge: {
-      backgroundColor: colors.greenDim,
-      borderRadius: 6,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-    },
-    youBadgeText: {
-      fontSize: 10,
-      fontFamily: "Inter_700Bold",
+    commentMeta: { flexDirection: "row", alignItems: "center", gap: 5 },
+    commentUserId: {
+      fontSize: 11,
+      fontFamily: "Inter_600SemiBold",
       color: colors.green,
-      letterSpacing: 0.2,
+      flexShrink: 1,
     },
+    commentDot: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary },
     commentTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textSecondary },
     replyBtn: { flexDirection: "row", alignItems: "center", gap: 3 },
     replyBtnText: { fontSize: 11, fontFamily: "Inter_500Medium", color: colors.textSecondary },

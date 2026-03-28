@@ -125,7 +125,14 @@ router.post("/posts", async (req, res) => {
       .insert(postsTable)
       .values({ anonymousId, content: content.trim(), imageUrl: imageUrl || null, videoUrl: videoUrl || null, expiresAt, isDraft })
       .returning();
-    return res.status(201).json(post);
+    return res.status(201).json({
+      ...post,
+      worthItCount: 0,
+      skipCount: 0,
+      commentCount: 0,
+      myReaction: null,
+      isOwn: true,
+    });
   } catch (err) {
     req.log.error(err, "Error creating post");
     return res.status(500).json({ error: "Failed to create post" });
@@ -134,13 +141,16 @@ router.post("/posts", async (req, res) => {
 
 router.get("/posts/mine", async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
+  const permId = req.headers["x-perm-id"] as string | undefined;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
+
+  const ownerIds = [anonymousId, permId].filter((id): id is string => Boolean(id));
 
   try {
     const posts = await db
       .select()
       .from(postsTable)
-      .where(and(eq(postsTable.anonymousId, anonymousId), eq(postsTable.isDraft, false)))
+      .where(and(inArray(postsTable.anonymousId, ownerIds), eq(postsTable.isDraft, false)))
       .orderBy(desc(postsTable.createdAt));
 
     const postIds = posts.map((p) => p.id);
