@@ -45,6 +45,7 @@ export default function CreateScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [posting, setPosting] = useState(false);
   const [showDrafts, setShowDrafts] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [expiresInHours, setExpiresInHours] = useState<number | null>(48);
   const [showExpiryModal, setShowExpiryModal] = useState(false);
   const [rateLimitMs, setRateLimitMs] = useState<number | null>(null);
@@ -276,14 +277,14 @@ export default function CreateScreen() {
         <Text style={styles.headerTitle}>New post</Text>
         <TouchableOpacity
           style={[styles.postBtn, !canPost && styles.postBtnDisabled]}
-          onPress={() => handleSubmit(false)}
+          onPress={() => { if (canPost) setShowPreview(true); }}
           disabled={!canPost}
           activeOpacity={0.85}
         >
           {posting ? (
             <ActivityIndicator size="small" color="#000" />
           ) : (
-            <Text style={[styles.postBtnText, !canPost && styles.postBtnTextDisabled]}>Post</Text>
+            <Text style={[styles.postBtnText, !canPost && styles.postBtnTextDisabled]}>Preview</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -439,6 +440,127 @@ export default function CreateScreen() {
           </View>
         </Modal>
       </ScrollView>
+
+      <Modal
+        visible={showPreview}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowPreview(false)}
+        statusBarTranslucent
+      >
+        <View style={[styles.previewScreen, { paddingTop: top, paddingBottom: bottom }]}>
+          <View style={styles.previewHeader}>
+            <TouchableOpacity onPress={() => setShowPreview(false)} style={styles.closeBtn}>
+              <Feather name="arrow-left" size={22} color={colors.textSecondary} />
+            </TouchableOpacity>
+            <Text style={styles.previewTitle}>Post preview</Text>
+            <View style={{ width: 36 }} />
+          </View>
+
+          <View style={styles.previewHint}>
+            <Feather name="eye" size={13} color={colors.textTertiary} />
+            <Text style={styles.previewHintText}>This is exactly how your post will appear</Text>
+          </View>
+
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={[styles.previewCard, { backgroundColor: colors.surface }]}>
+              <View style={styles.previewCardTop}>
+                <View style={[styles.previewAvatarDot, { backgroundColor: colors.green }]} />
+                <Text style={[styles.previewUserId, { color: colors.green }]}>You</Text>
+                <Text style={[styles.previewDot, { color: colors.textTertiary }]}>·</Text>
+                <Text style={[styles.previewTime, { color: colors.textTertiary }]}>Just now</Text>
+                <View style={styles.previewAnonBadge}>
+                  <Feather name="eye-off" size={10} color={colors.textTertiary} />
+                  <Text style={[styles.previewAnonLabel, { color: colors.textTertiary }]}>anon</Text>
+                </View>
+              </View>
+
+              <Text style={[styles.previewContent, { color: colors.text }]}>{content.trim()}</Text>
+
+              {selectedImages.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginTop: 12 }}
+                  contentContainerStyle={{ gap: 8 }}
+                >
+                  {selectedImages.map((img, idx) => (
+                    <Image
+                      key={idx}
+                      source={{ uri: img.uri }}
+                      style={styles.previewImage}
+                      contentFit="cover"
+                    />
+                  ))}
+                </ScrollView>
+              )}
+
+              {selectedVideo && !selectedImages.length && (
+                <View style={[styles.previewVideoThumb, { backgroundColor: colors.background }]}>
+                  <Feather name="play-circle" size={40} color={colors.textSecondary} />
+                  <Text style={[styles.previewVideoLabel, { color: colors.textSecondary }]}>
+                    Video · {Math.round(selectedVideo.duration ?? 0)}s
+                  </Text>
+                </View>
+              )}
+
+              <View style={[styles.previewFooter, { borderTopColor: colors.border }]}>
+                <View style={styles.previewStat}>
+                  <Feather name="thumbs-up" size={14} color={colors.textTertiary} />
+                  <Text style={[styles.previewStatText, { color: colors.textTertiary }]}>Worth it</Text>
+                </View>
+                <View style={styles.previewStat}>
+                  <Feather name="thumbs-down" size={14} color={colors.textTertiary} />
+                  <Text style={[styles.previewStatText, { color: colors.textTertiary }]}>Skip</Text>
+                </View>
+                <View style={styles.previewStat}>
+                  <Feather name="message-circle" size={14} color={colors.textTertiary} />
+                  <Text style={[styles.previewStatText, { color: colors.textTertiary }]}>Comment</Text>
+                </View>
+                {expiresInHours !== null && (
+                  <View style={styles.previewStat}>
+                    <Feather name="clock" size={12} color={colors.textTertiary} />
+                    <Text style={[styles.previewStatText, { color: colors.textTertiary }]}>
+                      Deletes in {EXPIRY_OPTIONS.find((o) => o.value === expiresInHours)?.label}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={[styles.previewActions, { borderTopColor: colors.border }]}>
+            <TouchableOpacity
+              style={[styles.previewEditBtn, { borderColor: colors.border }]}
+              onPress={() => setShowPreview(false)}
+            >
+              <Feather name="edit-2" size={16} color={colors.text} />
+              <Text style={[styles.previewEditText, { color: colors.text }]}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.previewPostBtn, { backgroundColor: colors.green }]}
+              onPress={() => {
+                setShowPreview(false);
+                handleSubmit(false);
+              }}
+              disabled={posting}
+            >
+              {posting ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <>
+                  <Feather name="send" size={16} color="#000" />
+                  <Text style={styles.previewPostText}>Post anonymously</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -764,6 +886,153 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       fontSize: 13,
       fontFamily: "Inter_600SemiBold",
       color: colors.green,
+    },
+    previewScreen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    previewHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    previewTitle: {
+      fontSize: 17,
+      fontFamily: "Inter_600SemiBold",
+      color: colors.text,
+    },
+    previewHint: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: colors.greenDim,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    previewHintText: {
+      fontSize: 12,
+      fontFamily: "Inter_500Medium",
+      color: colors.green,
+    },
+    previewCard: {
+      borderRadius: 18,
+      padding: 16,
+      gap: 12,
+    },
+    previewCardTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    previewAvatarDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    previewUserId: {
+      fontSize: 13,
+      fontFamily: "Inter_600SemiBold",
+    },
+    previewDot: {
+      fontSize: 13,
+    },
+    previewTime: {
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+      flex: 1,
+    },
+    previewAnonBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: colors.background,
+    },
+    previewAnonLabel: {
+      fontSize: 10,
+      fontFamily: "Inter_500Medium",
+    },
+    previewContent: {
+      fontSize: 17,
+      fontFamily: "Inter_400Regular",
+      lineHeight: 26,
+    },
+    previewImage: {
+      width: 200,
+      height: 200,
+      borderRadius: 12,
+    },
+    previewVideoThumb: {
+      marginTop: 12,
+      height: 140,
+      borderRadius: 12,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 8,
+    },
+    previewVideoLabel: {
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+    },
+    previewFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 16,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      flexWrap: "wrap",
+    },
+    previewStat: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+    },
+    previewStatText: {
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+    },
+    previewActions: {
+      flexDirection: "row",
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderTopWidth: 1,
+    },
+    previewEditBtn: {
+      flex: 1,
+      height: 52,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      borderRadius: 14,
+      borderWidth: 1.5,
+    },
+    previewEditText: {
+      fontSize: 16,
+      fontFamily: "Inter_600SemiBold",
+    },
+    previewPostBtn: {
+      flex: 2,
+      height: 52,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      borderRadius: 14,
+    },
+    previewPostText: {
+      fontSize: 16,
+      fontFamily: "Inter_600SemiBold",
+      color: "#000",
     },
   });
 }
