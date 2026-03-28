@@ -178,9 +178,8 @@ export function useReactionAnim() {
   const scale = useSharedValue(1);
   const trigger = () => {
     scale.value = withSequence(
-      withSpring(1.35, { damping: 5, stiffness: 500 }),
-      withSpring(0.92, { damping: 8, stiffness: 350 }),
-      withSpring(1, { damping: 10, stiffness: 250 }),
+      withTiming(0.92, { duration: 80, easing: Easing.out(Easing.quad) }),
+      withSpring(1, { damping: 12, stiffness: 280 }),
     );
   };
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));

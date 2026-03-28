@@ -226,8 +226,21 @@ function PostCard({
             </Text>
             <Text style={styles.posterTime}>{timeAgo(post.createdAt)}</Text>
           </View>
-          <View style={styles.tapHint}>
-            <Feather name="arrow-right" size={12} color={colors.textTertiary} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            {!post.isOwn && (
+              <View onStartShouldSetResponder={() => true}>
+                <TouchableOpacity
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  onPress={() => router.push({ pathname: "/report", params: { postId: String(post.id) } } as any)}
+                  style={styles.flagBtn}
+                >
+                  <Feather name="flag" size={13} color={colors.textTertiary} />
+                </TouchableOpacity>
+              </View>
+            )}
+            <View style={styles.tapHint}>
+              <Feather name="arrow-right" size={12} color={colors.textTertiary} />
+            </View>
           </View>
         </View>
 
@@ -670,6 +683,7 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     posterIdText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.text },
     posterTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary, marginTop: 1 },
     tapHint: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
+    flagBtn: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
     cardText: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.text, lineHeight: 23, paddingHorizontal: 16, paddingVertical: 10 },
     cardMeta: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
     metaChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
