@@ -2,11 +2,12 @@ import { Router } from "express";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { reportsTable, postsTable, notificationsTable } from "@workspace/db/schema";
+import { reportLimiter } from "../middleware/rateLimits";
 
 const router = Router();
 const ADMIN_KEY = process.env.ADMIN_KEY ?? "blindfeed-admin-2026";
 
-router.post("/posts/:id/report", async (req, res) => {
+router.post("/posts/:id/report", reportLimiter, async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string | undefined;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 

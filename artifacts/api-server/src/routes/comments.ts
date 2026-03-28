@@ -2,6 +2,7 @@ import { Router } from "express";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { commentsTable, postsTable, notificationsTable } from "@workspace/db/schema";
+import { commentLimiter } from "../middleware/rateLimits";
 
 const router = Router();
 
@@ -48,7 +49,7 @@ router.get("/posts/:id/comments", async (req, res) => {
   }
 });
 
-router.post("/posts/:id/comments", async (req, res) => {
+router.post("/posts/:id/comments", commentLimiter, async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 

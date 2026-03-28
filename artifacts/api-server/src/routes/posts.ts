@@ -2,6 +2,7 @@ import { Router } from "express";
 import { and, desc, eq, gt, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { postsTable, reactionsTable, commentsTable } from "@workspace/db/schema";
+import { postCreateLimiter, reactionLimiter, searchLimiter } from "../middleware/rateLimits";
 
 const router = Router();
 
@@ -74,7 +75,7 @@ router.get("/posts", async (req, res) => {
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 2;
 
-router.post("/posts", async (req, res) => {
+router.post("/posts", postCreateLimiter, async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
@@ -254,7 +255,7 @@ router.get("/posts/trending", async (req, res) => {
   }
 });
 
-router.get("/posts/search", async (req, res) => {
+router.get("/posts/search", searchLimiter, async (req, res) => {
   const { q = "", sort = "recent" } = req.query;
   const anonymousId = req.headers["x-anonymous-id"] as string;
   const searchTerm = String(q).trim();
@@ -420,7 +421,7 @@ router.delete("/posts/:id", async (req, res) => {
   }
 });
 
-router.post("/posts/:id/react", async (req, res) => {
+router.post("/posts/:id/react", reactionLimiter, async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 

@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { ObjectPermission } from "../lib/objectAcl";
+import { uploadLimiter } from "../middleware/rateLimits";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -13,7 +14,7 @@ const objectStorageService = new ObjectStorageService();
  * The client sends JSON metadata (name, size, contentType) — NOT the file.
  * Then uploads the file directly to the returned presigned URL.
  */
-router.post("/storage/uploads/request-url", async (req: Request, res: Response) => {
+router.post("/storage/uploads/request-url", uploadLimiter, async (req: Request, res: Response) => {
   const { name, size, contentType } = req.body ?? {};
   if (!name || !contentType) {
     res.status(400).json({ error: "Missing required fields: name, contentType" });

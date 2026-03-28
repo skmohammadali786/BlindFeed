@@ -3,6 +3,7 @@ import { eq, or } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db/schema";
 import crypto from "node:crypto";
+import { authLimiter } from "../middleware/rateLimits";
 
 const router = Router();
 
@@ -30,7 +31,7 @@ function generateAnonymousId(): string {
   return result;
 }
 
-router.post("/auth/register", async (req, res) => {
+router.post("/auth/register", authLimiter, async (req, res) => {
   const { anonymousId: clientAnonId, name, email, phone, password } = req.body;
   if (!name || !email || !phone || !password) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -68,7 +69,7 @@ router.post("/auth/register", async (req, res) => {
   }
 });
 
-router.post("/auth/login", async (req, res) => {
+router.post("/auth/login", authLimiter, async (req, res) => {
   const { identifier, password } = req.body;
   if (!identifier || !password) {
     return res.status(400).json({ error: "Missing credentials" });
