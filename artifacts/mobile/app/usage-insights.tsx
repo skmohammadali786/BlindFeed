@@ -50,7 +50,7 @@ function calcStreak(posts: Array<{ createdAt: string }>): number {
 
 export default function UsageInsightsScreen() {
   const { colors } = useTheme();
-  const { posts, sessionSeconds } = useApp();
+  const { posts, totalScreenTimeSeconds } = useApp();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top;
@@ -72,7 +72,7 @@ export default function UsageInsightsScreen() {
   const skipCount = reactedPosts.filter((p) => p.myReaction === "skip").length;
   const totalReactions = worthItCount + skipCount;
   const worthItPct = totalReactions > 0 ? Math.round((worthItCount / totalReactions) * 100) : 0;
-  const timeStr = formatTime(sessionSeconds);
+  const timeStr = formatTime(totalScreenTimeSeconds);
   const totalPosts = allPosts.length;
 
   const styles = makeStyles(colors);
@@ -109,10 +109,13 @@ export default function UsageInsightsScreen() {
                 <Text style={[styles.statValue, { color: "#FFD60A" }]}>{String(reactionCount)}</Text>
                 <Text style={styles.statLabel}>Reactions</Text>
               </View>
-              <View style={styles.statCard}>
-                <Feather name="clock" size={20} color={colors.textSecondary} />
+              <View style={[styles.statCard, { borderColor: colors.border, borderWidth: 1 }]}>
+                <View style={styles.liveRow}>
+                  <Feather name="clock" size={20} color={colors.textSecondary} />
+                  <View style={[styles.liveDot, { backgroundColor: colors.green }]} />
+                </View>
                 <Text style={styles.statValue}>{timeStr}</Text>
-                <Text style={styles.statLabel}>This session</Text>
+                <Text style={styles.statLabel}>Total screen time</Text>
               </View>
             </View>
           </AnimatedListItem>
@@ -120,7 +123,9 @@ export default function UsageInsightsScreen() {
           <AnimatedListItem index={1}>
             <View style={[styles.streakCard, streak >= 3 && styles.streakCardActive]}>
               <View style={styles.streakLeft}>
-                <Text style={styles.streakEmoji}>{streak === 0 ? "🌱" : streak < 3 ? "🔥" : streak < 7 ? "⚡" : "🏆"}</Text>
+                <View style={[styles.streakIconWrap, { backgroundColor: streak >= 7 ? "rgba(255,214,10,0.15)" : streak >= 3 ? colors.greenDim : colors.surface }]}>
+                  <Feather name={streak === 0 ? "sunrise" : streak < 3 ? "trending-up" : streak < 7 ? "zap" : "award"} size={20} color={streak >= 7 ? "#FFD60A" : streak >= 3 ? colors.green : colors.textSecondary} />
+                </View>
                 <View>
                   <Text style={styles.streakLabel}>Posting Streak</Text>
                   <Text style={styles.streakSub}>
@@ -240,7 +245,9 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     streakCardActive: { borderColor: colors.green, backgroundColor: colors.greenDim },
     streakLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-    streakEmoji: { fontSize: 30 },
+    streakIconWrap: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
+    liveRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+    liveDot: { width: 6, height: 6, borderRadius: 3 },
     streakLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: colors.text },
     streakSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textSecondary, marginTop: 2 },
     streakBadge: { alignItems: "center" },

@@ -184,14 +184,12 @@ const statCardStyles = StyleSheet.create({
 });
 
 function ReactionBtn({
-  active, activeColor, icon, emoji, label, count, onPress, colors,
+  active, activeColor, icon, label, count, onPress, colors,
 }: {
-  active: boolean; activeColor: string; icon: string; emoji: string; label: string;
+  active: boolean; activeColor: string; icon: string; label: string;
   count: number; onPress: () => void; colors: ReturnType<typeof useTheme>["colors"];
 }) {
   const { style: animStyle, trigger } = useReactionAnim();
-  const scale = useSharedValue(1);
-  const scaleStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
     <Animated.View style={[{ flex: 1 }, animStyle]}>
@@ -206,9 +204,9 @@ function ReactionBtn({
         onPress={() => { trigger(); onPress(); }}
         activeOpacity={0.75}
       >
-        <Animated.View style={[rxStyles.emojiWrap, scaleStyle, { backgroundColor: active ? activeColor + "25" : colors.background }]}>
-          <Text style={rxStyles.emoji}>{emoji}</Text>
-        </Animated.View>
+        <View style={[rxStyles.iconWrap, { backgroundColor: active ? activeColor + "25" : colors.background }]}>
+          <Feather name={icon as any} size={20} color={active ? activeColor : colors.textSecondary} />
+        </View>
         <View style={rxStyles.labelCol}>
           <Text style={[rxStyles.label, { color: active ? activeColor : colors.text }]}>{label}</Text>
           <Text style={[rxStyles.count, { color: active ? activeColor + "AA" : colors.textTertiary }]}>
@@ -216,7 +214,7 @@ function ReactionBtn({
           </Text>
         </View>
         {active && (
-          <Animated.View entering={FadeIn.duration(200)} style={rxStyles.activeDot}>
+          <Animated.View entering={FadeIn.duration(200)}>
             <Feather name="check-circle" size={16} color={activeColor} />
           </Animated.View>
         )}
@@ -229,12 +227,10 @@ const rxStyles = StyleSheet.create({
     flex: 1, flexDirection: "row", alignItems: "center", gap: 12,
     paddingVertical: 14, paddingHorizontal: 16, borderRadius: 18, borderWidth: 1.5,
   },
-  emojiWrap: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
-  emoji: { fontSize: 22 },
+  iconWrap: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
   labelCol: { flex: 1, gap: 2 },
   label: { fontSize: 15, fontFamily: "Inter_700Bold" },
   count: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  activeDot: { marginLeft: "auto" },
 });
 
 function CommentItem({
@@ -677,7 +673,6 @@ export default function PostDetailScreen() {
               active={myWorthIt}
               activeColor={colors.green}
               icon="check"
-              emoji="✅"
               label="Worth it"
               count={post.worthItCount}
               onPress={() => handleReact("worthit")}
@@ -687,7 +682,6 @@ export default function PostDetailScreen() {
               active={mySkip}
               activeColor="#FF3B30"
               icon="x"
-              emoji="⏭️"
               label="Skip"
               count={post.skipCount}
               onPress={() => handleReact("skip")}
@@ -701,7 +695,9 @@ export default function PostDetailScreen() {
     if (item.type === "no-comments") {
       return (
         <View style={styles.noCommentsBlock}>
-          <Text style={styles.noCommentsEmoji}>💬</Text>
+          <View style={[styles.noCommentsIconWrap, { backgroundColor: colors.surface }]}>
+            <Feather name="message-circle" size={28} color={colors.textTertiary} />
+          </View>
           <Text style={[styles.noCommentsTitle, { color: colors.text }]}>No comments yet</Text>
           <Text style={[styles.noCommentsSub, { color: colors.textSecondary }]}>Be the first to share your thoughts</Text>
         </View>
@@ -956,7 +952,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     reactionRow: { flexDirection: "row", gap: 12 },
 
     noCommentsBlock: { alignItems: "center", paddingVertical: 32, gap: 8 },
-    noCommentsEmoji: { fontSize: 36 },
+    noCommentsIconWrap: { width: 60, height: 60, borderRadius: 30, justifyContent: "center", alignItems: "center", marginBottom: 4 },
     noCommentsTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
     noCommentsSub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
 

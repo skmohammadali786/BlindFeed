@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { AppState, AppStateStatus } from "react-native";
 import { api, ApiPost, ApiMyPost } from "@/utils/api";
 
 export interface Post {
@@ -40,6 +41,7 @@ interface AppContextType {
   appInitialized: boolean;
   settings: AppSettings;
   sessionSeconds: number;
+  totalScreenTimeSeconds: number;
   drafts: DraftPost[];
   feedLoading: boolean;
   feedError: string | null;
@@ -77,6 +79,7 @@ const STORAGE_KEYS = {
   ANONYMOUS_ID: "bf_anonymous_id",
   REGISTERED: "bf_registered",
   DRAFTS: "bf_drafts",
+  TOTAL_SCREEN_TIME: "bf_total_screen_time",
 };
 
 const USER_RESET_MS = 7 * 24 * 60 * 60 * 1000;
@@ -132,14 +135,44 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [feedLoading, setFeedLoading] = useState(false);
   const [feedError, setFeedError] = useState<string | null>(null);
   const [sessionSeconds, setSessionSeconds] = useState(0);
+  const [storedScreenTime, setStoredScreenTime] = useState(0);
   const sessionStart = useRef(Date.now());
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+
+  const saveScreenTime = useCallback(async (extra: number) => {
+    const stored = parseInt((await AsyncStorage.getItem(STORAGE_KEYS.TOTAL_SCREEN_TIME)) || "0") || 0;
+    await AsyncStorage.setItem(STORAGE_KEYS.TOTAL_SCREEN_TIME, String(stored + extra));
+    setStoredScreenTime(stored + extra);
+  }, []);
 
   useEffect(() => {
     loadData();
+    AsyncStorage.getItem(STORAGE_KEYS.TOTAL_SCREEN_TIME).then((v) => {
+      setStoredScreenTime(parseInt(v || "0") || 0);
+    });
+
     const interval = setInterval(() => {
       setSessionSeconds(Math.floor((Date.now() - sessionStart.current) / 1000));
     }, 1000);
-    return () => clearInterval(interval);
+
+    const sub = AppState.addEventListener("change", (nextState: AppStateStatus) => {
+      const prev = appStateRef.current;
+      if (prev === "active" && nextState.match(/inactive|background/)) {
+        const elapsed = Math.floor((Date.now() - sessionStart.current) / 1000);
+        saveScreenTime(elapsed);
+        sessionStart.current = Date.now();
+        setSessionSeconds(0);
+      } else if (prev.match(/inactive|background/) && nextState === "active") {
+        sessionStart.current = Date.now();
+        setSessionSeconds(0);
+      }
+      appStateRef.current = nextState;
+    });
+
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
   }, []);
 
   const loadData = async () => {
@@ -383,6 +416,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         appInitialized: loaded,
         settings,
         sessionSeconds,
+        totalScreenTimeSeconds: storedScreenTime + sessionSeconds,
         drafts,
         feedLoading,
         feedError,

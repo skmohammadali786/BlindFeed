@@ -471,7 +471,10 @@ export default function SearchScreen() {
                 <FadeSlide delay={60}>
                   <View style={styles.section}>
                     <View style={styles.sectionRow}>
-                      <Text style={styles.sectionLabel}>🔥  Trending now</Text>
+                      <View style={styles.sectionLabelRow}>
+                        <Feather name="trending-up" size={14} color={colors.textSecondary} />
+                        <Text style={styles.sectionLabel}>Trending now</Text>
+                      </View>
                     </View>
                     {trendingLoading ? (
                       <View style={{ paddingVertical: 16, alignItems: "center" }}>
@@ -851,6 +854,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center",
       marginBottom: 12,
     },
+    sectionLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
     sectionLabel: {
       fontSize: 13,
       fontFamily: "Inter_600SemiBold",
