@@ -62,30 +62,26 @@ export default function NotificationSettingsScreen() {
   const top = isWeb ? 67 : insets.top;
   const bottom = isWeb ? 34 : insets.bottom > 0 ? insets.bottom : 16;
 
-  const [permGranted, setPermGranted] = useState<boolean | null>(null);
+  const [dailyReminderOn, setDailyReminderOn] = useState(settings.dailyReminder);
+  const [postActivityOn, setPostActivityOn] = useState(settings.postPerformance);
 
   useEffect(() => {
-    if (Platform.OS === "web") {
-      setPermGranted(false);
-      return;
-    }
-    Notifications.getPermissionsAsync().then(({ status }) => {
-      setPermGranted(status === "granted");
-    });
-  }, []);
+    setDailyReminderOn(settings.dailyReminder);
+    setPostActivityOn(settings.postPerformance);
+  }, [settings.dailyReminder, settings.postPerformance]);
 
   const handleDailyReminderToggle = async (value: boolean) => {
+    setDailyReminderOn(value);
     updateSetting("dailyReminder", value);
     if (value) {
       await scheduleDailyReminder();
-      const { status } = await Notifications.getPermissionsAsync();
-      setPermGranted(status === "granted");
     } else {
       await cancelDailyReminder();
     }
   };
 
   const handlePostActivityToggle = (value: boolean) => {
+    setPostActivityOn(value);
     updateSetting("postPerformance", value);
   };
 
@@ -124,7 +120,7 @@ export default function NotificationSettingsScreen() {
                   </View>
                 </View>
                 <Switch
-                  value={settings.dailyReminder}
+                  value={dailyReminderOn}
                   onValueChange={handleDailyReminderToggle}
                   trackColor={{ false: colors.surfaceElevated, true: colors.green }}
                   thumbColor={Platform.OS === "android" ? "#fff" : undefined}
@@ -150,7 +146,7 @@ export default function NotificationSettingsScreen() {
                   </View>
                 </View>
                 <Switch
-                  value={settings.postPerformance}
+                  value={postActivityOn}
                   onValueChange={handlePostActivityToggle}
                   trackColor={{ false: colors.surfaceElevated, true: colors.green }}
                   thumbColor={Platform.OS === "android" ? "#fff" : undefined}

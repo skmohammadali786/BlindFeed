@@ -321,7 +321,7 @@ const POLL_INTERVAL_MS = 30_000;
 
 export default function FeedScreen() {
   const { colors } = useTheme();
-  const { getActivePosts, getMyPosts, reactToPost, refreshFeed, feedLoading, feedError } = useApp();
+  const { getActivePosts, fetchMyPosts, reactToPost, refreshFeed, feedLoading, feedError } = useApp();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const top = isWeb ? 67 : insets.top;
@@ -332,6 +332,16 @@ export default function FeedScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [newPostsBanner, setNewPostsBanner] = useState(false);
   const [sensitivePost, setSensitivePost] = useState<Post | null>(null);
+  const [userHasPosted, setUserHasPosted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetchMyPosts()
+      .then((myPosts) => setUserHasPosted(myPosts.length > 0))
+      .catch(() => {
+        // On error (e.g. network/auth), don't show the banner — stay null (unknown)
+      });
+  }, [fetchMyPosts]);
+
   const lastPostCountRef = useRef<number>(0);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -407,7 +417,7 @@ export default function FeedScreen() {
   );
 
   const styles = makeStyles(colors);
-  const hasOwnPosts = !feedLoading && getMyPosts().length === 0;
+  const showFirstPostBanner = userHasPosted === false && !feedLoading;
 
   return (
     <ScreenTransition>
@@ -514,9 +524,9 @@ export default function FeedScreen() {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.green} />
             }
-            ListHeaderComponent={hasOwnPosts ? <FirstPostBanner colors={colors} /> : null}
+            ListHeaderComponent={showFirstPostBanner ? <FirstPostBanner colors={colors} /> : null}
             ListEmptyComponent={
-              hasOwnPosts ? null : (
+              showFirstPostBanner ? null : (
                 <FadeSlide delay={80} style={styles.empty}>
                   <Feather name="wind" size={40} color={colors.textTertiary} />
                   <Text style={styles.emptyTitle}>Nothing here yet</Text>
