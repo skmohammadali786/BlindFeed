@@ -30,7 +30,7 @@ function getApiBase(): string {
 }
 
 async function getAnonymousId(): Promise<string | null> {
-  return AsyncStorage.getItem("bf_anonymous_id");
+  return AsyncStorage.getItem("bf_user_id");
 }
 
 async function request<T>(

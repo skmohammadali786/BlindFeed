@@ -66,16 +66,24 @@ export default function SearchScreen() {
   const handleUserSearch = async () => {
     const uid = userIdQuery.trim();
     if (!uid) return;
+    if (!uid.startsWith("anon_") || uid.length < 10) {
+      setUserError("Enter a valid ID starting with 'anon_' (copy it from their identity screen).");
+      return;
+    }
     setUserLoading(true);
     setUserError(null);
     setUserPosts([]);
     try {
       const data = await api.get<ApiPost[]>(`/users/${encodeURIComponent(uid)}/posts`);
+      if (data.length === 0) {
+        setUserError("No active posts found for this ID. The ID may have reset or all posts have expired.");
+        return;
+      }
       setSearchedUserId(uid);
       setUserPosts(data);
       setUserProfileVisible(true);
     } catch {
-      setUserError("User not found or has no active posts.");
+      setUserError("Could not fetch posts. Check the ID and try again.");
     } finally {
       setUserLoading(false);
     }

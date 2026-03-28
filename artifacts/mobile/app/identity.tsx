@@ -52,12 +52,16 @@ export default function IdentityScreen() {
                     <Feather name="user-check" size={28} color={colors.green} />
                   </View>
                 </PulseView>
-                <Text style={styles.idLabel}>Your temporary ID</Text>
+                <Text style={styles.idLabel}>Your anonymous ID</Text>
                 <Text style={styles.idValue}>{tempUserId}</Text>
                 <View style={styles.divider} />
                 <View style={styles.resetRow}>
                   <Feather name="clock" size={14} color={colors.textSecondary} />
-                  <Text style={styles.resetText}>Resets every 7 days</Text>
+                  <Text style={styles.resetText}>Auto-resets every 7 days</Text>
+                </View>
+                <View style={styles.resetRow}>
+                  <Feather name="search" size={14} color={colors.textSecondary} />
+                  <Text style={styles.resetText}>Others can search this ID to find your posts</Text>
                 </View>
                 <AnimatedPressable
                   style={styles.copyBtn}
@@ -129,10 +133,10 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     idLabel: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary },
     idValue: {
-      fontSize: 30,
+      fontSize: 22,
       fontFamily: "Inter_700Bold",
       color: colors.text,
-      letterSpacing: -0.5,
+      letterSpacing: 1,
       textAlign: "center",
     },
     divider: { width: "100%", height: 1, backgroundColor: colors.border },
