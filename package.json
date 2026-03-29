@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
-    "expo": "bash -c 'pnpm --filter @workspace/mobile exec expo \"$@\" && { [ -d artifacts/mobile/android ] && mv artifacts/mobile/android android || true; } && { [ -d artifacts/mobile/ios ] && mv artifacts/mobile/ios ios || true; } && bash .eas/setup-java.sh' --",
+    "expo": "bash -c 'pnpm --filter @workspace/mobile exec expo \"$@\" && { [ -d artifacts/mobile/android ] && mv artifacts/mobile/android android || true; } && { [ -d artifacts/mobile/ios ] && mv artifacts/mobile/ios ios || true; } && node .eas/patch-gradle.js && bash .eas/setup-java.sh' --",
     "eas-build-pre-install": "npm install -g pnpm@10.33.0 && pnpm install --no-frozen-lockfile",
     "eas:android:preview": "cd artifacts/mobile && eas build -p android --profile preview",
     "eas:android:production": "cd artifacts/mobile && eas build -p android --profile production",
