@@ -1,31 +1,7 @@
 {
+  "_note": "Run 'eas build' from the artifacts/mobile/ directory, not the monorepo root. The real eas.json is at artifacts/mobile/eas.json.",
   "cli": {
-    "version": ">= 18.4.0",
-    "appVersionSource": "remote"
+    "version": ">= 18.4.0"
   },
-  "build": {
-    "base": {
-      "node": "20.18.0",
-      "prebuildCommand": "pnpm --filter @workspace/mobile exec expo prebuild --no-install",
-      "env": {
-        "EAS_USE_PNPM": "1"
-      }
-    },
-    "development": {
-      "extends": "base",
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
-      "extends": "base",
-      "distribution": "internal"
-    },
-    "production": {
-      "extends": "base",
-      "autoIncrement": true
-    }
-  },
-  "submit": {
-    "production": {}
-  }
+  "build": {}
 }
