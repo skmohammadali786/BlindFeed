@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "28434dbc-7643-490b-bf2a-66ec8e10a09f"
+      }
+    },
+    "android": {
+      "package": "com.blindfeed.app"
+    }
+  }
+}
