@@ -1,52 +1,121 @@
 #!/usr/bin/env node
 /**
- * Patches android/app/build.gradle AFTER expo prebuild runs.
+ * Patches generated android/ files AFTER expo prebuild runs.
  *
- * Problem: expo-splash-screen generates a Theme.SplashScreen style that
- * references attr/windowSplashScreenBackground, attr/windowSplashScreenAnimatedIcon,
- * and attr/postSplashScreenTheme. These attrs come from
- * androidx.core:core-splashscreen. With compileSdk 36 (Android 16) aapt2 can
- * see those same attrs in the platform android.jar and refuses to link the
- * library-defined copies, causing:
+ * --- Problem 1: expo autolinking uses wrong project root ---
+ * expo-modules-autolinking's settings plugin resolves modules by running:
+ *   node --eval "require('expo/bin/autolinking')" expo-modules-autolinking resolve ...
+ * with workingDir = settings.rootDir (the android/ directory).
  *
- *   error: style attribute 'attr/windowSplashScreenBackground ... not found.
+ * After expo prebuild runs in artifacts/mobile/ and we move android/ to the
+ * monorepo root, settings.rootDir becomes the monorepo root. The autolinking
+ * script then reads the monorepo root's package.json, which lists no expo
+ * modules as direct dependencies. Zero modules are included as Gradle
+ * subprojects → all `import expo.*` in MainActivity.kt are "Unresolved".
  *
- * Fix: explicitly add core-splashscreen:1.0.1 as a direct Gradle dependency
- * so the AAR's attr declarations are authoritative and aapt2 can resolve them.
+ * Fix: Patch android/settings.gradle to add
+ *   projectRoot = new File(settings.rootDir.parent, "artifacts/mobile")
+ * inside the `expo { }` block before `useExpoModules()`.
  *
- * NOTE: We do NOT touch compileSdkVersion / targetSdkVersion. Lowering to 34
- * fixes the resource conflict but breaks expo-modules-core Kotlin compilation
- * because that library references Android 15/16 APIs from the SDK 35/36 jar.
+ * --- Problem 2: splash screen resource attributes not found ---
+ * expo-splash-screen generates Theme.SplashScreen referencing attrs from
+ * androidx.core:core-splashscreen. Explicitly add it as a direct dependency.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const appBuildGradle = path.join(__dirname, '..', 'android', 'app', 'build.gradle');
+const androidDir = path.join(__dirname, '..', 'android');
 
-if (!fs.existsSync(appBuildGradle)) {
-  console.log('patch-gradle: android/app/build.gradle not found – skipping');
-  process.exit(0);
+// ── Helper ──────────────────────────────────────────────────────────────────
+function patch(filePath, transform) {
+  if (!fs.existsSync(filePath)) {
+    return false;
+  }
+  const original = fs.readFileSync(filePath, 'utf8');
+  const patched = transform(original);
+  if (patched !== original) {
+    fs.writeFileSync(filePath, patched, 'utf8');
+    console.log(`patch-gradle: patched ${path.basename(filePath)}`);
+  } else {
+    console.log(`patch-gradle: no changes needed in ${path.basename(filePath)}`);
+  }
+  return true;
 }
 
-let content = fs.readFileSync(appBuildGradle, 'utf8');
-const original = content;
+// ── 1. Fix autolinking project root in settings.gradle ───────────────────────
+const settingsGradle = path.join(androidDir, 'settings.gradle');
+const settingsGradleKts = path.join(androidDir, 'settings.gradle.kts');
 
-// Add core-splashscreen as an explicit dependency so aapt2 can find the
-// splash screen attributes regardless of transitive dependency resolution.
-if (!content.includes('core-splashscreen')) {
-  content = content.replace(
-    /^(dependencies \{)/m,
-    '$1\n    // Added by .eas/patch-gradle.js – required for splash screen resource attrs\n    implementation("androidx.core:core-splashscreen:1.0.1")'
+// Print first 80 lines so we can see the format in build logs
+const settingsFile = fs.existsSync(settingsGradle) ? settingsGradle
+  : fs.existsSync(settingsGradleKts) ? settingsGradleKts
+  : null;
+
+if (!settingsFile) {
+  console.log('patch-gradle: WARNING – no settings.gradle found in android/');
+} else {
+  const content = fs.readFileSync(settingsFile, 'utf8');
+  console.log(`\n--- BEGIN ${path.basename(settingsFile)} (first 80 lines) ---`);
+  content.split('\n').slice(0, 80).forEach((l, i) => console.log(`${String(i + 1).padStart(3)}: ${l}`));
+  console.log(`--- END ${path.basename(settingsFile)} ---\n`);
+}
+
+// Now patch the settings file
+const PROJECT_ROOT_LINE =
+  '  projectRoot = new File(settings.rootDir.parent, "artifacts/mobile")';
+const PROJECT_ROOT_LINE_KTS =
+  '  projectRoot = File(settings.rootDir.parent, "artifacts/mobile")';
+
+function patchSettings(content, isKts) {
+  if (content.includes('projectRoot')) {
+    console.log('patch-gradle: settings already has projectRoot, skipping');
+    return content;
+  }
+
+  const rootLine = isKts ? PROJECT_ROOT_LINE_KTS : PROJECT_ROOT_LINE;
+
+  // Pattern A: expo { ... useExpoModules() ... }
+  let patched = content.replace(
+    /(expo\s*\{[^}]*?)(useExpoModules\(\))/s,
+    (_, prefix, call) => `${prefix}${rootLine}\n  ${call}`
   );
-  console.log('patch-gradle: added androidx.core:core-splashscreen:1.0.1');
-} else {
-  console.log('patch-gradle: core-splashscreen already present, skipping');
+  if (patched !== content) {
+    console.log('patch-gradle: applied Pattern A (expo { useExpoModules() })');
+    return patched;
+  }
+
+  // Pattern B: standalone useExpoModules() call
+  patched = content.replace(
+    /^(\s*useExpoModules\(\))/m,
+    `expo {\n${rootLine}\n  useExpoModules()\n}`
+  );
+  if (patched !== content) {
+    console.log('patch-gradle: applied Pattern B (bare useExpoModules())');
+    return patched;
+  }
+
+  console.log('patch-gradle: WARNING – could not find useExpoModules() in settings, no patch applied');
+  return content;
 }
 
-if (content !== original) {
-  fs.writeFileSync(appBuildGradle, content, 'utf8');
-  console.log('patch-gradle: android/app/build.gradle patched successfully');
-} else {
-  console.log('patch-gradle: no changes needed');
+if (settingsFile) {
+  const isKts = settingsFile.endsWith('.kts');
+  patch(settingsFile, (c) => patchSettings(c, isKts));
 }
+
+// ── 2. Add core-splashscreen dependency to android/app/build.gradle ──────────
+const appBuildGradle = path.join(androidDir, 'app', 'build.gradle');
+patch(appBuildGradle, (content) => {
+  if (content.includes('core-splashscreen')) {
+    return content;
+  }
+  const updated = content.replace(
+    /^(dependencies \{)/m,
+    '$1\n    // Added by .eas/patch-gradle.js\n    implementation("androidx.core:core-splashscreen:1.0.1")'
+  );
+  if (updated !== content) {
+    console.log('patch-gradle: added androidx.core:core-splashscreen:1.0.1');
+  }
+  return updated;
+});
