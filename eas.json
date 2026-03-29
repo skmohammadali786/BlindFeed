@@ -1,7 +1,7 @@
 {
-  "_note": "Run 'eas build' from the artifacts/mobile/ directory, not the monorepo root. The real eas.json is at artifacts/mobile/eas.json.",
   "cli": {
     "version": ">= 18.4.0"
   },
-  "build": {}
+  "build": {},
+  "submit": {}
 }
