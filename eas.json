@@ -1,30 +1,7 @@
 {
   "cli": {
-    "version": ">= 18.4.0",
-    "appVersionSource": "remote"
+    "version": ">= 18.4.0"
   },
-  "build": {
-    "base": {
-      "node": "20.18.0",
-      "env": {
-        "EAS_USE_PNPM": "1"
-      }
-    },
-    "development": {
-      "extends": "base",
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
-      "extends": "base",
-      "distribution": "internal"
-    },
-    "production": {
-      "extends": "base",
-      "autoIncrement": true
-    }
-  },
-  "submit": {
-    "production": {}
-  }
+  "build": {},
+  "submit": {}
 }
