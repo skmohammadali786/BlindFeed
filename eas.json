@@ -6,6 +6,9 @@
   "build": {
     "base": {
       "node": "20.18.0",
+      "android": {
+        "image": "latest"
+      },
       "env": {
         "EAS_USE_PNPM": "1"
       }
