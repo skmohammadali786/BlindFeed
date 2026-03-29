@@ -4,27 +4,25 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
+    "base": {
       "node": "20.18.0",
+      "prebuildCommand": "pnpm --filter @workspace/mobile exec expo prebuild --no-install",
       "env": {
         "EAS_USE_PNPM": "1"
       }
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "node": "20.18.0",
-      "env": {
-        "EAS_USE_PNPM": "1"
-      }
+      "extends": "base",
+      "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true,
-      "node": "20.18.0",
-      "env": {
-        "EAS_USE_PNPM": "1"
-      }
+      "extends": "base",
+      "autoIncrement": true
     }
   },
   "submit": {
