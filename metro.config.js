@@ -25,12 +25,17 @@ config.resolver.nodeModulesPaths = [
 // real .pnpm/ directory, which breaks relative imports like "../../App".
 config.resolver.unstable_enableSymlinks = true;
 
-// Resolve the "@/" path alias that tsconfig.json maps to the project root.
-// babel-preset-expo's auto-tsconfig-paths feature doesn't fire reliably when
-// Metro is started from outside the mobile package directory, so we wire it
-// up here in the resolver instead.
-config.resolver.alias = {
-  '@': projectRoot,
+// Resolve the "@/" path alias (tsconfig.json: "@/*" -> "./*" from projectRoot).
+// resolver.alias only matches exact module names, not prefixes, so we use a
+// custom resolveRequest that converts "@/foo" to an absolute path and then
+// hands off to Metro's default resolution (which handles extensions, index
+// files, platform suffixes, etc.).
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName.startsWith('@/')) {
+    const absolutePath = path.resolve(projectRoot, moduleName.slice(2));
+    return context.resolveRequest(context, absolutePath, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
 };
 
 module.exports = config;
