@@ -7,7 +7,8 @@
     "base": {
       "node": "20.18.0",
       "env": {
-        "EAS_USE_PNPM": "1"
+        "EAS_USE_PNPM": "1",
+        "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64"
       }
     },
     "development": {
