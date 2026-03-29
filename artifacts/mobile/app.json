@@ -17,10 +17,7 @@
       "supportsTablet": false
     },
     "android": {
-      "backgroundColor": "#0A0A0A",
-      "compileSdkVersion": 35,
-      "targetSdkVersion": 35,
-      "buildToolsVersion": "35.0.0"
+      "backgroundColor": "#0A0A0A"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
