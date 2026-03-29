@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# Force the pnpm version declared in packageManager to be used for this build.
-# corepack enable creates a shim so all subsequent pnpm calls (including
-# EAS's own "pnpm install --frozen-lockfile") use pnpm@10.33.0, which can
-# read our lockfile format (v9.0 + catalogs) without the LOCKFILE_CONFIG_MISMATCH error.
+# Install pnpm@10.33.0 directly via npm (avoids corepack's signature verification).
+# This upgrades the pnpm binary in the nvm bin directory so ALL subsequent
+# pnpm calls on this build server — including EAS's own frozen-lockfile install
+# — use pnpm@10.33.0, which understands our lockfile format (v9.0 + catalogs).
 set -euo pipefail
 
-echo "EAS pre-install: activating pnpm@10.33.0 via corepack..."
-corepack enable pnpm
-corepack prepare pnpm@10.33.0 --activate
+echo "EAS pre-install: installing pnpm@10.33.0..."
+npm install -g pnpm@10.33.0
 
-echo "EAS pre-install: regenerating lockfile with pnpm@10.33.0..."
+echo "EAS pre-install: pnpm version: $(pnpm --version)"
+
+echo "EAS pre-install: regenerating lockfile..."
 pnpm install --no-frozen-lockfile
 
 echo "EAS pre-install: done."
