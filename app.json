@@ -1,12 +1,17 @@
 {
   "expo": {
-    "extra": {
-      "eas": {
-        "projectId": "28434dbc-7643-490b-bf2a-66ec8e10a09f"
-      }
-    },
+    "name": "blindfeed",
+    "slug": "blindfeed",
     "android": {
       "package": "com.blindfeed.app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f7e70d71-bc9c-4f36-a554-fc9860f2fbd1"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.blindfeed.app"
     }
   }
 }

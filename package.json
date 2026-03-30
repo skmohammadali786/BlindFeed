@@ -14,7 +14,9 @@
     "eas:ios:production": "cd artifacts/mobile && eas build -p ios --profile production",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "main": "expo-router/entry",
   "private": true,
@@ -30,5 +32,10 @@
   "devDependencies": {
     "typescript": "~5.9.2",
     "prettier": "^3.8.1"
+  },
+  "dependencies": {
+    "expo": "~54.0.33",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   }
 }
