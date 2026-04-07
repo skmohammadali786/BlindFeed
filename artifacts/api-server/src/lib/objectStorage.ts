@@ -44,8 +44,11 @@ export class ObjectStorageService {
       throw new Error(error?.message ?? "Failed to generate upload URL");
     }
 
-    const uploadURL = (data as { signedUrl?: string }).signedUrl
-      ?? createSignedUploadEndpoint(privateBucket, objectName, data.token);
+    const signedUrl =
+      "signedUrl" in data && typeof data.signedUrl === "string"
+        ? data.signedUrl
+        : undefined;
+    const uploadURL = signedUrl ?? createSignedUploadEndpoint(privateBucket, objectName, data.token);
     return {
       uploadURL,
       objectPath: `/objects/${objectName}`,

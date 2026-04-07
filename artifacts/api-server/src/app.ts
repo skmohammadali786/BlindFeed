@@ -7,6 +7,12 @@ import { globalLimiter } from "./middleware/rateLimits";
 import { attachIdentityFromSupabaseToken } from "./middleware/authIdentity";
 
 const app: Express = express();
+const corsAllowedOrigins = new Set(
+  (process.env.CORS_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean),
+);
 
 app.set("trust proxy", 1);
 
@@ -37,28 +43,20 @@ app.use(
 );
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  const allowList = (process.env.CORS_ALLOWED_ORIGINS ?? "")
-    .split(",")
-    .map((v) => v.trim())
-    .filter(Boolean);
-  const isAllowedOrigin = origin ? allowList.includes(origin) : true;
+  const allowedOrigin = origin && corsAllowedOrigins.has(origin) ? origin : undefined;
 
-  if (origin && !isAllowedOrigin) {
-    if (req.method === "OPTIONS") {
-      res.sendStatus(204);
-      return;
-    }
+  if (origin && !allowedOrigin) {
     res.status(403).json({ error: "Origin not allowed" });
     return;
   }
 
-  if (origin && isAllowedOrigin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
+  if (allowedOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-anonymous-id, x-perm-id, x-admin-key");
   }
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-anonymous-id, x-perm-id, x-admin-key");
   if (req.method === "OPTIONS") {
     res.sendStatus(204);
     return;
