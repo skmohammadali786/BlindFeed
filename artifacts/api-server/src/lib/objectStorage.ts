@@ -33,6 +33,11 @@ export class ObjectStorageService {
     return bucket;
   }
 
+  /**
+   * Returns:
+   * - uploadURL: signed PUT URL the client uploads bytes to
+   * - objectPath: normalized path persisted in app records for later reads
+   */
   async getObjectUploadURL(): Promise<{ uploadURL: string; objectPath: string }> {
     const privateBucket = this.getPrivateBucket();
     const objectName = `uploads/${randomUUID()}`;
@@ -48,6 +53,7 @@ export class ObjectStorageService {
       "signedUrl" in data && typeof data.signedUrl === "string"
         ? data.signedUrl
         : undefined;
+    // Some SDK responses only provide token/path pieces; build endpoint from token when signedUrl is absent.
     const uploadURL = signedUrl ?? createSignedUploadEndpoint(privateBucket, objectName, data.token);
     return {
       uploadURL,
