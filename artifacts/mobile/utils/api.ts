@@ -10,6 +10,11 @@ export const AUTH_STORAGE_KEYS = {
   REFRESH_TOKEN: "bf_refresh_token",
 };
 
+interface RefreshAuthResponse {
+  accessToken?: string | null;
+  refreshToken?: string | null;
+}
+
 export class ApiError extends Error {
   status: number;
   retryAfterMs?: number;
@@ -72,7 +77,7 @@ async function refreshAccessToken(): Promise<string | null> {
         return null;
       }
 
-      const data = (await res.json()) as { accessToken?: string | null; refreshToken?: string | null };
+      const data = (await res.json()) as RefreshAuthResponse;
       await storeAuthTokens(data);
       return data.accessToken ?? null;
     } catch {

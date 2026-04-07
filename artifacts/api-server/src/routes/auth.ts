@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db/schema";
 import { authLimiter } from "../middleware/rateLimits";
 import { refreshAuthSession, supabaseAuthClient } from "../lib/supabase";
+import { findOrLinkLocalUserBySupabaseIdentity } from "../lib/userIdentity";
 
 const router = Router();
 
@@ -12,21 +13,6 @@ function generateAnonymousId(): string {
   let result = "anon_";
   for (let i = 0; i < 12; i++) result += chars[Math.floor(Math.random() * chars.length)];
   return result;
-}
-
-async function findLocalUserBySupabaseId(supabaseUserId: string) {
-  const [user] = await db
-    .select({
-      id: usersTable.id,
-      anonymousId: usersTable.anonymousId,
-      name: usersTable.name,
-      email: usersTable.email,
-      supabaseUserId: usersTable.supabaseUserId,
-    })
-    .from(usersTable)
-    .where(eq(usersTable.supabaseUserId, supabaseUserId))
-    .limit(1);
-  return user ?? null;
 }
 
 router.post("/auth/register", authLimiter, async (req, res) => {
@@ -151,29 +137,7 @@ router.post("/auth/refresh", authLimiter, async (req, res) => {
     }
 
     const authUser = refreshed.user;
-    let localUser = await findLocalUserBySupabaseId(authUser.id);
-
-    if (!localUser && authUser.email) {
-      const [byEmail] = await db
-        .select({
-          id: usersTable.id,
-          anonymousId: usersTable.anonymousId,
-          name: usersTable.name,
-          email: usersTable.email,
-          supabaseUserId: usersTable.supabaseUserId,
-        })
-        .from(usersTable)
-        .where(eq(usersTable.email, authUser.email.toLowerCase()))
-        .limit(1);
-
-      if (byEmail) {
-        await db
-          .update(usersTable)
-          .set({ supabaseUserId: authUser.id })
-          .where(eq(usersTable.id, byEmail.id));
-        localUser = { ...byEmail, supabaseUserId: authUser.id };
-      }
-    }
+    const localUser = await findOrLinkLocalUserBySupabaseIdentity(authUser.id, authUser.email);
 
     if (!localUser) {
       return res.status(403).json({ error: "Account not linked. Please log in again." });

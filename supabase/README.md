@@ -39,7 +39,10 @@ Use `.env.example` as reference:
 - API requests can authenticate with `Authorization: Bearer <access_token>`.
 - Storage upload URLs are generated from Supabase Storage signed upload URLs.
 - `/storage/objects/*` now redirects to Supabase signed read URLs.
+- Storage paths are normalized and path traversal segments (`..`, `.`, empty segments, backslashes, null bytes) are rejected.
+- Private object signed reads are restricted to the expected `uploads/` namespace.
 - Admin routes only honor `x-admin-key` (query-string secrets removed).
+- Token-auth middleware auto-links local users by email when `users.supabase_user_id` is missing, then persists the link.
 
 ## End-to-end verification checklist
 
