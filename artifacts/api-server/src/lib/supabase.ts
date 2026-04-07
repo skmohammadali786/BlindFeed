@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type Session, type User } from "@supabase/supabase-js";
 import { logger } from "./logger";
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -26,7 +26,9 @@ export async function getAuthUserFromAccessToken(accessToken: string) {
   return data.user;
 }
 
-export async function refreshAuthSession(refreshToken: string) {
+export async function refreshAuthSession(
+  refreshToken: string,
+): Promise<{ session: Session; user: User } | null> {
   const { data, error } = await supabaseAuthClient.auth.refreshSession({
     refresh_token: refreshToken,
   });
@@ -34,5 +36,5 @@ export async function refreshAuthSession(refreshToken: string) {
     if (error) logger.warn({ err: error }, "Supabase token refresh failed");
     return null;
   }
-  return data;
+  return { session: data.session, user: data.user };
 }

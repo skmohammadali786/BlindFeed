@@ -12,7 +12,7 @@ const REQUIRED_ENV_KEYS = [
 export function validateRequiredEnv(): void {
   const missing = REQUIRED_ENV_KEYS.filter((key) => {
     const value = process.env[key];
-    return !value || value.trim().length === 0;
+    return typeof value !== "string" || value.trim().length === 0;
   });
 
   if (missing.length > 0) {

@@ -14,8 +14,8 @@ const objectStorageService = new ObjectStorageService();
  * Then uploads the file directly to the returned presigned URL.
  */
 router.post("/storage/uploads/request-url", uploadLimiter, async (req: Request, res: Response) => {
-  const anonymousId = getAuthenticatedIdentity(res);
-  if (!anonymousId) {
+  const authenticatedUserId = getAuthenticatedIdentity(res);
+  if (!authenticatedUserId) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
