@@ -18,8 +18,8 @@ export function parsePagination(
   const rawLimit = parseInteger(limitValue);
   const rawOffset = parseInteger(offsetValue);
 
-  const limit = rawLimit === null ? defaultLimit : Math.min(Math.max(rawLimit, 1), maxLimit);
+  const clampedLimit = rawLimit === null ? defaultLimit : Math.min(Math.max(rawLimit, 1), maxLimit);
   const offset = rawOffset === null ? 0 : Math.max(rawOffset, 0);
 
-  return { limit, offset };
+  return { limit: clampedLimit, offset };
 }

@@ -17,8 +17,8 @@ export class ObjectNotFoundError extends Error {
 }
 
 export class InvalidObjectPathError extends Error {
-  constructor() {
-    super("Invalid object path");
+  constructor(message: string = "Invalid object path") {
+    super(message);
     this.name = "InvalidObjectPathError";
     Object.setPrototypeOf(this, InvalidObjectPathError.prototype);
   }
@@ -94,7 +94,9 @@ export class ObjectStorageService {
     const privateBucket = this.getPrivateBucket();
     const objectName = normalizeAndValidateObjectName(objectPath.replace(/^\/objects\//, ""));
     // Only sign app-uploaded objects to avoid exposing other private bucket paths.
-    if (!objectName.startsWith(PRIVATE_UPLOADS_PREFIX)) throw new InvalidObjectPathError();
+    if (!objectName.startsWith(PRIVATE_UPLOADS_PREFIX)) {
+      throw new InvalidObjectPathError();
+    }
 
     const { data, error } = await supabaseAdminClient.storage
       .from(privateBucket)
