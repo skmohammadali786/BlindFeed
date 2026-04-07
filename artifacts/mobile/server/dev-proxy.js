@@ -1,16 +1,15 @@
 /**
  * Development proxy for BlindFeed mobile (Expo web).
  *
- * Runs on $PORT (the Replit-assigned port served via expo.kirk.replit.dev).
- * - /api-server/*  → API server on localhost:8080 (strips /api-server prefix)
+ * Runs on $PORT.
+ * - /api/*        → API server on localhost:8080
  * - everything else → Expo Metro bundler on METRO_PORT (default 19001)
  *
- * This lets the Expo web app call /api-server/api/... without a CORS header
+ * This lets the Expo web app call /api/... without a CORS header
  * because both the app and API are served from the same origin.
  */
 
 const http = require("http");
-const https = require("https");
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const METRO_PORT = parseInt(process.env.METRO_PORT || "19001", 10);
@@ -52,8 +51,8 @@ function proxy(req, res, targetHost, targetPort, rewritePath, stripCorsHeaders) 
 const server = http.createServer((req, res) => {
   const url = req.url || "/";
 
-  if (url.startsWith("/api-server")) {
-    proxy(req, res, "localhost", API_PORT, (u) => u.replace("/api-server", "") || "/", false);
+  if (url.startsWith("/api")) {
+    proxy(req, res, "localhost", API_PORT, (u) => u, false);
   } else {
     proxy(req, res, "localhost", METRO_PORT, (u) => u, true);
   }
@@ -61,6 +60,6 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`[dev-proxy] Listening on port ${PORT}`);
-  console.log(`[dev-proxy] /api-server/* → localhost:${API_PORT}`);
+  console.log(`[dev-proxy] /api/* → localhost:${API_PORT}`);
   console.log(`[dev-proxy] /* → localhost:${METRO_PORT} (Metro)`);
 });

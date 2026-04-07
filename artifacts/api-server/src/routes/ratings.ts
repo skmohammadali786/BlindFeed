@@ -3,11 +3,12 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { ratingsTable } from "@workspace/db/schema";
 import { isAuthorizedAdmin } from "../middleware/adminAuth";
+import { getPrimaryIdentity } from "../lib/requestIdentity";
 
 const router = Router();
 
 router.post("/ratings", async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string | undefined;
+  const anonymousId = getPrimaryIdentity(req, res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const { stars, category, feedback } = req.body;
