@@ -365,6 +365,7 @@ export default function PostDetailScreen() {
             myReaction: data.myReaction,
             commentCount: data.commentCount,
             isOwn: data.isOwn,
+            isSensitive: data.isSensitive ?? false,
           });
         })
         .catch(() => {})
@@ -1004,4 +1005,3 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     modalConfirmText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#fff" },
   });
 }
-
