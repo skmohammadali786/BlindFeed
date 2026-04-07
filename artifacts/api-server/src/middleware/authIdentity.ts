@@ -5,7 +5,7 @@ import { getAuthUserFromAccessToken } from "../lib/supabase";
 
 export async function attachIdentityFromSupabaseToken(
   req: Parameters<import("express").RequestHandler>[0],
-  _res: Parameters<import("express").RequestHandler>[1],
+  res: Parameters<import("express").RequestHandler>[1],
   next: Parameters<import("express").RequestHandler>[2],
 ) {
   const authHeader = req.headers.authorization;
@@ -35,7 +35,8 @@ export async function attachIdentityFromSupabaseToken(
       .where(eq(usersTable.supabaseUserId, authUser.id))
       .limit(1);
 
-    if (user?.anonymousId && !req.headers["x-anonymous-id"]) {
+    if (user?.anonymousId) {
+      res.locals.authAnonymousId = user.anonymousId;
       req.headers["x-anonymous-id"] = user.anonymousId;
       req.headers["x-perm-id"] = user.anonymousId;
     }

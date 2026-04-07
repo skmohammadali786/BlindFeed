@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gt, ilike, inArray, isNull, lte, or, sql } from "dr
 import { db } from "@workspace/db";
 import { postsTable, reactionsTable, commentsTable } from "@workspace/db/schema";
 import { postCreateLimiter, reactionLimiter, searchLimiter } from "../middleware/rateLimits";
+import { getIdentitySet, getPrimaryIdentity } from "../lib/requestIdentity";
 
 const router = Router();
 
@@ -10,7 +11,7 @@ const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
 
 router.get("/posts", async (req, res) => {
   const { sort = "fresh", limit = "50", offset = "0" } = req.query;
-  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const anonymousId = getPrimaryIdentity(req, res);
 
   try {
     const now = new Date();
@@ -82,7 +83,7 @@ const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 2;
 
 router.post("/posts", postCreateLimiter, async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const anonymousId = getPrimaryIdentity(req, res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const { content, imageUrl, videoUrl, isDraft = false, expiresInHours, scheduledAt: scheduledAtRaw } = req.body;
@@ -156,11 +157,8 @@ router.post("/posts", postCreateLimiter, async (req, res) => {
 });
 
 router.get("/posts/mine", async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string;
-  const permId = req.headers["x-perm-id"] as string | undefined;
-  if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
-
-  const ownerIds = [anonymousId, permId].filter((id): id is string => Boolean(id));
+  const ownerIds = getIdentitySet(req, res);
+  if (ownerIds.length === 0) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const posts = await db
@@ -213,7 +211,7 @@ router.get("/posts/mine", async (req, res) => {
 });
 
 router.get("/posts/drafts", async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const anonymousId = getPrimaryIdentity(req, res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -230,11 +228,8 @@ router.get("/posts/drafts", async (req, res) => {
 });
 
 router.get("/posts/scheduled", async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string;
-  const permId = req.headers["x-perm-id"] as string | undefined;
-  if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
-
-  const ownerIds = [anonymousId, permId].filter((id): id is string => Boolean(id));
+  const ownerIds = getIdentitySet(req, res);
+  if (ownerIds.length === 0) return res.status(401).json({ error: "Unauthorized" });
   const now = new Date();
 
   try {
@@ -298,7 +293,7 @@ router.get("/posts/trending", async (req, res) => {
 
 router.get("/posts/search", searchLimiter, async (req, res) => {
   const { q = "", sort = "recent" } = req.query;
-  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const anonymousId = getPrimaryIdentity(req, res);
   const searchTerm = String(q).trim();
 
   if (searchTerm.length < 2) return res.json([]);
@@ -368,7 +363,7 @@ router.get("/posts/search", searchLimiter, async (req, res) => {
 });
 
 router.get("/posts/:id", async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const anonymousId = getPrimaryIdentity(req, res);
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const postId = parseInt(postIdRaw, 10);
   if (isNaN(postId)) return res.status(400).json({ error: "Invalid id" });
@@ -402,7 +397,7 @@ router.get("/posts/:id", async (req, res) => {
 const EDIT_WINDOW_MS = 10 * 60 * 1000;
 
 router.patch("/posts/:id", async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const anonymousId = getPrimaryIdentity(req, res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -446,7 +441,7 @@ router.patch("/posts/:id", async (req, res) => {
 });
 
 router.delete("/posts/:id", async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const anonymousId = getPrimaryIdentity(req, res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -466,7 +461,7 @@ router.delete("/posts/:id", async (req, res) => {
 });
 
 router.post("/posts/:id/react", reactionLimiter, async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const anonymousId = getPrimaryIdentity(req, res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -537,7 +532,7 @@ router.post("/posts/:id/react", reactionLimiter, async (req, res) => {
 });
 
 router.get("/users/:anonymousId/posts", async (req, res) => {
-  const viewerAnonymousId = req.headers["x-anonymous-id"] as string;
+  const viewerAnonymousId = getPrimaryIdentity(req, res);
   const { anonymousId } = req.params;
 
   try {
