@@ -16,6 +16,22 @@ const corsAllowedOrigins = new Set(
 
 app.set("trust proxy", 1);
 
+function parseForwardedHeader(headerValue: string | string[] | undefined): string | undefined {
+  if (!headerValue) return undefined;
+  const raw = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+  return raw.split(",")[0]?.trim();
+}
+
+function isSameOrigin(origin: string, req: Parameters<import("express").RequestHandler>[0]): boolean {
+  const forwardedProto = parseForwardedHeader(req.headers["x-forwarded-proto"]);
+  const forwardedHost = parseForwardedHeader(req.headers["x-forwarded-host"]);
+  const host = forwardedHost ?? req.headers.host;
+  if (!host) return false;
+
+  const protocol = forwardedProto ?? req.protocol;
+  return origin === `${protocol}://${host}`;
+}
+
 app.use(helmet({
   crossOriginResourcePolicy: false,
   contentSecurityPolicy: false,
@@ -43,9 +59,11 @@ app.use(
 );
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  const allowedOrigin = origin && corsAllowedOrigins.has(origin) ? origin : undefined;
+  const isAllowedOrigin = !!origin && corsAllowedOrigins.has(origin);
+  const allowedOrigin = isAllowedOrigin ? origin : undefined;
+  const isSameOriginRequest = !!origin && isSameOrigin(origin, req);
 
-  if (origin && !allowedOrigin) {
+  if (origin && !allowedOrigin && !isSameOriginRequest) {
     res.status(403).json({ error: "Origin not allowed" });
     return;
   }

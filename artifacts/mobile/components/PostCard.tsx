@@ -16,6 +16,10 @@ import { Post } from "@/context/AppContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+const WORTH_IT = "#3DDB85";
+const WORTH_IT_BG = "rgba(61, 219, 133, 0.16)";
+const SKIP = "#FF6B6B";
+const SKIP_BG = "rgba(255, 107, 107, 0.14)";
 
 interface PostCardProps {
   post: Post;
@@ -129,12 +133,12 @@ export default function PostCard({
         style={[styles.reactionOverlay, styles.skipOverlay, { opacity: skipOpacity }]}
         pointerEvents="none"
       >
-        <Text style={[styles.overlayText, { color: Colors.skip }]}>SKIP</Text>
+        <Text style={[styles.overlayText, { color: SKIP }]}>SKIP</Text>
       </Animated.View>
 
       {/* Post image */}
-      {post.imageUri && (
-        <Image source={{ uri: post.imageUri }} style={styles.postImage} />
+      {post.imageUrl && (
+        <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
       )}
 
       {/* Post content */}
@@ -237,16 +241,16 @@ const styles = StyleSheet.create({
   },
   worthItOverlay: {
     right: 20,
-    borderColor: Colors.worthIt,
+    borderColor: WORTH_IT,
   },
   skipOverlay: {
     left: 20,
-    borderColor: Colors.skip,
+    borderColor: SKIP,
   },
   overlayText: {
     fontSize: 16,
     fontWeight: "800" as const,
-    color: Colors.worthIt,
+    color: WORTH_IT,
     letterSpacing: 1.5,
   },
   postImage: {
@@ -289,14 +293,14 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 3,
-    backgroundColor: Colors.skipBg,
+    backgroundColor: SKIP_BG,
     borderRadius: 2,
     marginBottom: 8,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    backgroundColor: Colors.worthIt,
+    backgroundColor: WORTH_IT,
     borderRadius: 2,
   },
   reactionStats: {
@@ -305,12 +309,12 @@ const styles = StyleSheet.create({
   },
   worthItStat: {
     fontSize: 11,
-    color: Colors.worthIt,
+    color: WORTH_IT,
     fontFamily: "Inter_500Medium",
   },
   skipStat: {
     fontSize: 11,
-    color: Colors.skip,
+    color: SKIP,
     fontFamily: "Inter_500Medium",
   },
   actions: {
@@ -326,18 +330,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   worthItBtn: {
-    backgroundColor: Colors.worthItBg,
-    borderColor: Colors.worthIt,
+    backgroundColor: WORTH_IT_BG,
+    borderColor: WORTH_IT,
   },
   skipBtn: {
-    backgroundColor: Colors.skipBg,
-    borderColor: Colors.skip,
+    backgroundColor: SKIP_BG,
+    borderColor: SKIP,
   },
   activeWorthIt: {
-    backgroundColor: Colors.worthIt,
+    backgroundColor: WORTH_IT,
   },
   activeSkip: {
-    backgroundColor: Colors.skip,
+    backgroundColor: SKIP,
   },
   dimmedBtn: {
     opacity: 0.35,
@@ -347,10 +351,10 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
   worthItText: {
-    color: Colors.worthIt,
+    color: WORTH_IT,
   },
   skipText: {
-    color: Colors.skip,
+    color: SKIP,
   },
   dimmedText: {
     opacity: 0.6,

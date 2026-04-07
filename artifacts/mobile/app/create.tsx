@@ -428,7 +428,7 @@ export default function CreateScreen() {
                   <Feather name="play-circle" size={28} color="#fff" />
                   {selectedVideo.duration !== undefined && (
                     <Text style={styles.videoDuration}>
-                      {Math.round(selectedVideo.duration)}s
+                      {Math.round(selectedVideo.duration ?? 0)}s
                     </Text>
                   )}
                 </View>

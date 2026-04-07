@@ -5,7 +5,6 @@ import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Modal,
   Platform,
   RefreshControl,
@@ -40,7 +39,6 @@ import {
 
 type SortMode = "fresh" | "top";
 
-const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 const HEADER_HEIGHT = 60;
 
 const AVATAR_COLORS = ["#3DDB85","#4A9EFF","#FF6B6B","#FFB84D","#B57BFF","#FF7EB3","#4DD9DC","#FF9D6B"];
@@ -512,7 +510,7 @@ export default function FeedScreen() {
             </AnimatedPressable>
           </FadeSlide>
         ) : (
-          <AnimatedFlatList
+          <Animated.FlatList<Post>
             data={activePosts}
             keyExtractor={(item) => item.id}
             onScroll={scrollHandler}
