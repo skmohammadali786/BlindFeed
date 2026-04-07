@@ -3,7 +3,8 @@ import { eq, or } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db/schema";
 import { authLimiter } from "../middleware/rateLimits";
-import { supabaseAuthClient } from "../lib/supabase";
+import { refreshAuthSession, supabaseAuthClient } from "../lib/supabase";
+import { findOrLinkLocalUserBySupabaseIdentity } from "../lib/userIdentity";
 
 const router = Router();
 
@@ -120,6 +121,37 @@ router.post("/auth/login", authLimiter, async (req, res) => {
   } catch (err) {
     req.log.error(err, "Error logging in");
     return res.status(500).json({ error: "Failed to log in" });
+  }
+});
+
+router.post("/auth/refresh", authLimiter, async (req, res) => {
+  const { refreshToken } = req.body ?? {};
+  if (!refreshToken || typeof refreshToken !== "string") {
+    return res.status(400).json({ error: "refreshToken is required" });
+  }
+
+  try {
+    const refreshed = await refreshAuthSession(refreshToken);
+    if (!refreshed) {
+      return res.status(401).json({ error: "Invalid or expired refresh token" });
+    }
+
+    const authUser = refreshed.user;
+    const localUser = await findOrLinkLocalUserBySupabaseIdentity(authUser.id, authUser.email);
+
+    if (!localUser) {
+      return res.status(403).json({ error: "Account not linked. Please log in again." });
+    }
+
+    return res.json({
+      anonymousId: localUser.anonymousId,
+      name: localUser.name,
+      accessToken: refreshed.session.access_token,
+      refreshToken: refreshed.session.refresh_token,
+    });
+  } catch (err) {
+    req.log.error(err, "Error refreshing session");
+    return res.status(500).json({ error: "Failed to refresh session" });
   }
 });
 

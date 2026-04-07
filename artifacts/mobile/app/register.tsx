@@ -64,7 +64,7 @@ export default function RegisterScreen() {
       const existing = await AsyncStorage.getItem("bf_anonymous_id");
       const anonymousId = existing ?? generateAnonymousId();
 
-      const result = await api.post<{ accessToken?: string | null; refreshToken?: string | null }>("/auth/register", {
+      const result = await api.post<{ anonymousId: string; accessToken?: string | null; refreshToken?: string | null }>("/auth/register", {
         anonymousId,
         name: name.trim(),
         email: email.trim(),
@@ -72,7 +72,7 @@ export default function RegisterScreen() {
         password,
       });
       await storeAuthTokens(result);
-      await setRegistered(anonymousId);
+      await setRegistered(result.anonymousId);
 
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 

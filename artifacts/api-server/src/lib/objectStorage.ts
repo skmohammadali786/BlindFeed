@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { supabaseAdminClient } from "./supabase";
 
 const supabaseUrl = process.env.SUPABASE_URL;
+const PRIVATE_UPLOADS_PREFIX = "uploads/";
 
 if (!supabaseUrl) {
   throw new Error("SUPABASE_URL must be set");
@@ -13,6 +14,28 @@ export class ObjectNotFoundError extends Error {
     this.name = "ObjectNotFoundError";
     Object.setPrototypeOf(this, ObjectNotFoundError.prototype);
   }
+}
+
+export class InvalidObjectPathError extends Error {
+  constructor(message: string = "Invalid object path") {
+    super(message);
+    this.name = "InvalidObjectPathError";
+    Object.setPrototypeOf(this, InvalidObjectPathError.prototype);
+  }
+}
+
+function normalizeAndValidateObjectName(raw: string): string {
+  // Normalize separators, remove leading slashes, and collapse duplicate separators.
+  const normalized = raw.replace(/\\/g, "/").replace(/^\/+/, "").replace(/\/+/g, "/");
+  if (!normalized) throw new InvalidObjectPathError();
+  if (normalized.includes("\0")) throw new InvalidObjectPathError();
+
+  const segments = normalized.split("/");
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
+    throw new InvalidObjectPathError();
+  }
+
+  return normalized;
 }
 
 function createSignedUploadEndpoint(bucket: string, objectName: string, token: string): string {
@@ -65,13 +88,14 @@ export class ObjectStorageService {
 
   async getObjectEntitySignedReadURL(objectPath: string, expiresInSeconds: number = 3600): Promise<string> {
     if (!objectPath.startsWith("/objects/")) {
-      throw new ObjectNotFoundError();
+      throw new InvalidObjectPathError();
     }
 
     const privateBucket = this.getPrivateBucket();
-    const objectName = objectPath.replace(/^\/objects\//, "");
-    if (!objectName) {
-      throw new ObjectNotFoundError();
+    const objectName = normalizeAndValidateObjectName(objectPath.replace(/^\/objects\//, ""));
+    // Only sign app-uploaded objects to avoid exposing other private bucket paths.
+    if (!objectName.startsWith(PRIVATE_UPLOADS_PREFIX)) {
+      throw new InvalidObjectPathError();
     }
 
     const { data, error } = await supabaseAdminClient.storage
@@ -89,7 +113,7 @@ export class ObjectStorageService {
     if (buckets.length === 0) {
       throw new Error("SUPABASE_STORAGE_PUBLIC_BUCKETS must be set to serve public assets");
     }
-    const normalizedPath = filePath.replace(/^\/+/, "");
+    const normalizedPath = normalizeAndValidateObjectName(filePath);
     const firstBucket = buckets[0];
     return `${supabaseUrl}/storage/v1/object/public/${firstBucket}/${encodeURI(normalizedPath)}`;
   }

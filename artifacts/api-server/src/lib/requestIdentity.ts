@@ -23,3 +23,12 @@ export function getIdentitySet(req: Request, res: Response): string[] {
   const ids = [primary, perm].filter((id): id is string => Boolean(id));
   return Array.from(new Set(ids));
 }
+
+export function getAuthenticatedIdentity(res: Response): string | undefined {
+  return res.locals.authAnonymousId as string | undefined;
+}
+
+export function getAuthenticatedIdentitySet(res: Response): string[] {
+  const jwtIdentity = getAuthenticatedIdentity(res);
+  return jwtIdentity ? [jwtIdentity] : [];
+}

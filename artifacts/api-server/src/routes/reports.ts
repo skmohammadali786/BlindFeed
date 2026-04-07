@@ -1,14 +1,15 @@
 import { Router } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { reportsTable, postsTable, notificationsTable } from "@workspace/db/schema";
 import { reportLimiter } from "../middleware/rateLimits";
 import { isAuthorizedAdmin } from "../middleware/adminAuth";
-import { getPrimaryIdentity } from "../lib/requestIdentity";
+import { getAuthenticatedIdentity } from "../lib/requestIdentity";
+import { parsePagination } from "../lib/pagination";
 
 const router = Router();
 router.post("/posts/:id/report", reportLimiter, async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -49,7 +50,7 @@ router.post("/posts/:id/report", reportLimiter, async (req, res) => {
 });
 
 router.post("/reports/:id/respond", async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const reportIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -91,7 +92,8 @@ router.get("/admin/reports", async (req, res) => {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const { status, limit = "50", offset = "0" } = req.query;
+  const { status, limit: limitRaw = "50", offset: offsetRaw = "0" } = req.query;
+  const { limit, offset } = parsePagination(limitRaw, offsetRaw);
 
   try {
     let query = db.select().from(reportsTable).$dynamic();
@@ -100,14 +102,22 @@ router.get("/admin/reports", async (req, res) => {
     }
     const reports = await query
       .orderBy(desc(reportsTable.createdAt))
-      .limit(parseInt(limit as string))
-      .offset(parseInt(offset as string));
+      .limit(limit)
+      .offset(offset);
 
-    const enriched = await Promise.all(reports.map(async (r) => {
-      const [post] = await db.select({ content: postsTable.content, anonymousId: postsTable.anonymousId })
-        .from(postsTable).where(eq(postsTable.id, r.postId)).limit(1);
+    const postIds = Array.from(new Set(reports.map((r) => r.postId)));
+    const postRows = postIds.length === 0
+      ? []
+      : await db
+        .select({ id: postsTable.id, content: postsTable.content, anonymousId: postsTable.anonymousId })
+        .from(postsTable)
+        .where(inArray(postsTable.id, postIds));
+    const postMap = new Map(postRows.map((post) => [post.id, post]));
+
+    const enriched = reports.map((r) => {
+      const post = postMap.get(r.postId);
       return { ...r, postContent: post?.content ?? null, postAuthorId: post?.anonymousId ?? null };
-    }));
+    });
 
     return res.json(enriched);
   } catch (err) {

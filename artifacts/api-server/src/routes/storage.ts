@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
+import { ObjectStorageService, ObjectNotFoundError, InvalidObjectPathError } from "../lib/objectStorage";
 import { uploadLimiter } from "../middleware/rateLimits";
+import { getAuthenticatedIdentity } from "../lib/requestIdentity";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -13,6 +14,12 @@ const objectStorageService = new ObjectStorageService();
  * Then uploads the file directly to the returned presigned URL.
  */
 router.post("/storage/uploads/request-url", uploadLimiter, async (req: Request, res: Response) => {
+  const authenticatedUserId = getAuthenticatedIdentity(res);
+  if (!authenticatedUserId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const { name, size, contentType } = req.body ?? {};
   if (!name || !contentType) {
     res.status(400).json({ error: "Missing required fields: name, contentType" });
@@ -43,6 +50,10 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
     const publicObjectURL = objectStorageService.getPublicObjectURL(filePath);
     res.redirect(302, publicObjectURL);
   } catch (error) {
+    if (error instanceof InvalidObjectPathError) {
+      res.status(400).json({ error: "Invalid object path" });
+      return;
+    }
     req.log.error({ err: error }, "Error serving public object");
     res.status(500).json({ error: "Failed to serve public object" });
   }
@@ -63,6 +74,10 @@ router.get("/storage/objects/*path", async (req: Request, res: Response) => {
     const signedURL = await objectStorageService.getObjectEntitySignedReadURL(objectPath);
     res.redirect(302, signedURL);
   } catch (error) {
+    if (error instanceof InvalidObjectPathError) {
+      res.status(400).json({ error: "Invalid object path" });
+      return;
+    }
     if (error instanceof ObjectNotFoundError) {
       req.log.warn({ err: error }, "Object not found");
       res.status(404).json({ error: "Object not found" });

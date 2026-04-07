@@ -1,7 +1,5 @@
-import { eq } from "drizzle-orm";
-import { db } from "@workspace/db";
-import { usersTable } from "@workspace/db/schema";
 import { getAuthUserFromAccessToken } from "../lib/supabase";
+import { findOrLinkLocalUserBySupabaseIdentity } from "../lib/userIdentity";
 
 export async function attachIdentityFromSupabaseToken(
   req: Parameters<import("express").RequestHandler>[0],
@@ -27,13 +25,7 @@ export async function attachIdentityFromSupabaseToken(
       return;
     }
 
-    const [user] = await db
-      .select({
-        anonymousId: usersTable.anonymousId,
-      })
-      .from(usersTable)
-      .where(eq(usersTable.supabaseUserId, authUser.id))
-      .limit(1);
+    const user = await findOrLinkLocalUserBySupabaseIdentity(authUser.id, authUser.email);
 
     if (user?.anonymousId) {
       res.locals.authAnonymousId = user.anonymousId;

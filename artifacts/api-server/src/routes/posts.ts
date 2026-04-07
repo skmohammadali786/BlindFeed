@@ -3,14 +3,16 @@ import { and, asc, desc, eq, gt, ilike, inArray, isNull, lte, or, sql } from "dr
 import { db } from "@workspace/db";
 import { postsTable, reactionsTable, commentsTable } from "@workspace/db/schema";
 import { postCreateLimiter, reactionLimiter, searchLimiter } from "../middleware/rateLimits";
-import { getIdentitySet, getPrimaryIdentity } from "../lib/requestIdentity";
+import { getAuthenticatedIdentity, getAuthenticatedIdentitySet, getPrimaryIdentity } from "../lib/requestIdentity";
+import { parsePagination } from "../lib/pagination";
 
 const router = Router();
 
 const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
 
 router.get("/posts", async (req, res) => {
-  const { sort = "fresh", limit = "50", offset = "0" } = req.query;
+  const { sort = "fresh", limit: limitRaw = "50", offset: offsetRaw = "0" } = req.query;
+  const { limit, offset } = parsePagination(limitRaw, offsetRaw);
   const anonymousId = getPrimaryIdentity(req, res);
 
   try {
@@ -43,26 +45,32 @@ router.get("/posts", async (req, res) => {
     }
 
     const posts = await query
-      .limit(parseInt(limit as string))
-      .offset(parseInt(offset as string));
+      .limit(limit)
+      .offset(offset);
+
+    const postIds = posts.map((p) => p.id);
 
     let userReactions: Record<number, string> = {};
-    if (anonymousId) {
+    if (anonymousId && postIds.length > 0) {
       const reactions = await db
         .select({ postId: reactionsTable.postId, type: reactionsTable.type })
         .from(reactionsTable)
-        .where(eq(reactionsTable.anonymousId, anonymousId));
+        .where(and(eq(reactionsTable.anonymousId, anonymousId), inArray(reactionsTable.postId, postIds)));
       userReactions = Object.fromEntries(reactions.map((r) => [r.postId, r.type]));
     }
 
-    const commentCounts = await db
-      .select({
-        postId: commentsTable.postId,
-        count: sql<number>`cast(count(*) as int)`,
-      })
-      .from(commentsTable)
-      .groupBy(commentsTable.postId);
-    const commentCountMap = Object.fromEntries(commentCounts.map((c) => [c.postId, c.count]));
+    let commentCountMap: Record<number, number> = {};
+    if (postIds.length > 0) {
+      const commentCounts = await db
+        .select({
+          postId: commentsTable.postId,
+          count: sql<number>`cast(count(*) as int)`,
+        })
+        .from(commentsTable)
+        .where(inArray(commentsTable.postId, postIds))
+        .groupBy(commentsTable.postId);
+      commentCountMap = Object.fromEntries(commentCounts.map((c) => [c.postId, c.count]));
+    }
 
     const enriched = posts.map((p) => ({
       ...p,
@@ -83,7 +91,7 @@ const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 2;
 
 router.post("/posts", postCreateLimiter, async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const { content, imageUrl, videoUrl, isDraft = false, expiresInHours, scheduledAt: scheduledAtRaw } = req.body;
@@ -157,7 +165,7 @@ router.post("/posts", postCreateLimiter, async (req, res) => {
 });
 
 router.get("/posts/mine", async (req, res) => {
-  const ownerIds = getIdentitySet(req, res);
+  const ownerIds = getAuthenticatedIdentitySet(res);
   if (ownerIds.length === 0) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -211,7 +219,7 @@ router.get("/posts/mine", async (req, res) => {
 });
 
 router.get("/posts/drafts", async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -228,7 +236,7 @@ router.get("/posts/drafts", async (req, res) => {
 });
 
 router.get("/posts/scheduled", async (req, res) => {
-  const ownerIds = getIdentitySet(req, res);
+  const ownerIds = getAuthenticatedIdentitySet(res);
   if (ownerIds.length === 0) return res.status(401).json({ error: "Unauthorized" });
   const now = new Date();
 
@@ -327,17 +335,17 @@ router.get("/posts/search", searchLimiter, async (req, res) => {
     }
 
     const posts = await query.limit(50);
+    const postIds = posts.map((p) => p.id);
 
     let userReactions: Record<number, string> = {};
-    if (anonymousId) {
+    if (anonymousId && postIds.length > 0) {
       const reactions = await db
         .select({ postId: reactionsTable.postId, type: reactionsTable.type })
         .from(reactionsTable)
-        .where(eq(reactionsTable.anonymousId, anonymousId));
+        .where(and(eq(reactionsTable.anonymousId, anonymousId), inArray(reactionsTable.postId, postIds)));
       userReactions = Object.fromEntries(reactions.map((r) => [r.postId, r.type]));
     }
 
-    const postIds = posts.map((p) => p.id);
     let commentCountMap: Record<number, number> = {};
     if (postIds.length > 0) {
       const counts = await db
@@ -397,7 +405,7 @@ router.get("/posts/:id", async (req, res) => {
 const EDIT_WINDOW_MS = 10 * 60 * 1000;
 
 router.patch("/posts/:id", async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -441,7 +449,7 @@ router.patch("/posts/:id", async (req, res) => {
 });
 
 router.delete("/posts/:id", async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -461,7 +469,7 @@ router.delete("/posts/:id", async (req, res) => {
 });
 
 router.post("/posts/:id/react", reactionLimiter, async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -559,14 +567,19 @@ router.get("/users/:anonymousId/posts", async (req, res) => {
       .orderBy(desc(postsTable.createdAt))
       .limit(50);
 
-    const commentCounts = await db
-      .select({
-        postId: commentsTable.postId,
-        count: sql<number>`cast(count(*) as int)`,
-      })
-      .from(commentsTable)
-      .groupBy(commentsTable.postId);
-    const commentCountMap = Object.fromEntries(commentCounts.map((c) => [c.postId, c.count]));
+    const postIds = posts.map((p) => p.id);
+    let commentCountMap: Record<number, number> = {};
+    if (postIds.length > 0) {
+      const commentCounts = await db
+        .select({
+          postId: commentsTable.postId,
+          count: sql<number>`cast(count(*) as int)`,
+        })
+        .from(commentsTable)
+        .where(inArray(commentsTable.postId, postIds))
+        .groupBy(commentsTable.postId);
+      commentCountMap = Object.fromEntries(commentCounts.map((c) => [c.postId, c.count]));
+    }
 
     const enriched = posts.map((p) => ({
       ...p,
