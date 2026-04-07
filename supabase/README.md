@@ -15,16 +15,19 @@
 
 ### API server (`artifacts/api-server`)
 
-Use `.env.example` as reference:
+Use `.env.example` as reference. Required to start:
 
 - `DATABASE_URL`
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_STORAGE_PRIVATE_BUCKET`
-- `SUPABASE_STORAGE_PUBLIC_BUCKETS`
-- `CORS_ALLOWED_ORIGINS`
-- `ADMIN_KEY`
+
+Optional (required only for related features):
+
+- `SUPABASE_STORAGE_PRIVATE_BUCKET` (private uploads)
+- `SUPABASE_STORAGE_PUBLIC_BUCKETS` (public asset URLs)
+- `CORS_ALLOWED_ORIGINS` (allow specific cross-origin browser clients)
+- `ADMIN_KEY` (admin-only endpoints)
 
 ### Mobile (`artifacts/mobile`)
 
