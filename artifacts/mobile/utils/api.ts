@@ -104,10 +104,14 @@ export const api = {
 };
 
 export async function storeAuthTokens(tokens: { accessToken?: string | null; refreshToken?: string | null }) {
-  if (tokens.accessToken) {
+  if (tokens.accessToken === null) {
+    await AsyncStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+  } else if (tokens.accessToken) {
     await AsyncStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken);
   }
-  if (tokens.refreshToken) {
+  if (tokens.refreshToken === null) {
+    await AsyncStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+  } else if (tokens.refreshToken) {
     await AsyncStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
   }
 }
