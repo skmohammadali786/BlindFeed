@@ -20,7 +20,7 @@ router.post("/storage/uploads/request-url", uploadLimiter, async (req: Request, 
   }
 
   try {
-    const { uploadURL, objectPath } = await objectStorageService.getObjectEntityUploadURL();
+    const { uploadURL, objectPath } = await objectStorageService.getObjectUploadURL();
 
     res.json({ uploadURL, objectPath, metadata: { name, size, contentType } });
   } catch (error) {

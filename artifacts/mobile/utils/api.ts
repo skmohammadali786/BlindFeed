@@ -3,6 +3,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const STORAGE_KEYS = {
   USER_ID: "bf_user_id",
   ANONYMOUS_ID: "bf_anonymous_id",
+};
+
+export const AUTH_STORAGE_KEYS = {
   ACCESS_TOKEN: "bf_access_token",
   REFRESH_TOKEN: "bf_refresh_token",
 };
@@ -45,7 +48,7 @@ async function getPermanentId(): Promise<string | null> {
 }
 
 async function getAccessToken(): Promise<string | null> {
-  return AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+  return AsyncStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
 }
 
 async function request<T>(
@@ -103,10 +106,10 @@ export const api = {
 
 export async function storeAuthTokens(tokens: { accessToken?: string | null; refreshToken?: string | null }) {
   if (tokens.accessToken) {
-    await AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken);
+    await AsyncStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken);
   }
   if (tokens.refreshToken) {
-    await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
+    await AsyncStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
   }
 }
 

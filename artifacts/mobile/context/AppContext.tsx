@@ -8,7 +8,7 @@ import React, {
   useState,
 } from "react";
 import { AppState, AppStateStatus } from "react-native";
-import { api, ApiPost, ApiMyPost } from "@/utils/api";
+import { api, ApiPost, ApiMyPost, AUTH_STORAGE_KEYS } from "@/utils/api";
 
 export interface Post {
   id: string;
@@ -271,8 +271,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.multiRemove([
       STORAGE_KEYS.ANONYMOUS_ID,
       STORAGE_KEYS.REGISTERED,
-      "bf_access_token",
-      "bf_refresh_token",
+      AUTH_STORAGE_KEYS.ACCESS_TOKEN,
+      AUTH_STORAGE_KEYS.REFRESH_TOKEN,
     ]);
   }, []);
 

@@ -1,5 +1,4 @@
 import express, { type Express } from "express";
-import cors from "cors";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
 import router from "./routes";
@@ -42,17 +41,22 @@ app.use((req, res, next) => {
     .split(",")
     .map((v) => v.trim())
     .filter(Boolean);
+  const isAllowedOrigin = origin ? allowList.includes(origin) : true;
 
-  if (origin && allowList.length > 0 && !allowList.includes(origin)) {
+  if (origin && !isAllowedOrigin) {
+    if (req.method === "OPTIONS") {
+      res.sendStatus(204);
+      return;
+    }
     res.status(403).json({ error: "Origin not allowed" });
     return;
   }
 
-  if (origin) {
+  if (origin && isAllowedOrigin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
   }
-  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-anonymous-id, x-perm-id, x-admin-key");
   if (req.method === "OPTIONS") {

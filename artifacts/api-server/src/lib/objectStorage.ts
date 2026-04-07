@@ -15,6 +15,10 @@ export class ObjectNotFoundError extends Error {
   }
 }
 
+function createSignedUploadEndpoint(bucket: string, objectName: string, token: string): string {
+  return `${supabaseUrl}/storage/v1/object/upload/sign/${bucket}/${encodeURIComponent(objectName)}?token=${encodeURIComponent(token)}`;
+}
+
 export class ObjectStorageService {
   getPublicBuckets(): string[] {
     return (process.env.SUPABASE_STORAGE_PUBLIC_BUCKETS ?? "")
@@ -29,7 +33,7 @@ export class ObjectStorageService {
     return bucket;
   }
 
-  async getObjectEntityUploadURL(): Promise<{ uploadURL: string; objectPath: string }> {
+  async getObjectUploadURL(): Promise<{ uploadURL: string; objectPath: string }> {
     const privateBucket = this.getPrivateBucket();
     const objectName = `uploads/${randomUUID()}`;
     const { data, error } = await supabaseAdminClient.storage
@@ -40,16 +44,12 @@ export class ObjectStorageService {
       throw new Error(error?.message ?? "Failed to generate upload URL");
     }
 
-    const uploadURL = `${supabaseUrl}/storage/v1/object/upload/sign/${privateBucket}/${encodeURIComponent(objectName)}?token=${encodeURIComponent(data.token)}`;
+    const uploadURL = (data as { signedUrl?: string }).signedUrl
+      ?? createSignedUploadEndpoint(privateBucket, objectName, data.token);
     return {
       uploadURL,
       objectPath: `/objects/${objectName}`,
     };
-  }
-
-  normalizeObjectEntityPath(rawPath: string): string {
-    if (rawPath.startsWith("/objects/")) return rawPath;
-    return rawPath;
   }
 
   async getObjectEntitySignedReadURL(objectPath: string, expiresInSeconds: number = 3600): Promise<string> {
