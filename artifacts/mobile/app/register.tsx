@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
-import { api } from "@/utils/api";
+import { api, storeAuthTokens } from "@/utils/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ScreenTransition,
@@ -64,13 +64,14 @@ export default function RegisterScreen() {
       const existing = await AsyncStorage.getItem("bf_anonymous_id");
       const anonymousId = existing ?? generateAnonymousId();
 
-      await api.post("/auth/register", {
+      const result = await api.post<{ accessToken?: string | null; refreshToken?: string | null }>("/auth/register", {
         anonymousId,
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
         password,
       });
+      await storeAuthTokens(result);
       await setRegistered(anonymousId);
 
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

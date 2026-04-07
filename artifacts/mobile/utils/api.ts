@@ -1,5 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const STORAGE_KEYS = {
+  USER_ID: "bf_user_id",
+  ANONYMOUS_ID: "bf_anonymous_id",
+};
+
+export const AUTH_STORAGE_KEYS = {
+  ACCESS_TOKEN: "bf_access_token",
+  REFRESH_TOKEN: "bf_refresh_token",
+};
+
 export class ApiError extends Error {
   status: number;
   retryAfterMs?: number;
@@ -12,29 +22,29 @@ export class ApiError extends Error {
 }
 
 function getApiBase(): string {
-  // Explicit base URL injected at build time — most reliable across all environments.
-  // Dev:  EXPO_PUBLIC_API_URL = https://<dev-domain>/api-server/api  (dev-proxy strips prefix)
-  // Prod: EXPO_PUBLIC_API_URL = https://<prod-domain>/api            (Replit routes /api/* directly)
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
-  // Web browser fallback (when no explicit URL is configured).
   if (typeof window !== "undefined" && window.location?.origin) {
-    const isProduction = process.env.NODE_ENV === "production";
-    return isProduction
-      ? `${window.location.origin}/api`
-      : `${window.location.origin}/api-server/api`;
+    return `${window.location.origin}/api`;
   }
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  return domain ? `https://${domain}/api-server/api` : "http://localhost:8080/api";
+  return "http://localhost:8080/api";
 }
 
 async function getAnonymousId(): Promise<string | null> {
-  return AsyncStorage.getItem("bf_user_id");
+  const [anonymousId, legacyUserId] = await Promise.all([
+    AsyncStorage.getItem(STORAGE_KEYS.ANONYMOUS_ID),
+    AsyncStorage.getItem(STORAGE_KEYS.USER_ID),
+  ]);
+  return anonymousId ?? legacyUserId;
 }
 
 async function getPermanentId(): Promise<string | null> {
-  return AsyncStorage.getItem("bf_anonymous_id");
+  return AsyncStorage.getItem(STORAGE_KEYS.ANONYMOUS_ID);
+}
+
+async function getAccessToken(): Promise<string | null> {
+  return AsyncStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
 }
 
 async function request<T>(
@@ -43,13 +53,21 @@ async function request<T>(
   body?: unknown,
 ): Promise<T> {
   const base = getApiBase();
-  const [anonymousId, permanentId] = await Promise.all([getAnonymousId(), getPermanentId()]);
+  const [anonymousId, permanentId, accessToken] = await Promise.all([
+    getAnonymousId(),
+    getPermanentId(),
+    getAccessToken(),
+  ]);
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  if (anonymousId) headers["x-anonymous-id"] = anonymousId;
-  if (permanentId && permanentId !== anonymousId) headers["x-perm-id"] = permanentId;
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  } else {
+    if (anonymousId) headers["x-anonymous-id"] = anonymousId;
+    if (permanentId && permanentId !== anonymousId) headers["x-perm-id"] = permanentId;
+  }
 
   let res: Response;
   try {
@@ -84,6 +102,19 @@ export const api = {
   patch: <T>(path: string, body: unknown) => request<T>("PATCH", path, body),
   delete: <T>(path: string) => request<T>("DELETE", path),
 };
+
+export async function storeAuthTokens(tokens: { accessToken?: string | null; refreshToken?: string | null }) {
+  if (tokens.accessToken === null) {
+    await AsyncStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+  } else if (tokens.accessToken) {
+    await AsyncStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken);
+  }
+  if (tokens.refreshToken === null) {
+    await AsyncStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+  } else if (tokens.refreshToken) {
+    await AsyncStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
+  }
+}
 
 export interface ApiPost {
   id: number;
@@ -133,9 +164,13 @@ export async function requestUploadUrl(
   contentType: string,
 ): Promise<{ uploadURL: string; objectPath: string }> {
   const base = getApiBase();
-  const anonymousId = await getAnonymousId();
+  const [anonymousId, accessToken] = await Promise.all([getAnonymousId(), getAccessToken()]);
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (anonymousId) headers["x-anonymous-id"] = anonymousId;
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  } else if (anonymousId) {
+    headers["x-anonymous-id"] = anonymousId;
+  }
 
   let res: Response;
   try {

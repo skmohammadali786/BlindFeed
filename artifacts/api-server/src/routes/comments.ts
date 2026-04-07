@@ -3,11 +3,13 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { commentsTable, postsTable, notificationsTable } from "@workspace/db/schema";
 import { commentLimiter } from "../middleware/rateLimits";
+import { getPrimaryIdentity } from "../lib/requestIdentity";
 
 const router = Router();
 
 router.get("/posts/:id/comments", async (req, res) => {
-  const postId = parseInt(req.params.id);
+  const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const postId = parseInt(postIdRaw, 10);
   if (isNaN(postId)) return res.status(400).json({ error: "Invalid id" });
 
   try {
@@ -31,7 +33,7 @@ router.get("/posts/:id/comments", async (req, res) => {
       }
     }
 
-    const anonymousId = req.headers["x-anonymous-id"] as string;
+    const anonymousId = getPrimaryIdentity(req, res);
 
     const withReplies = topLevel.map((c) => ({
       ...c,
@@ -50,10 +52,11 @@ router.get("/posts/:id/comments", async (req, res) => {
 });
 
 router.post("/posts/:id/comments", commentLimiter, async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const anonymousId = getPrimaryIdentity(req, res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const postId = parseInt(req.params.id);
+  const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const postId = parseInt(postIdRaw, 10);
   if (isNaN(postId)) return res.status(400).json({ error: "Invalid id" });
 
   const { content, parentId } = req.body;
@@ -118,10 +121,11 @@ router.post("/posts/:id/comments", commentLimiter, async (req, res) => {
 });
 
 router.delete("/comments/:id", async (req, res) => {
-  const anonymousId = req.headers["x-anonymous-id"] as string;
+  const anonymousId = getPrimaryIdentity(req, res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const commentId = parseInt(req.params.id);
+  const commentIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const commentId = parseInt(commentIdRaw, 10);
   if (isNaN(commentId)) return res.status(400).json({ error: "Invalid id" });
 
   try {

@@ -8,7 +8,7 @@ import React, {
   useState,
 } from "react";
 import { AppState, AppStateStatus } from "react-native";
-import { api, ApiPost, ApiMyPost } from "@/utils/api";
+import { api, ApiPost, ApiMyPost, AUTH_STORAGE_KEYS } from "@/utils/api";
 
 export interface Post {
   id: string;
@@ -268,7 +268,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     setRegisteredState(false);
     setAnonymousId("");
-    await AsyncStorage.multiRemove([STORAGE_KEYS.ANONYMOUS_ID, STORAGE_KEYS.REGISTERED]);
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.ANONYMOUS_ID,
+      STORAGE_KEYS.REGISTERED,
+      AUTH_STORAGE_KEYS.ACCESS_TOKEN,
+      AUTH_STORAGE_KEYS.REFRESH_TOKEN,
+    ]);
   }, []);
 
   const addPost = useCallback(async (

@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useApp } from "@/context/AppContext";
-import { api } from "@/utils/api";
+import { api, storeAuthTokens } from "@/utils/api";
 import { AnimatedPressable, FadeSlide, ScreenTransition } from "@/components/Animations";
 
 export default function LoginScreen() {
@@ -41,11 +41,12 @@ export default function LoginScreen() {
     setErrorMsg(null);
     setLoading(true);
     try {
-      const result = await api.post<{ anonymousId: string; name: string }>("/auth/login", {
+      const result = await api.post<{ anonymousId: string; name: string; accessToken?: string | null; refreshToken?: string | null }>("/auth/login", {
         identifier: identifier.trim(),
         password,
       });
 
+      await storeAuthTokens(result);
       await setRegistered(result.anonymousId);
       await setOnboarded();
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
