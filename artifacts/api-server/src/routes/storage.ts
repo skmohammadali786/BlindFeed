@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { uploadLimiter } from "../middleware/rateLimits";
+import { getAuthenticatedIdentity } from "../lib/requestIdentity";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -13,6 +14,12 @@ const objectStorageService = new ObjectStorageService();
  * Then uploads the file directly to the returned presigned URL.
  */
 router.post("/storage/uploads/request-url", uploadLimiter, async (req: Request, res: Response) => {
+  const anonymousId = getAuthenticatedIdentity(res);
+  if (!anonymousId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const { name, size, contentType } = req.body ?? {};
   if (!name || !contentType) {
     res.status(400).json({ error: "Missing required fields: name, contentType" });

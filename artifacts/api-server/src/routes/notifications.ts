@@ -2,12 +2,12 @@ import { Router } from "express";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { notificationsTable } from "@workspace/db/schema";
-import { getIdentitySet } from "../lib/requestIdentity";
+import { getAuthenticatedIdentitySet } from "../lib/requestIdentity";
 
 const router = Router();
 
 router.get("/notifications", async (req, res) => {
-  const ids = getIdentitySet(req, res);
+  const ids = getAuthenticatedIdentitySet(res);
   if (ids.length === 0) return res.status(401).json({ error: "Missing identity" });
 
   try {
@@ -29,7 +29,7 @@ router.get("/notifications", async (req, res) => {
 });
 
 router.get("/notifications/unread-count", async (req, res) => {
-  const ids = getIdentitySet(req, res);
+  const ids = getAuthenticatedIdentitySet(res);
   if (ids.length === 0) return res.json({ count: 0 });
 
   try {
@@ -52,7 +52,7 @@ router.get("/notifications/unread-count", async (req, res) => {
 });
 
 router.patch("/notifications/read-all", async (req, res) => {
-  const ids = getIdentitySet(req, res);
+  const ids = getAuthenticatedIdentitySet(res);
   if (ids.length === 0) return res.status(401).json({ error: "Missing identity" });
 
   try {
@@ -75,7 +75,7 @@ router.patch("/notifications/read-all", async (req, res) => {
 });
 
 router.patch("/notifications/:id/read", async (req, res) => {
-  const ids = getIdentitySet(req, res);
+  const ids = getAuthenticatedIdentitySet(res);
   if (ids.length === 0) return res.status(401).json({ error: "Missing identity" });
 
   const idRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

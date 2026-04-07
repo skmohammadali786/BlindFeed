@@ -3,7 +3,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { commentsTable, postsTable, notificationsTable } from "@workspace/db/schema";
 import { commentLimiter } from "../middleware/rateLimits";
-import { getPrimaryIdentity } from "../lib/requestIdentity";
+import { getAuthenticatedIdentity, getPrimaryIdentity } from "../lib/requestIdentity";
 
 const router = Router();
 
@@ -52,7 +52,7 @@ router.get("/posts/:id/comments", async (req, res) => {
 });
 
 router.post("/posts/:id/comments", commentLimiter, async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -121,7 +121,7 @@ router.post("/posts/:id/comments", commentLimiter, async (req, res) => {
 });
 
 router.delete("/comments/:id", async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const commentIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

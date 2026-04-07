@@ -25,3 +25,14 @@ export async function getAuthUserFromAccessToken(accessToken: string) {
   }
   return data.user;
 }
+
+export async function refreshAuthSession(refreshToken: string) {
+  const { data, error } = await supabaseAuthClient.auth.refreshSession({
+    refresh_token: refreshToken,
+  });
+  if (error || !data.session || !data.user) {
+    if (error) logger.warn({ err: error }, "Supabase token refresh failed");
+    return null;
+  }
+  return data;
+}

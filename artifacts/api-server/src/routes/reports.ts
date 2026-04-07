@@ -4,11 +4,11 @@ import { db } from "@workspace/db";
 import { reportsTable, postsTable, notificationsTable } from "@workspace/db/schema";
 import { reportLimiter } from "../middleware/rateLimits";
 import { isAuthorizedAdmin } from "../middleware/adminAuth";
-import { getPrimaryIdentity } from "../lib/requestIdentity";
+import { getAuthenticatedIdentity } from "../lib/requestIdentity";
 
 const router = Router();
 router.post("/posts/:id/report", reportLimiter, async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -49,7 +49,7 @@ router.post("/posts/:id/report", reportLimiter, async (req, res) => {
 });
 
 router.post("/reports/:id/respond", async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const reportIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

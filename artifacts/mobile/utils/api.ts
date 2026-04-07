@@ -47,10 +47,51 @@ async function getAccessToken(): Promise<string | null> {
   return AsyncStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
 }
 
+async function getRefreshToken(): Promise<string | null> {
+  return AsyncStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+}
+
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    const refreshToken = await getRefreshToken();
+    if (!refreshToken) return null;
+
+    try {
+      const res = await fetch(`${getApiBase()}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!res.ok) {
+        await storeAuthTokens({ accessToken: null, refreshToken: null });
+        return null;
+      }
+
+      const data = (await res.json()) as { accessToken?: string | null; refreshToken?: string | null };
+      await storeAuthTokens(data);
+      return data.accessToken ?? null;
+    } catch {
+      return null;
+    }
+  })();
+
+  try {
+    return await refreshInFlight;
+  } finally {
+    refreshInFlight = null;
+  }
+}
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
+  allowRefreshRetry: boolean = true,
 ): Promise<T> {
   const base = getApiBase();
   const [anonymousId, permanentId, accessToken] = await Promise.all([
@@ -78,6 +119,13 @@ async function request<T>(
     });
   } catch (networkErr) {
     throw new Error("No internet connection. Please try again.");
+  }
+
+  if (res.status === 401 && accessToken && allowRefreshRetry) {
+    const refreshedAccessToken = await refreshAccessToken();
+    if (refreshedAccessToken) {
+      return request<T>(method, path, body, false);
+    }
   }
 
   if (!res.ok) {
@@ -163,27 +211,11 @@ export async function requestUploadUrl(
   size: number,
   contentType: string,
 ): Promise<{ uploadURL: string; objectPath: string }> {
-  const base = getApiBase();
-  const [anonymousId, accessToken] = await Promise.all([getAnonymousId(), getAccessToken()]);
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  } else if (anonymousId) {
-    headers["x-anonymous-id"] = anonymousId;
-  }
-
-  let res: Response;
-  try {
-    res = await fetch(`${base}/storage/uploads/request-url`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ name, size, contentType }),
-    });
-  } catch {
-    throw new Error("No internet connection.");
-  }
-  if (!res.ok) throw new Error("Failed to get upload URL");
-  return res.json();
+  return api.post<{ uploadURL: string; objectPath: string }>("/storage/uploads/request-url", {
+    name,
+    size,
+    contentType,
+  });
 }
 
 export function getObjectUrl(objectPath: string): string {

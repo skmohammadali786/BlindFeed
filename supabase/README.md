@@ -8,6 +8,8 @@
    - private bucket (e.g. `blindfeed-private`)
    - public bucket (e.g. `blindfeed-public`)
 4. Apply SQL migrations in `supabase/migrations`.
+5. Start the API server with the required env configured.
+6. Start mobile with `EXPO_PUBLIC_API_URL` pointing to your API server.
 
 ## Environment variables
 
@@ -33,7 +35,16 @@ Use `.env.example` as reference:
 ## Behavior changes in this migration
 
 - Auth routes now use Supabase Auth (`/auth/register`, `/auth/login`).
+- Session refresh is supported via `/auth/refresh` (mobile retries once on 401 using stored refresh token).
 - API requests can authenticate with `Authorization: Bearer <access_token>`.
 - Storage upload URLs are generated from Supabase Storage signed upload URLs.
 - `/storage/objects/*` now redirects to Supabase signed read URLs.
 - Admin routes only honor `x-admin-key` (query-string secrets removed).
+
+## End-to-end verification checklist
+
+1. Register in app (`/auth/register`) and confirm `accessToken`/`refreshToken` are returned.
+2. Log in (`/auth/login`) and confirm authenticated routes (create post, react, comment, report) work with `Authorization: Bearer <token>`.
+3. Remove/expire access token and confirm app refreshes session via `/auth/refresh`.
+4. Request upload URL (`/storage/uploads/request-url`) with auth token and upload a file.
+5. Fetch private object through `/storage/objects/*` and confirm signed redirect works.

@@ -3,7 +3,7 @@ import { and, asc, desc, eq, gt, ilike, inArray, isNull, lte, or, sql } from "dr
 import { db } from "@workspace/db";
 import { postsTable, reactionsTable, commentsTable } from "@workspace/db/schema";
 import { postCreateLimiter, reactionLimiter, searchLimiter } from "../middleware/rateLimits";
-import { getIdentitySet, getPrimaryIdentity } from "../lib/requestIdentity";
+import { getAuthenticatedIdentity, getAuthenticatedIdentitySet, getPrimaryIdentity } from "../lib/requestIdentity";
 
 const router = Router();
 
@@ -83,7 +83,7 @@ const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 2;
 
 router.post("/posts", postCreateLimiter, async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const { content, imageUrl, videoUrl, isDraft = false, expiresInHours, scheduledAt: scheduledAtRaw } = req.body;
@@ -157,7 +157,7 @@ router.post("/posts", postCreateLimiter, async (req, res) => {
 });
 
 router.get("/posts/mine", async (req, res) => {
-  const ownerIds = getIdentitySet(req, res);
+  const ownerIds = getAuthenticatedIdentitySet(res);
   if (ownerIds.length === 0) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -211,7 +211,7 @@ router.get("/posts/mine", async (req, res) => {
 });
 
 router.get("/posts/drafts", async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -228,7 +228,7 @@ router.get("/posts/drafts", async (req, res) => {
 });
 
 router.get("/posts/scheduled", async (req, res) => {
-  const ownerIds = getIdentitySet(req, res);
+  const ownerIds = getAuthenticatedIdentitySet(res);
   if (ownerIds.length === 0) return res.status(401).json({ error: "Unauthorized" });
   const now = new Date();
 
@@ -397,7 +397,7 @@ router.get("/posts/:id", async (req, res) => {
 const EDIT_WINDOW_MS = 10 * 60 * 1000;
 
 router.patch("/posts/:id", async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -441,7 +441,7 @@ router.patch("/posts/:id", async (req, res) => {
 });
 
 router.delete("/posts/:id", async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -461,7 +461,7 @@ router.delete("/posts/:id", async (req, res) => {
 });
 
 router.post("/posts/:id/react", reactionLimiter, async (req, res) => {
-  const anonymousId = getPrimaryIdentity(req, res);
+  const anonymousId = getAuthenticatedIdentity(res);
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
   const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
