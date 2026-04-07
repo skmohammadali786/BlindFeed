@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "./logger";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
@@ -18,6 +19,9 @@ export const supabaseAdminClient = createClient(supabaseUrl, supabaseServiceRole
 
 export async function getAuthUserFromAccessToken(accessToken: string) {
   const { data, error } = await supabaseAuthClient.auth.getUser(accessToken);
-  if (error || !data.user) return null;
+  if (error || !data.user) {
+    if (error) logger.warn({ err: error }, "Supabase token validation failed");
+    return null;
+  }
   return data.user;
 }

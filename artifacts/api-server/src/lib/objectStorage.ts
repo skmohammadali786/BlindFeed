@@ -53,8 +53,9 @@ export class ObjectStorageService {
       "signedUrl" in data && typeof data.signedUrl === "string"
         ? data.signedUrl
         : undefined;
-    // In @supabase/supabase-js v2, createSignedUploadUrl may return token/path data without signedUrl.
-    // Build the signed upload endpoint from token/path in that case to preserve upload behavior.
+    // In @supabase/supabase-js v2, createSignedUploadUrl response is shape-dependent:
+    // adapters may include `signedUrl`, or only return token/path pieces.
+    // When `signedUrl` is missing, construct the upload endpoint from token/path.
     const uploadURL = signedUrl ?? createSignedUploadEndpoint(privateBucket, objectName, data.token);
     return {
       uploadURL,
