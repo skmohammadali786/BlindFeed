@@ -5,6 +5,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { globalLimiter } from "./middleware/rateLimits";
+import { attachIdentityFromSupabaseToken } from "./middleware/authIdentity";
 
 const app: Express = express();
 
@@ -36,8 +37,21 @@ app.use(
   }),
 );
 app.use((req, res, next) => {
-  const origin = req.headers.origin ?? "*";
-  res.setHeader("Access-Control-Allow-Origin", origin);
+  const origin = req.headers.origin;
+  const allowList = (process.env.CORS_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  if (origin && allowList.length > 0 && !allowList.includes(origin)) {
+    res.status(403).json({ error: "Origin not allowed" });
+    return;
+  }
+
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-anonymous-id, x-perm-id, x-admin-key");
@@ -49,6 +63,7 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true, limit: "100kb" }));
+app.use(attachIdentityFromSupabaseToken);
 
 app.use("/api", router);
 

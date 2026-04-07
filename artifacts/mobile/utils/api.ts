@@ -1,5 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const STORAGE_KEYS = {
+  USER_ID: "bf_user_id",
+  ANONYMOUS_ID: "bf_anonymous_id",
+  ACCESS_TOKEN: "bf_access_token",
+  REFRESH_TOKEN: "bf_refresh_token",
+};
+
 export class ApiError extends Error {
   status: number;
   retryAfterMs?: number;
@@ -30,11 +37,15 @@ function getApiBase(): string {
 }
 
 async function getAnonymousId(): Promise<string | null> {
-  return AsyncStorage.getItem("bf_user_id");
+  return AsyncStorage.getItem(STORAGE_KEYS.USER_ID);
 }
 
 async function getPermanentId(): Promise<string | null> {
-  return AsyncStorage.getItem("bf_anonymous_id");
+  return AsyncStorage.getItem(STORAGE_KEYS.ANONYMOUS_ID);
+}
+
+async function getAccessToken(): Promise<string | null> {
+  return AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
 }
 
 async function request<T>(
@@ -43,11 +54,16 @@ async function request<T>(
   body?: unknown,
 ): Promise<T> {
   const base = getApiBase();
-  const [anonymousId, permanentId] = await Promise.all([getAnonymousId(), getPermanentId()]);
+  const [anonymousId, permanentId, accessToken] = await Promise.all([
+    getAnonymousId(),
+    getPermanentId(),
+    getAccessToken(),
+  ]);
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (anonymousId) headers["x-anonymous-id"] = anonymousId;
   if (permanentId && permanentId !== anonymousId) headers["x-perm-id"] = permanentId;
 
@@ -84,6 +100,15 @@ export const api = {
   patch: <T>(path: string, body: unknown) => request<T>("PATCH", path, body),
   delete: <T>(path: string) => request<T>("DELETE", path),
 };
+
+export async function storeAuthTokens(tokens: { accessToken?: string | null; refreshToken?: string | null }) {
+  if (tokens.accessToken) {
+    await AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken);
+  }
+  if (tokens.refreshToken) {
+    await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
+  }
+}
 
 export interface ApiPost {
   id: number;

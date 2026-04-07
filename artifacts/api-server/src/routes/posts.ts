@@ -369,7 +369,8 @@ router.get("/posts/search", searchLimiter, async (req, res) => {
 
 router.get("/posts/:id", async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
-  const postId = parseInt(req.params.id);
+  const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const postId = parseInt(postIdRaw, 10);
   if (isNaN(postId)) return res.status(400).json({ error: "Invalid id" });
 
   try {
@@ -404,7 +405,8 @@ router.patch("/posts/:id", async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const postId = parseInt(req.params.id);
+  const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const postId = parseInt(postIdRaw, 10);
   if (isNaN(postId)) return res.status(400).json({ error: "Invalid id" });
 
   try {
@@ -447,7 +449,8 @@ router.delete("/posts/:id", async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const postId = parseInt(req.params.id);
+  const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const postId = parseInt(postIdRaw, 10);
   if (isNaN(postId)) return res.status(400).json({ error: "Invalid id" });
 
   try {
@@ -466,7 +469,8 @@ router.post("/posts/:id/react", reactionLimiter, async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const postId = parseInt(req.params.id);
+  const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const postId = parseInt(postIdRaw, 10);
   if (isNaN(postId)) return res.status(400).json({ error: "Invalid id" });
 
   const { type } = req.body;

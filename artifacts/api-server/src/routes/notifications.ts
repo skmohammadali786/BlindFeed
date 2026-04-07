@@ -86,7 +86,8 @@ router.patch("/notifications/:id/read", async (req, res) => {
   const ids = getIdentities(req);
   if (ids.length === 0) return res.status(401).json({ error: "Missing identity" });
 
-  const id = parseInt(req.params.id, 10);
+  const idRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(idRaw, 10);
   if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
 
   try {

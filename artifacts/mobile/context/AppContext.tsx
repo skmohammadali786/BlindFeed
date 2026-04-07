@@ -268,7 +268,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     setRegisteredState(false);
     setAnonymousId("");
-    await AsyncStorage.multiRemove([STORAGE_KEYS.ANONYMOUS_ID, STORAGE_KEYS.REGISTERED]);
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.ANONYMOUS_ID,
+      STORAGE_KEYS.REGISTERED,
+      "bf_access_token",
+      "bf_refresh_token",
+    ]);
   }, []);
 
   const addPost = useCallback(async (

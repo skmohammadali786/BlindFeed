@@ -2,27 +2,10 @@ import { Router } from "express";
 import { eq, or } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db/schema";
-import crypto from "node:crypto";
 import { authLimiter } from "../middleware/rateLimits";
+import { supabaseAuthClient } from "../lib/supabase";
 
 const router = Router();
-
-function hashPassword(password: string, salt: string): string {
-  return crypto.scryptSync(password, salt, 64).toString("hex");
-}
-
-function createHash(password: string): string {
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hash = hashPassword(password, salt);
-  return `${salt}:${hash}`;
-}
-
-function verifyHash(password: string, stored: string): boolean {
-  const [salt, hash] = stored.split(":");
-  if (!salt || !hash) return false;
-  const attempt = hashPassword(password, salt);
-  return crypto.timingSafeEqual(Buffer.from(attempt, "hex"), Buffer.from(hash, "hex"));
-}
 
 function generateAnonymousId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -41,10 +24,11 @@ router.post("/auth/register", authLimiter, async (req, res) => {
   }
 
   try {
+    const emailNormalized = email.trim().toLowerCase();
     const existingByEmail = await db
       .select({ anonymousId: usersTable.anonymousId })
       .from(usersTable)
-      .where(eq(usersTable.email, email.trim().toLowerCase()))
+      .where(eq(usersTable.email, emailNormalized))
       .limit(1);
 
     if (existingByEmail.length > 0) {
@@ -52,17 +36,40 @@ router.post("/auth/register", authLimiter, async (req, res) => {
     }
 
     const anonymousId = clientAnonId ?? generateAnonymousId();
-    const passwordHash = createHash(password);
-
-    await db.insert(usersTable).values({
-      anonymousId,
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone.trim(),
-      passwordHash,
+    const { data: signUpData, error: signUpError } = await supabaseAuthClient.auth.signUp({
+      email: emailNormalized,
+      password,
+      options: {
+        data: {
+          anonymousId,
+          name: name.trim(),
+          phone: phone.trim(),
+        },
+      },
     });
 
-    return res.status(201).json({ anonymousId, alreadyRegistered: false });
+    if (signUpError || !signUpData.user) {
+      if (signUpError?.message?.toLowerCase().includes("already registered")) {
+        return res.status(409).json({ error: "An account with this email already exists. Please log in." });
+      }
+      return res.status(400).json({ error: signUpError?.message ?? "Failed to register" });
+    }
+
+    await db.insert(usersTable).values({
+      supabaseUserId: signUpData.user.id,
+      anonymousId,
+      name: name.trim(),
+      email: emailNormalized,
+      phone: phone.trim(),
+      passwordHash: null,
+    });
+
+    return res.status(201).json({
+      anonymousId,
+      alreadyRegistered: false,
+      accessToken: signUpData.session?.access_token ?? null,
+      refreshToken: signUpData.session?.refresh_token ?? null,
+    });
   } catch (err) {
     req.log.error(err, "Error registering user");
     return res.status(500).json({ error: "Failed to register" });
@@ -87,16 +94,29 @@ router.post("/auth/login", authLimiter, async (req, res) => {
       return res.status(401).json({ error: "No account found with that email or phone number" });
     }
 
-    const user = users[0];
-    if (!user.passwordHash) {
-      return res.status(401).json({ error: "This account was created before password login was available. Please contact support." });
+    const localUser = users[0];
+    const { data: signInData, error: signInError } = await supabaseAuthClient.auth.signInWithPassword({
+      email: localUser.email,
+      password,
+    });
+
+    if (signInError || !signInData.user || !signInData.session) {
+      return res.status(401).json({ error: signInError?.message ?? "Incorrect password" });
     }
 
-    if (!verifyHash(password, user.passwordHash)) {
-      return res.status(401).json({ error: "Incorrect password" });
+    if (!localUser.supabaseUserId) {
+      await db
+        .update(usersTable)
+        .set({ supabaseUserId: signInData.user.id })
+        .where(eq(usersTable.id, localUser.id));
     }
 
-    return res.json({ anonymousId: user.anonymousId, name: user.name });
+    return res.json({
+      anonymousId: localUser.anonymousId,
+      name: localUser.name,
+      accessToken: signInData.session.access_token,
+      refreshToken: signInData.session.refresh_token,
+    });
   } catch (err) {
     req.log.error(err, "Error logging in");
     return res.status(500).json({ error: "Failed to log in" });

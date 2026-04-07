@@ -3,15 +3,15 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { reportsTable, postsTable, notificationsTable } from "@workspace/db/schema";
 import { reportLimiter } from "../middleware/rateLimits";
+import { isAuthorizedAdmin } from "../middleware/adminAuth";
 
 const router = Router();
-const ADMIN_KEY = process.env.ADMIN_KEY ?? "blindfeed-admin-2026";
-
 router.post("/posts/:id/report", reportLimiter, async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string | undefined;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const postId = parseInt(req.params.id, 10);
+  const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const postId = parseInt(postIdRaw, 10);
   if (isNaN(postId)) return res.status(400).json({ error: "Invalid post id" });
 
   const { reason, description } = req.body;
@@ -51,7 +51,8 @@ router.post("/reports/:id/respond", async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string | undefined;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const reportId = parseInt(req.params.id, 10);
+  const reportIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const reportId = parseInt(reportIdRaw, 10);
   if (isNaN(reportId)) return res.status(400).json({ error: "Invalid report id" });
 
   const { response } = req.body;
@@ -85,7 +86,7 @@ router.post("/reports/:id/respond", async (req, res) => {
 });
 
 router.get("/admin/reports", async (req, res) => {
-  if (req.query.secret !== ADMIN_KEY && req.headers["x-admin-key"] !== ADMIN_KEY) {
+  if (!isAuthorizedAdmin(req)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
@@ -115,11 +116,12 @@ router.get("/admin/reports", async (req, res) => {
 });
 
 router.patch("/admin/reports/:id", async (req, res) => {
-  if (req.query.secret !== ADMIN_KEY && req.headers["x-admin-key"] !== ADMIN_KEY) {
+  if (!isAuthorizedAdmin(req)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const reportId = parseInt(req.params.id, 10);
+  const reportIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const reportId = parseInt(reportIdRaw, 10);
   if (isNaN(reportId)) return res.status(400).json({ error: "Invalid report id" });
 
   const { action, adminNote } = req.body;
@@ -179,11 +181,12 @@ router.patch("/admin/reports/:id", async (req, res) => {
 });
 
 router.patch("/admin/appeals/:id", async (req, res) => {
-  if (req.query.secret !== ADMIN_KEY && req.headers["x-admin-key"] !== ADMIN_KEY) {
+  if (!isAuthorizedAdmin(req)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const reportId = parseInt(req.params.id, 10);
+  const reportIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const reportId = parseInt(reportIdRaw, 10);
   if (isNaN(reportId)) return res.status(400).json({ error: "Invalid report id" });
 
   const { decision, response } = req.body;

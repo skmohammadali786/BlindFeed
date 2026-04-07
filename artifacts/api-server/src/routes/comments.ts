@@ -7,7 +7,8 @@ import { commentLimiter } from "../middleware/rateLimits";
 const router = Router();
 
 router.get("/posts/:id/comments", async (req, res) => {
-  const postId = parseInt(req.params.id);
+  const postIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const postId = parseInt(postIdRaw, 10);
   if (isNaN(postId)) return res.status(400).json({ error: "Invalid id" });
 
   try {
@@ -121,7 +122,8 @@ router.delete("/comments/:id", async (req, res) => {
   const anonymousId = req.headers["x-anonymous-id"] as string;
   if (!anonymousId) return res.status(401).json({ error: "Unauthorized" });
 
-  const commentId = parseInt(req.params.id);
+  const commentIdRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const commentId = parseInt(commentIdRaw, 10);
   if (isNaN(commentId)) return res.status(400).json({ error: "Invalid id" });
 
   try {
