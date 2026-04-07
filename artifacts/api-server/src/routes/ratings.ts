@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { ratingsTable } from "@workspace/db/schema";
 import { isAuthorizedAdmin } from "../middleware/adminAuth";
 import { getAuthenticatedIdentity } from "../lib/requestIdentity";
+import { parsePagination } from "../lib/pagination";
 
 const router = Router();
 
@@ -38,15 +39,16 @@ router.get("/admin/ratings", async (req, res) => {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const { limit = "50", offset = "0" } = req.query;
+  const { limit: limitRaw = "50", offset: offsetRaw = "0" } = req.query;
+  const { limit, offset } = parsePagination(limitRaw, offsetRaw);
 
   try {
     const ratings = await db
       .select()
       .from(ratingsTable)
       .orderBy(desc(ratingsTable.createdAt))
-      .limit(parseInt(limit as string))
-      .offset(parseInt(offset as string));
+      .limit(limit)
+      .offset(offset);
 
     const total = ratings.length;
     const avgStars =

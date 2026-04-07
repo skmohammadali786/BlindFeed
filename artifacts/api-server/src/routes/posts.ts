@@ -4,13 +4,15 @@ import { db } from "@workspace/db";
 import { postsTable, reactionsTable, commentsTable } from "@workspace/db/schema";
 import { postCreateLimiter, reactionLimiter, searchLimiter } from "../middleware/rateLimits";
 import { getAuthenticatedIdentity, getAuthenticatedIdentitySet, getPrimaryIdentity } from "../lib/requestIdentity";
+import { parsePagination } from "../lib/pagination";
 
 const router = Router();
 
 const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
 
 router.get("/posts", async (req, res) => {
-  const { sort = "fresh", limit = "50", offset = "0" } = req.query;
+  const { sort = "fresh", limit: limitRaw = "50", offset: offsetRaw = "0" } = req.query;
+  const { limit, offset } = parsePagination(limitRaw, offsetRaw);
   const anonymousId = getPrimaryIdentity(req, res);
 
   try {
@@ -43,26 +45,32 @@ router.get("/posts", async (req, res) => {
     }
 
     const posts = await query
-      .limit(parseInt(limit as string))
-      .offset(parseInt(offset as string));
+      .limit(limit)
+      .offset(offset);
+
+    const postIds = posts.map((p) => p.id);
 
     let userReactions: Record<number, string> = {};
-    if (anonymousId) {
+    if (anonymousId && postIds.length > 0) {
       const reactions = await db
         .select({ postId: reactionsTable.postId, type: reactionsTable.type })
         .from(reactionsTable)
-        .where(eq(reactionsTable.anonymousId, anonymousId));
+        .where(and(eq(reactionsTable.anonymousId, anonymousId), inArray(reactionsTable.postId, postIds)));
       userReactions = Object.fromEntries(reactions.map((r) => [r.postId, r.type]));
     }
 
-    const commentCounts = await db
-      .select({
-        postId: commentsTable.postId,
-        count: sql<number>`cast(count(*) as int)`,
-      })
-      .from(commentsTable)
-      .groupBy(commentsTable.postId);
-    const commentCountMap = Object.fromEntries(commentCounts.map((c) => [c.postId, c.count]));
+    let commentCountMap: Record<number, number> = {};
+    if (postIds.length > 0) {
+      const commentCounts = await db
+        .select({
+          postId: commentsTable.postId,
+          count: sql<number>`cast(count(*) as int)`,
+        })
+        .from(commentsTable)
+        .where(inArray(commentsTable.postId, postIds))
+        .groupBy(commentsTable.postId);
+      commentCountMap = Object.fromEntries(commentCounts.map((c) => [c.postId, c.count]));
+    }
 
     const enriched = posts.map((p) => ({
       ...p,
@@ -327,17 +335,17 @@ router.get("/posts/search", searchLimiter, async (req, res) => {
     }
 
     const posts = await query.limit(50);
+    const postIds = posts.map((p) => p.id);
 
     let userReactions: Record<number, string> = {};
-    if (anonymousId) {
+    if (anonymousId && postIds.length > 0) {
       const reactions = await db
         .select({ postId: reactionsTable.postId, type: reactionsTable.type })
         .from(reactionsTable)
-        .where(eq(reactionsTable.anonymousId, anonymousId));
+        .where(and(eq(reactionsTable.anonymousId, anonymousId), inArray(reactionsTable.postId, postIds)));
       userReactions = Object.fromEntries(reactions.map((r) => [r.postId, r.type]));
     }
 
-    const postIds = posts.map((p) => p.id);
     let commentCountMap: Record<number, number> = {};
     if (postIds.length > 0) {
       const counts = await db
@@ -559,14 +567,19 @@ router.get("/users/:anonymousId/posts", async (req, res) => {
       .orderBy(desc(postsTable.createdAt))
       .limit(50);
 
-    const commentCounts = await db
-      .select({
-        postId: commentsTable.postId,
-        count: sql<number>`cast(count(*) as int)`,
-      })
-      .from(commentsTable)
-      .groupBy(commentsTable.postId);
-    const commentCountMap = Object.fromEntries(commentCounts.map((c) => [c.postId, c.count]));
+    const postIds = posts.map((p) => p.id);
+    let commentCountMap: Record<number, number> = {};
+    if (postIds.length > 0) {
+      const commentCounts = await db
+        .select({
+          postId: commentsTable.postId,
+          count: sql<number>`cast(count(*) as int)`,
+        })
+        .from(commentsTable)
+        .where(inArray(commentsTable.postId, postIds))
+        .groupBy(commentsTable.postId);
+      commentCountMap = Object.fromEntries(commentCounts.map((c) => [c.postId, c.count]));
+    }
 
     const enriched = posts.map((p) => ({
       ...p,
