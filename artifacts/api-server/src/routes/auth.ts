@@ -45,13 +45,10 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       .from(usersTable)
       .where(or(eq(usersTable.email, emailNormalized), eq(usersTable.phone, phoneNormalized)))
       // Email/phone are app-level unique checks (DB-level uniqueness is on anonymous_id and supabaseUserId).
-      .limit(2);
+      .limit(1);
 
-    if (existingByIdentity.some((user) => user.email === emailNormalized)) {
-      return res.status(409).json({ error: "An account with this email already exists. Please log in." });
-    }
-    if (existingByIdentity.some((user) => user.phone === phoneNormalized)) {
-      return res.status(409).json({ error: "An account with this phone number already exists. Please log in." });
+    if (existingByIdentity.length > 0) {
+      return res.status(409).json({ error: "An account with this email or phone number already exists. Please log in." });
     }
 
     const anonymousId = typeof clientAnonId === "string" && clientAnonId.trim() ? clientAnonId.trim() : generateAnonymousId();
@@ -104,7 +101,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       if (deleteResult.error) {
         req.log.error(deleteResult.error, "Failed to rollback Supabase user after local registration failure");
         return res.status(500).json({
-          error: "Registration entered a partial state. Please contact support before using this email again.",
+          error: "Registration entered a partial state. Please contact support before attempting these credentials again.",
         });
       }
 
