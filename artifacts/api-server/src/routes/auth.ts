@@ -21,6 +21,12 @@ function getDbErrorCode(err: unknown): string | undefined {
   return typeof code === "string" ? code : undefined;
 }
 
+function isEmailNotConfirmedError(err: { code?: string; message?: string } | null | undefined): boolean {
+  const code = err?.code?.toLowerCase();
+  if (code === "email_not_confirmed" || code === "email_not_confirmed_error") return true;
+  return err?.message?.toLowerCase().includes("email not confirmed") ?? false;
+}
+
 router.post("/auth/register", authLimiter, async (req, res) => {
   const { anonymousId: clientAnonId, name, email, phone, password } = req.body;
   if (!name || !email || !phone || !password) {
@@ -38,7 +44,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       .select({ email: usersTable.email, phone: usersTable.phone })
       .from(usersTable)
       .where(or(eq(usersTable.email, emailNormalized), eq(usersTable.phone, phoneNormalized)))
-      // Email/phone are app-level unique checks (DB-level uniqueness is on anonymous_id and supabase_user_id).
+      // Email/phone are app-level unique checks (DB-level uniqueness is on anonymous_id and supabaseUserId).
       .limit(2);
 
     if (existingByIdentity.some((user) => user.email === emailNormalized)) {
@@ -75,7 +81,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
         password,
       });
       if (signInError || !signInData.session) {
-        if (signInError?.message?.toLowerCase().includes("email not confirmed")) {
+        if (isEmailNotConfirmedError(signInError)) {
           return res.status(403).json({ error: "Email verification is required. Verify your email, then log in." });
         }
         return res.status(400).json({ error: signInError?.message ?? "Failed to create session after registration" });
@@ -104,7 +110,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
 
       const code = getDbErrorCode(err);
       if (code === "23505") {
-        return res.status(409).json({ error: "An account with this email or phone may already exist. Please log in." });
+        return res.status(409).json({ error: "An account with this email or phone number may already exist. Please log in." });
       }
       return res.status(500).json({ error: "Failed to register" });
     }
