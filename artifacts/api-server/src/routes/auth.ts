@@ -73,21 +73,6 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       return res.status(400).json({ error: signUpError?.message ?? "Failed to register" });
     }
 
-    let session = signUpData.session;
-    if (!session) {
-      const { data: signInData, error: signInError } = await supabaseAuthClient.auth.signInWithPassword({
-        email: emailNormalized,
-        password,
-      });
-      if (signInError || !signInData.session) {
-        if (isEmailNotConfirmedError(signInError)) {
-          return res.status(403).json({ error: "Email verification is required. Please verify your email and try again." });
-        }
-        return res.status(400).json({ error: signInError?.message ?? "Failed to create session after registration" });
-      }
-      session = signInData.session;
-    }
-
     try {
       await db.insert(usersTable).values({
         supabaseUserId: signUpData.user.id,
@@ -113,6 +98,21 @@ router.post("/auth/register", authLimiter, async (req, res) => {
         return res.status(409).json({ error: "An account with this email or phone number already exists. Please log in." });
       }
       return res.status(500).json({ error: "Failed to register" });
+    }
+
+    let session = signUpData.session;
+    if (!session) {
+      const { data: signInData, error: signInError } = await supabaseAuthClient.auth.signInWithPassword({
+        email: emailNormalized,
+        password,
+      });
+      if (signInError || !signInData.session) {
+        if (isEmailNotConfirmedError(signInError)) {
+          return res.status(403).json({ error: "Email verification is required. Please verify your email and try again." });
+        }
+        return res.status(400).json({ error: signInError?.message ?? "Failed to create session after registration" });
+      }
+      session = signInData.session;
     }
 
     return res.status(201).json({
