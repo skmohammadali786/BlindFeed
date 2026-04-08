@@ -3,7 +3,7 @@ import { eq, or } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db/schema";
 import { authLimiter } from "../middleware/rateLimits";
-import { refreshAuthSession, supabaseAuthClient } from "../lib/supabase";
+import { refreshAuthSession, supabaseAdminClient, supabaseAuthClient } from "../lib/supabase";
 import { findOrLinkLocalUserBySupabaseIdentity } from "../lib/userIdentity";
 
 const router = Router();
@@ -13,6 +13,18 @@ function generateAnonymousId(): string {
   let result = "anon_";
   for (let i = 0; i < 12; i++) result += chars[Math.floor(Math.random() * chars.length)];
   return result;
+}
+
+function getDbErrorCode(err: unknown): string | undefined {
+  if (!err || typeof err !== "object") return undefined;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === "string" ? code : undefined;
+}
+
+function getDbErrorConstraint(err: unknown): string | undefined {
+  if (!err || typeof err !== "object") return undefined;
+  const constraint = (err as { constraint?: unknown }).constraint;
+  return typeof constraint === "string" ? constraint : undefined;
 }
 
 router.post("/auth/register", authLimiter, async (req, res) => {
@@ -25,26 +37,31 @@ router.post("/auth/register", authLimiter, async (req, res) => {
   }
 
   try {
+    const nameNormalized = name.trim();
     const emailNormalized = email.trim().toLowerCase();
-    const existingByEmail = await db
-      .select({ anonymousId: usersTable.anonymousId })
+    const phoneNormalized = phone.trim();
+    const existingByIdentity = await db
+      .select({ email: usersTable.email, phone: usersTable.phone })
       .from(usersTable)
-      .where(eq(usersTable.email, emailNormalized))
-      .limit(1);
+      .where(or(eq(usersTable.email, emailNormalized), eq(usersTable.phone, phoneNormalized)))
+      .limit(2);
 
-    if (existingByEmail.length > 0) {
+    if (existingByIdentity.some((user) => user.email === emailNormalized)) {
       return res.status(409).json({ error: "An account with this email already exists. Please log in." });
     }
+    if (existingByIdentity.some((user) => user.phone === phoneNormalized)) {
+      return res.status(409).json({ error: "An account with this phone number already exists. Please log in." });
+    }
 
-    const anonymousId = clientAnonId ?? generateAnonymousId();
+    const anonymousId = typeof clientAnonId === "string" && clientAnonId.trim() ? clientAnonId.trim() : generateAnonymousId();
     const { data: signUpData, error: signUpError } = await supabaseAuthClient.auth.signUp({
       email: emailNormalized,
       password,
       options: {
         data: {
           anonymousId,
-          name: name.trim(),
-          phone: phone.trim(),
+          name: nameNormalized,
+          phone: phoneNormalized,
         },
       },
     });
@@ -56,20 +73,58 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       return res.status(400).json({ error: signUpError?.message ?? "Failed to register" });
     }
 
-    await db.insert(usersTable).values({
-      supabaseUserId: signUpData.user.id,
-      anonymousId,
-      name: name.trim(),
-      email: emailNormalized,
-      phone: phone.trim(),
-      passwordHash: null,
-    });
+    let session = signUpData.session;
+    if (!session) {
+      const { data: signInData, error: signInError } = await supabaseAuthClient.auth.signInWithPassword({
+        email: emailNormalized,
+        password,
+      });
+      if (signInError || !signInData.session) {
+        if (signInError?.message?.toLowerCase().includes("email not confirmed")) {
+          return res.status(403).json({ error: "Email verification is required. Verify your email, then log in." });
+        }
+        return res.status(400).json({ error: signInError?.message ?? "Failed to create session after registration" });
+      }
+      session = signInData.session;
+    }
+
+    try {
+      await db.insert(usersTable).values({
+        supabaseUserId: signUpData.user.id,
+        anonymousId,
+        name: nameNormalized,
+        email: emailNormalized,
+        phone: phoneNormalized,
+        passwordHash: null,
+      });
+    } catch (err) {
+      req.log.error(err, "Failed to persist local user after Supabase sign-up");
+      const deleteResult = await supabaseAdminClient.auth.admin.deleteUser(signUpData.user.id);
+      if (deleteResult.error) {
+        req.log.error(deleteResult.error, "Failed to rollback Supabase user after local registration failure");
+      }
+
+      const code = getDbErrorCode(err);
+      const constraint = getDbErrorConstraint(err);
+      if (code === "23505") {
+        if (constraint?.includes("email")) {
+          return res.status(409).json({ error: "An account with this email already exists. Please log in." });
+        }
+        if (constraint?.includes("phone")) {
+          return res.status(409).json({ error: "An account with this phone number already exists. Please log in." });
+        }
+        if (constraint?.includes("anonymous_id")) {
+          return res.status(409).json({ error: "Could not complete registration. Please try again." });
+        }
+      }
+      return res.status(500).json({ error: "Failed to register" });
+    }
 
     return res.status(201).json({
       anonymousId,
       alreadyRegistered: false,
-      accessToken: signUpData.session?.access_token ?? null,
-      refreshToken: signUpData.session?.refresh_token ?? null,
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token,
     });
   } catch (err) {
     req.log.error(err, "Error registering user");
@@ -103,6 +158,10 @@ router.post("/auth/login", authLimiter, async (req, res) => {
 
     if (signInError || !signInData.user || !signInData.session) {
       return res.status(401).json({ error: signInError?.message ?? "Incorrect password" });
+    }
+
+    if (localUser.supabaseUserId && localUser.supabaseUserId !== signInData.user.id) {
+      return res.status(409).json({ error: "Account identity mismatch. Please contact support." });
     }
 
     if (!localUser.supabaseUserId) {
