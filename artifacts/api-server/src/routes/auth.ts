@@ -21,12 +21,6 @@ function getDbErrorCode(err: unknown): string | undefined {
   return typeof code === "string" ? code : undefined;
 }
 
-function getDbErrorConstraint(err: unknown): string | undefined {
-  if (!err || typeof err !== "object") return undefined;
-  const constraint = (err as { constraint?: unknown }).constraint;
-  return typeof constraint === "string" ? constraint : undefined;
-}
-
 router.post("/auth/register", authLimiter, async (req, res) => {
   const { anonymousId: clientAnonId, name, email, phone, password } = req.body;
   if (!name || !email || !phone || !password) {
@@ -44,7 +38,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       .select({ email: usersTable.email, phone: usersTable.phone })
       .from(usersTable)
       .where(or(eq(usersTable.email, emailNormalized), eq(usersTable.phone, phoneNormalized)))
-      // Email/phone are not DB-unique, so two rows may match (one for email, one for phone).
+      // Email/phone are app-level unique checks (DB-level uniqueness is on anonymous_id and supabase_user_id).
       .limit(2);
 
     if (existingByIdentity.some((user) => user.email === emailNormalized)) {
@@ -104,22 +98,13 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       if (deleteResult.error) {
         req.log.error(deleteResult.error, "Failed to rollback Supabase user after local registration failure");
         return res.status(500).json({
-          error: "Registration entered an inconsistent state. Please contact support before retrying.",
+          error: "Registration entered a partial state. Please contact support before using this email again.",
         });
       }
 
       const code = getDbErrorCode(err);
-      const constraint = getDbErrorConstraint(err);
       if (code === "23505") {
-        if (constraint?.includes("email")) {
-          return res.status(409).json({ error: "An account with this email already exists. Please log in." });
-        }
-        if (constraint?.includes("phone")) {
-          return res.status(409).json({ error: "An account with this phone number already exists. Please log in." });
-        }
-        if (constraint?.includes("anonymous_id")) {
-          return res.status(409).json({ error: "Could not complete registration. Please try again." });
-        }
+        return res.status(409).json({ error: "An account with this email or phone may already exist. Please log in." });
       }
       return res.status(500).json({ error: "Failed to register" });
     }
