@@ -15,7 +15,7 @@ function generateAnonymousId(): string {
   return result;
 }
 
-function getDbErrorCode(err: unknown): string | undefined {
+function extractErrorCode(err: unknown): string | undefined {
   if (!err || typeof err !== "object") return undefined;
   const code = (err as { code?: unknown }).code;
   return typeof code === "string" ? code : undefined;
@@ -106,10 +106,11 @@ router.post("/auth/register", authLimiter, async (req, res) => {
           error: "Registration failed after account creation. Please contact support for assistance.",
         });
       }
+      req.log.warn({ supabaseUserId: signUpData.user.id }, "Rolled back Supabase user after local registration failure");
 
-      const code = getDbErrorCode(err);
+      const code = extractErrorCode(err);
       if (code === "23505") {
-        return res.status(409).json({ error: "An account with this email or phone number may already exist. Please log in." });
+        return res.status(409).json({ error: "An account with this email or phone number already exists. Please log in." });
       }
       return res.status(500).json({ error: "Failed to register" });
     }
