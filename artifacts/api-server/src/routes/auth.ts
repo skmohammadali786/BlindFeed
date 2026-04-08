@@ -81,7 +81,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       });
       if (signInError || !signInData.session) {
         if (isEmailNotConfirmedError(signInError)) {
-          return res.status(403).json({ error: "Email verification is required. Verify your email, then log in." });
+          return res.status(403).json({ error: "Email verification is required. Please verify your email and try again." });
         }
         return res.status(400).json({ error: signInError?.message ?? "Failed to create session after registration" });
       }
@@ -103,7 +103,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       if (deleteResult.error) {
         req.log.error(deleteResult.error, "Failed to rollback Supabase user after local registration failure");
         return res.status(500).json({
-          error: "Registration failed after account creation. Please contact support for assistance.",
+          error: "Registration encountered a critical error. An incomplete account may exist. Please contact support.",
         });
       }
       req.log.warn({ supabaseUserId: signUpData.user.id }, "Rolled back Supabase user after local registration failure");
