@@ -24,7 +24,9 @@ function getDbErrorCode(err: unknown): string | undefined {
 function isEmailNotConfirmedError(err: { code?: string; message?: string } | null | undefined): boolean {
   const code = err?.code?.toLowerCase();
   if (code === "email_not_confirmed" || code === "email_not_confirmed_error") return true;
-  return err?.message?.toLowerCase().includes("email not confirmed") ?? false;
+  const message = err?.message;
+  if (typeof message !== "string") return false;
+  return message.toLowerCase().includes("email not confirmed");
 }
 
 router.post("/auth/register", authLimiter, async (req, res) => {
@@ -101,7 +103,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       if (deleteResult.error) {
         req.log.error(deleteResult.error, "Failed to rollback Supabase user after local registration failure");
         return res.status(500).json({
-          error: "Registration entered a partial state. Please contact support before attempting these credentials again.",
+          error: "Registration failed after account creation. Please contact support for assistance.",
         });
       }
 
