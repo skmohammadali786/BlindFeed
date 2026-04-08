@@ -44,6 +44,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       .select({ email: usersTable.email, phone: usersTable.phone })
       .from(usersTable)
       .where(or(eq(usersTable.email, emailNormalized), eq(usersTable.phone, phoneNormalized)))
+      // Email/phone are not DB-unique, so two rows may match (one for email, one for phone).
       .limit(2);
 
     if (existingByIdentity.some((user) => user.email === emailNormalized)) {
@@ -102,6 +103,9 @@ router.post("/auth/register", authLimiter, async (req, res) => {
       const deleteResult = await supabaseAdminClient.auth.admin.deleteUser(signUpData.user.id);
       if (deleteResult.error) {
         req.log.error(deleteResult.error, "Failed to rollback Supabase user after local registration failure");
+        return res.status(500).json({
+          error: "Registration entered an inconsistent state. Please contact support before retrying.",
+        });
       }
 
       const code = getDbErrorCode(err);
@@ -161,6 +165,10 @@ router.post("/auth/login", authLimiter, async (req, res) => {
     }
 
     if (localUser.supabaseUserId && localUser.supabaseUserId !== signInData.user.id) {
+      req.log.warn(
+        { localSupabaseUserId: localUser.supabaseUserId, loginSupabaseUserId: signInData.user.id, userId: localUser.id },
+        "Supabase identity mismatch during login",
+      );
       return res.status(409).json({ error: "Account identity mismatch. Please contact support." });
     }
 
