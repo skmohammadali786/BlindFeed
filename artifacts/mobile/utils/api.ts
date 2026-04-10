@@ -74,6 +74,11 @@ function getApiBase(): string {
   if (typeof window !== "undefined" && window.location?.origin) {
     return `${window.location.origin}/api`;
   }
+  if (!__DEV__) {
+    throw new Error(
+      "Missing API base URL. Set EXPO_PUBLIC_API_URL or EXPO_PUBLIC_DOMAIN before creating production Android/iOS builds.",
+    );
+  }
   if (Platform.OS === "android") {
     return "http://10.0.2.2:8080/api";
   }
