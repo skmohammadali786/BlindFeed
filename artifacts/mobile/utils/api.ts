@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 const STORAGE_KEYS = {
   USER_ID: "bf_user_id",
@@ -27,11 +28,54 @@ export class ApiError extends Error {
 }
 
 function getApiBase(): string {
+  const stripTrailingSlash = (value: string): string => value.replace(/\/+$/, "");
+  const HAS_PROTOCOL_REGEX = /^https?:\/\//i;
+  const isPrivateIpv4Host = (hostname: string): boolean => {
+    const parts = hostname.split(".");
+    if (parts.length !== 4) return false;
+    const octets = parts.map((part) => Number(part));
+    if (octets.some((octet) => Number.isNaN(octet) || !Number.isInteger(octet) || octet < 0 || octet > 255)) {
+      return false;
+    }
+    const [first, second] = octets;
+    if (first === 127 || first === 10) return true;
+    if (first === 192 && second === 168) return true;
+    if (first === 172 && second >= 16 && second <= 31) return true;
+    return false;
+  };
+  const isLocalOrPrivateHost = (value: string): boolean => {
+    try {
+      const parsed = new URL(HAS_PROTOCOL_REGEX.test(value) ? value : `http://${value}`);
+      const hostname = parsed.hostname.toLowerCase();
+      return hostname === "localhost" || isPrivateIpv4Host(hostname);
+    } catch {
+      return false;
+    }
+  };
+  const normalizeDomainToApi = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    const defaultProtocol = isLocalOrPrivateHost(trimmed) ? "http://" : "https://";
+    const withProtocol = HAS_PROTOCOL_REGEX.test(trimmed) ? trimmed : `${defaultProtocol}${trimmed}`;
+    return `${stripTrailingSlash(withProtocol)}/api`;
+  };
+
   if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+    return stripTrailingSlash(process.env.EXPO_PUBLIC_API_URL);
+  }
+  if (process.env.EXPO_PUBLIC_DOMAIN) {
+    const apiUrl = normalizeDomainToApi(process.env.EXPO_PUBLIC_DOMAIN);
+    if (apiUrl) return apiUrl;
+  }
+  if (process.env.PUBLIC_DOMAIN) {
+    const apiUrl = normalizeDomainToApi(process.env.PUBLIC_DOMAIN);
+    if (apiUrl) return apiUrl;
   }
   if (typeof window !== "undefined" && window.location?.origin) {
     return `${window.location.origin}/api`;
+  }
+  if (Platform.OS === "android") {
+    return "http://10.0.2.2:8080/api";
   }
   return "http://localhost:8080/api";
 }
