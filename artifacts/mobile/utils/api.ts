@@ -29,11 +29,12 @@ export class ApiError extends Error {
 
 function getApiBase(): string {
   const stripTrailingSlash = (value: string): string => value.replace(/\/+$/, "");
+  const HAS_PROTOCOL_REGEX = /^https?:\/\//i;
   const isPrivateIpv4Host = (hostname: string): boolean => {
     const parts = hostname.split(".");
     if (parts.length !== 4) return false;
     const octets = parts.map((part) => Number(part));
-    if (octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) {
+    if (octets.some((octet) => Number.isNaN(octet) || !Number.isInteger(octet) || octet < 0 || octet > 255)) {
       return false;
     }
     const [first, second] = octets;
@@ -44,7 +45,7 @@ function getApiBase(): string {
   };
   const isLocalOrPrivateHost = (value: string): boolean => {
     try {
-      const parsed = new URL(/^https?:\/\//i.test(value) ? value : `http://${value}`);
+      const parsed = new URL(HAS_PROTOCOL_REGEX.test(value) ? value : `http://${value}`);
       const hostname = parsed.hostname.toLowerCase();
       return hostname === "localhost" || isPrivateIpv4Host(hostname);
     } catch {
@@ -55,7 +56,7 @@ function getApiBase(): string {
     const trimmed = value.trim();
     if (!trimmed) return "";
     const defaultProtocol = isLocalOrPrivateHost(trimmed) ? "http://" : "https://";
-    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `${defaultProtocol}${trimmed}`;
+    const withProtocol = HAS_PROTOCOL_REGEX.test(trimmed) ? trimmed : `${defaultProtocol}${trimmed}`;
     return `${stripTrailingSlash(withProtocol)}/api`;
   };
 
