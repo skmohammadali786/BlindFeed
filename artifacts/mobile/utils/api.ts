@@ -29,16 +29,32 @@ export class ApiError extends Error {
 
 function getApiBase(): string {
   const stripTrailingSlash = (value: string): string => value.replace(/\/+$/, "");
+  const isPrivateIpv4Host = (hostname: string): boolean => {
+    const parts = hostname.split(".");
+    if (parts.length !== 4) return false;
+    const octets = parts.map((part) => Number(part));
+    if (octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) {
+      return false;
+    }
+    const [first, second] = octets;
+    if (first === 127 || first === 10) return true;
+    if (first === 192 && second === 168) return true;
+    if (first === 172 && second >= 16 && second <= 31) return true;
+    return false;
+  };
+  const isLocalOrPrivateHost = (value: string): boolean => {
+    try {
+      const parsed = new URL(/^https?:\/\//i.test(value) ? value : `http://${value}`);
+      const hostname = parsed.hostname.toLowerCase();
+      return hostname === "localhost" || isPrivateIpv4Host(hostname);
+    } catch {
+      return false;
+    }
+  };
   const normalizeDomainToApi = (value: string): string => {
     const trimmed = value.trim();
     if (!trimmed) return "";
-    const isLocalHost =
-      /^localhost(?::\d+)?$/i.test(trimmed) ||
-      /^127(?:\.\d{1,3}){3}(?::\d+)?$/.test(trimmed) ||
-      /^10(?:\.\d{1,3}){3}(?::\d+)?$/.test(trimmed) ||
-      /^192\.168(?:\.\d{1,3}){2}(?::\d+)?$/.test(trimmed) ||
-      /^172\.(1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}(?::\d+)?$/.test(trimmed);
-    const defaultProtocol = isLocalHost ? "http://" : "https://";
+    const defaultProtocol = isLocalOrPrivateHost(trimmed) ? "http://" : "https://";
     const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `${defaultProtocol}${trimmed}`;
     return `${stripTrailingSlash(withProtocol)}/api`;
   };
