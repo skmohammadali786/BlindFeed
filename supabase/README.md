@@ -38,7 +38,7 @@ Use `.env.example` as reference:
   - accepts a domain or full host
   - app auto-appends `/api`
   - defaults to `https://`, or `http://` for localhost/private IPv4 hosts (`127.x.x.x`, `10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`)
-- For EAS Android APK builds, set one of these in the build profile environment; otherwise native builds may point to local development URLs.
+- For EAS Android/iOS preview and production builds, set one of these in the build profile environment to a public host. The build now fails fast if missing or set to localhost/private IP.
 
 ## Behavior changes in this migration
 
