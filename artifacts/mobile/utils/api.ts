@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 const STORAGE_KEYS = {
   USER_ID: "bf_user_id",
@@ -27,11 +28,30 @@ export class ApiError extends Error {
 }
 
 function getApiBase(): string {
+  const stripTrailingSlash = (value: string): string => value.replace(/\/+$/, "");
+  const normalizeDomainToApi = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    return `${stripTrailingSlash(withProtocol)}/api`;
+  };
+
   if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+    return stripTrailingSlash(process.env.EXPO_PUBLIC_API_URL);
+  }
+  if (process.env.EXPO_PUBLIC_DOMAIN) {
+    const apiUrl = normalizeDomainToApi(process.env.EXPO_PUBLIC_DOMAIN);
+    if (apiUrl) return apiUrl;
+  }
+  if (process.env.PUBLIC_DOMAIN) {
+    const apiUrl = normalizeDomainToApi(process.env.PUBLIC_DOMAIN);
+    if (apiUrl) return apiUrl;
   }
   if (typeof window !== "undefined" && window.location?.origin) {
     return `${window.location.origin}/api`;
+  }
+  if (Platform.OS === "android") {
+    return "http://10.0.2.2:8080/api";
   }
   return "http://localhost:8080/api";
 }
