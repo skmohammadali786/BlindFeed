@@ -60,14 +60,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "JetBrainsMono_700Bold",
     color: Colors.text,
     letterSpacing: -0.5,
   },
   userId: {
     fontSize: 11,
     color: Colors.textTertiary,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "JetBrainsMono_400Regular",
     marginTop: 1,
     letterSpacing: 0.5,
   },

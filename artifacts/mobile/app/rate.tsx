@@ -206,7 +206,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingVertical: 12,
     },
     backBtn: { padding: 4 },
-    headerTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.text },
+    headerTitle: { fontSize: 17, fontFamily: "JetBrainsMono_600SemiBold", color: colors.text },
     introSection: { alignItems: "center", paddingVertical: 28, gap: 12 },
     appIconWrap: {
       width: 72,
@@ -217,11 +217,11 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center",
       marginBottom: 4,
     },
-    introTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: colors.text, letterSpacing: -0.3 },
-    introSub: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary, textAlign: "center", lineHeight: 20 },
+    introTitle: { fontSize: 24, fontFamily: "JetBrainsMono_700Bold", color: colors.text, letterSpacing: -0.3 },
+    introSub: { fontSize: 14, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary, textAlign: "center", lineHeight: 20 },
     sectionLabel: {
       fontSize: 12,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.textSecondary,
       textTransform: "uppercase",
       letterSpacing: 0.6,
@@ -229,7 +229,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     starsRow: { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 10 },
     starBtn: { padding: 4 },
-    starLabel: { textAlign: "center", fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#FFB800", marginBottom: 4 },
+    starLabel: { textAlign: "center", fontSize: 16, fontFamily: "JetBrainsMono_600SemiBold", color: "#FFB800", marginBottom: 4 },
     categoriesWrap: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
     categoryChip: {
       paddingHorizontal: 16,
@@ -240,7 +240,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderColor: colors.border,
     },
     categoryChipActive: { backgroundColor: colors.greenDim, borderColor: colors.green },
-    categoryText: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.text },
+    categoryText: { fontSize: 13, fontFamily: "JetBrainsMono_500Medium", color: colors.text },
     categoryTextActive: { color: colors.green },
     feedbackInput: {
       backgroundColor: colors.surface,
@@ -250,12 +250,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingHorizontal: 16,
       paddingVertical: 14,
       fontSize: 15,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
       minHeight: 110,
       lineHeight: 22,
     },
-    charCount: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary, textAlign: "right", marginTop: 6 },
+    charCount: { fontSize: 11, fontFamily: "JetBrainsMono_400Regular", color: colors.textTertiary, textAlign: "right", marginTop: 6 },
     submitBtn: {
       height: 56,
       backgroundColor: colors.green,
@@ -265,7 +265,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       marginTop: 32,
     },
     submitBtnDisabled: { opacity: 0.4 },
-    submitBtnText: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#000" },
+    submitBtnText: { fontSize: 17, fontFamily: "JetBrainsMono_600SemiBold", color: "#000" },
     successContainer: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16, paddingHorizontal: 32 },
     successIcon: {
       width: 88,
@@ -276,8 +276,8 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center",
       marginBottom: 8,
     },
-    successTitle: { fontSize: 28, fontFamily: "Inter_700Bold", color: colors.text, letterSpacing: -0.3 },
-    successSub: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.textSecondary, textAlign: "center", lineHeight: 22 },
+    successTitle: { fontSize: 28, fontFamily: "JetBrainsMono_700Bold", color: colors.text, letterSpacing: -0.3 },
+    successSub: { fontSize: 15, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary, textAlign: "center", lineHeight: 22 },
     doneBtn: {
       marginTop: 16,
       height: 52,
@@ -287,6 +287,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       justifyContent: "center",
       alignItems: "center",
     },
-    doneBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
+    doneBtnText: { fontSize: 16, fontFamily: "JetBrainsMono_600SemiBold", color: "#000" },
   });
 }

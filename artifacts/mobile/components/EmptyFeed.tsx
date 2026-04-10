@@ -25,13 +25,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "JetBrainsMono_600SemiBold",
     color: Colors.textSecondary,
     marginTop: 8,
   },
   subtitle: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "JetBrainsMono_400Regular",
     color: Colors.textTertiary,
     textAlign: "center",
     lineHeight: 22,

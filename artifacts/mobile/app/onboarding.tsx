@@ -125,8 +125,8 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     illustration: { width: "100%", height: "100%" },
     bottomSection: { paddingHorizontal: 24, paddingTop: 40, gap: 24 },
     textBlock: { gap: 8 },
-    title: { fontSize: 34, fontFamily: "Inter_700Bold", color: colors.text, letterSpacing: -0.5 },
-    subtitle: { fontSize: 17, fontFamily: "Inter_400Regular", color: colors.textSecondary },
+    title: { fontSize: 34, fontFamily: "JetBrainsMono_700Bold", color: colors.text, letterSpacing: -0.5 },
+    subtitle: { fontSize: 17, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary },
     button: {
       height: 56,
       borderRadius: 16,
@@ -135,7 +135,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center",
     },
     buttonGreen: { backgroundColor: colors.green },
-    buttonText: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.text },
+    buttonText: { fontSize: 17, fontFamily: "JetBrainsMono_600SemiBold", color: colors.text },
     buttonTextDark: { color: "#000000" },
   });
 }

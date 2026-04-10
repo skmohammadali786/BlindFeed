@@ -302,21 +302,21 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     title: {
       fontSize: 28,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: colors.text,
       letterSpacing: -0.5,
       textAlign: "center",
     },
     subtitle: {
       fontSize: 15,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       textAlign: "center",
       lineHeight: 22,
     },
     highlight: {
       color: colors.green,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
     },
     privacyBox: {
       marginHorizontal: 24,
@@ -333,7 +333,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     privacyText: {
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
     },
     btn: {
@@ -349,7 +349,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     btnText: {
       fontSize: 17,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: "#000",
     },
     loginRow: {
@@ -358,12 +358,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     loginText: {
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     loginLink: {
       color: colors.green,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
     },
     backRow: {
       flexDirection: "row",
@@ -374,12 +374,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     backText: {
       fontSize: 15,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     formSubtitle: {
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       lineHeight: 20,
       marginBottom: 28,
@@ -390,7 +390,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     label: {
       fontSize: 14,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.text,
     },
     input: {
@@ -400,7 +400,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderColor: colors.border,
       padding: 14,
       fontSize: 16,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
     },
     passwordRow: {
@@ -420,7 +420,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     fieldNote: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textTertiary,
     },
     noteBox: {
@@ -435,7 +435,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     noteText: {
       flex: 1,
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       lineHeight: 19,
     },

@@ -234,7 +234,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     backBtn: { padding: 4 },
     headerTitle: {
       fontSize: 17,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.text,
     },
     list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32, gap: 12 },
@@ -260,16 +260,16 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     scheduleBadgeText: {
       fontSize: 12,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
     },
     countdown: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textTertiary,
     },
     content: {
       fontSize: 15,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
       lineHeight: 22,
     },
@@ -288,7 +288,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     mediaBadgeText: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     cardFooter: {
@@ -306,7 +306,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     anonText: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textTertiary,
     },
     cancelBtn: {
@@ -320,7 +320,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     cancelBtnText: {
       fontSize: 13,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: "#FF3B30",
     },
     center: {
@@ -332,12 +332,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     emptyTitle: {
       fontSize: 20,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: colors.text,
     },
     emptyText: {
       fontSize: 15,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       textAlign: "center",
       lineHeight: 22,
@@ -350,7 +350,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     retryText: {
       fontSize: 15,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.text,
     },
     createBtn: {
@@ -365,7 +365,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     createBtnText: {
       fontSize: 15,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: "#000",
     },
   });

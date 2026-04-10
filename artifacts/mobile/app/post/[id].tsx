@@ -85,7 +85,7 @@ function AnonymousAvatar({ seed, size = 40 }: { seed: string; size?: number }) {
       backgroundColor: bg, justifyContent: "center", alignItems: "center",
       shadowColor: bg, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4,
     }}>
-      <Text style={{ fontSize, fontFamily: "Inter_700Bold", color: "#000" }}>{initials}</Text>
+      <Text style={{ fontSize, fontFamily: "JetBrainsMono_700Bold", color: "#000" }}>{initials}</Text>
     </View>
   );
 }
@@ -178,9 +178,9 @@ function StatCard({ value, label, color, sub }: { value: string | number; label:
 }
 const statCardStyles = StyleSheet.create({
   card: { flex: 1, alignItems: "center", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 8, borderWidth: 1, gap: 3 },
-  value: { fontSize: 22, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
-  label: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase", letterSpacing: 0.5 },
-  sub: { fontSize: 10, fontFamily: "Inter_400Regular" },
+  value: { fontSize: 22, fontFamily: "JetBrainsMono_700Bold", letterSpacing: -0.5 },
+  label: { fontSize: 11, fontFamily: "JetBrainsMono_500Medium", textTransform: "uppercase", letterSpacing: 0.5 },
+  sub: { fontSize: 10, fontFamily: "JetBrainsMono_400Regular" },
 });
 
 function ReactionBtn({
@@ -229,8 +229,8 @@ const rxStyles = StyleSheet.create({
   },
   iconWrap: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
   labelCol: { flex: 1, gap: 2 },
-  label: { fontSize: 15, fontFamily: "Inter_700Bold" },
-  count: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  label: { fontSize: 15, fontFamily: "JetBrainsMono_700Bold" },
+  count: { fontSize: 12, fontFamily: "JetBrainsMono_400Regular" },
 });
 
 function CommentItem({
@@ -305,16 +305,16 @@ const cmtStyles = StyleSheet.create({
   bubble: { flex: 1, gap: 6 },
   bubbleInner: { borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14, gap: 6, borderWidth: 1 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 5, flexWrap: "wrap" },
-  userId: { fontSize: 12, fontFamily: "Inter_700Bold", flexShrink: 1 },
+  userId: { fontSize: 12, fontFamily: "JetBrainsMono_700Bold", flexShrink: 1 },
   ownBadge: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  ownBadgeText: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  ownBadgeText: { fontSize: 10, fontFamily: "JetBrainsMono_600SemiBold" },
   dot: { fontSize: 10 },
-  time: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  text: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 21 },
+  time: { fontSize: 11, fontFamily: "JetBrainsMono_400Regular" },
+  text: { fontSize: 14, fontFamily: "JetBrainsMono_400Regular", lineHeight: 21 },
   actionsRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 4 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 2 },
   deleteBtn: { marginLeft: "auto" as any },
-  actionText: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  actionText: { fontSize: 12, fontFamily: "JetBrainsMono_500Medium" },
 });
 
 export default function PostDetailScreen() {
@@ -847,7 +847,7 @@ const carouselStyles = StyleSheet.create({
   carouselImage: { height: 260, borderRadius: 16 },
   dotsRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 10 },
   dot: { height: 6, borderRadius: 3 },
-  dotsCount: { fontSize: 11, fontFamily: "Inter_400Regular", marginLeft: 6 },
+  dotsCount: { fontSize: 11, fontFamily: "JetBrainsMono_400Regular", marginLeft: 6 },
 });
 
 const voteBarStyles = StyleSheet.create({
@@ -855,7 +855,7 @@ const voteBarStyles = StyleSheet.create({
   splitGreen: { backgroundColor: "#3DDB85" },
   splitRed: { backgroundColor: "#FF3B30" },
   splitLabels: { flexDirection: "row", justifyContent: "space-between" },
-  splitLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  splitLabel: { fontSize: 12, fontFamily: "JetBrainsMono_600SemiBold" },
 });
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
@@ -875,18 +875,18 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     navTitle: {
       flex: 1, textAlign: "center",
-      fontSize: 16, fontFamily: "Inter_600SemiBold",
+      fontSize: 16, fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.text,
     },
     navActions: { flexDirection: "row", gap: 8 },
 
     center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, paddingHorizontal: 32 },
     emptyIcon: { width: 72, height: 72, borderRadius: 36, justifyContent: "center", alignItems: "center" },
-    notFoundTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: colors.text },
-    notFoundSub: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary, textAlign: "center" },
+    notFoundTitle: { fontSize: 20, fontFamily: "JetBrainsMono_700Bold", color: colors.text },
+    notFoundSub: { fontSize: 14, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary, textAlign: "center" },
     backHomeBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14, marginTop: 8 },
-    backHomeBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
-    loadingText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+    backHomeBtnText: { fontSize: 15, fontFamily: "JetBrainsMono_600SemiBold" },
+    loadingText: { fontSize: 14, fontFamily: "JetBrainsMono_400Regular" },
 
     postCard: { paddingBottom: 8 },
 
@@ -896,17 +896,17 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     authorInfo: { flex: 1, gap: 4 },
     authorRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-    authorId: { fontSize: 14, fontFamily: "Inter_700Bold", flexShrink: 1 },
+    authorId: { fontSize: 14, fontFamily: "JetBrainsMono_700Bold", flexShrink: 1 },
     ownBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-    ownBadgeText: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#000" },
+    ownBadgeText: { fontSize: 11, fontFamily: "JetBrainsMono_700Bold", color: "#000" },
     authorMeta: { flexDirection: "row", alignItems: "center", gap: 5, flexWrap: "wrap" },
-    authorMetaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
+    authorMetaText: { fontSize: 12, fontFamily: "JetBrainsMono_400Regular" },
     anonChip: {
       flexDirection: "row", alignItems: "center", gap: 4,
       paddingHorizontal: 10, paddingVertical: 5,
       borderRadius: 20, borderWidth: 1,
     },
-    anonChipText: { fontSize: 11, fontFamily: "Inter_500Medium" },
+    anonChipText: { fontSize: 11, fontFamily: "JetBrainsMono_500Medium" },
 
     mediaWrap: { paddingHorizontal: 16, marginBottom: 14 },
 
@@ -915,17 +915,17 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       justifyContent: "center", alignItems: "center", gap: 12, marginBottom: 14,
     },
     videoPlayBtn: { width: 56, height: 56, borderRadius: 28, justifyContent: "center", alignItems: "center" },
-    videoNote: { fontSize: 13, fontFamily: "Inter_400Regular" },
+    videoNote: { fontSize: 13, fontFamily: "JetBrainsMono_400Regular" },
 
     contentWrap: { paddingHorizontal: 16, marginBottom: 16, gap: 8 },
-    postContent: { fontSize: 19, fontFamily: "Inter_400Regular", lineHeight: 29, letterSpacing: -0.2 },
+    postContent: { fontSize: 19, fontFamily: "JetBrainsMono_400Regular", lineHeight: 29, letterSpacing: -0.2 },
     readMoreBtn: { alignSelf: "flex-start" },
-    readMoreText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+    readMoreText: { fontSize: 14, fontFamily: "JetBrainsMono_600SemiBold" },
 
     statsGrid: { flexDirection: "row", gap: 10, paddingHorizontal: 16, marginBottom: 12 },
 
     voteBarWrap: { paddingHorizontal: 16, marginBottom: 16, gap: 6 },
-    voteBarSummary: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center" },
+    voteBarSummary: { fontSize: 12, fontFamily: "JetBrainsMono_400Regular", textAlign: "center" },
 
     managePostBtn: {
       flexDirection: "row", alignItems: "center", gap: 10,
@@ -933,29 +933,29 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingHorizontal: 16, paddingVertical: 13,
       borderRadius: 14, borderWidth: 1,
     },
-    managePostText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium" },
+    managePostText: { flex: 1, fontSize: 14, fontFamily: "JetBrainsMono_500Medium" },
 
     commentsHeader: {
       flexDirection: "row", alignItems: "center", gap: 8,
       paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12,
       borderTopWidth: 1, borderTopColor: colors.border,
     },
-    commentsTitle: { flex: 1, fontSize: 15, fontFamily: "Inter_700Bold" },
+    commentsTitle: { flex: 1, fontSize: 15, fontFamily: "JetBrainsMono_700Bold" },
     sortToggle: {
       flexDirection: "row", alignItems: "center", gap: 4,
       paddingHorizontal: 10, paddingVertical: 5,
       borderRadius: 12, borderWidth: 1,
     },
-    sortToggleText: { fontSize: 11, fontFamily: "Inter_500Medium" },
+    sortToggleText: { fontSize: 11, fontFamily: "JetBrainsMono_500Medium" },
 
     reactionsBlock: { paddingHorizontal: 16, paddingBottom: 16, gap: 10 },
-    reactionsLabel: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+    reactionsLabel: { fontSize: 13, fontFamily: "JetBrainsMono_400Regular", textAlign: "center" },
     reactionRow: { flexDirection: "row", gap: 12 },
 
     noCommentsBlock: { alignItems: "center", paddingVertical: 32, gap: 8 },
     noCommentsIconWrap: { width: 60, height: 60, borderRadius: 30, justifyContent: "center", alignItems: "center", marginBottom: 4 },
-    noCommentsTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
-    noCommentsSub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+    noCommentsTitle: { fontSize: 17, fontFamily: "JetBrainsMono_700Bold" },
+    noCommentsSub: { fontSize: 13, fontFamily: "JetBrainsMono_400Regular", textAlign: "center" },
 
     footer: {
       borderTopWidth: 1,
@@ -968,19 +968,19 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingHorizontal: 12, paddingVertical: 8,
       borderRadius: 10, borderWidth: 1,
     },
-    replyBarText: { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium" },
+    replyBarText: { flex: 1, fontSize: 12, fontFamily: "JetBrainsMono_500Medium" },
     errorBar: {
       flexDirection: "row", alignItems: "center", gap: 8,
       paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
     },
-    errorText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: "#FF3B30" },
+    errorText: { flex: 1, fontSize: 12, fontFamily: "JetBrainsMono_400Regular", color: "#FF3B30" },
     inputRow: {
       flexDirection: "row", alignItems: "flex-end", gap: 10,
       borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
       borderWidth: 1, minHeight: 46,
     },
     input: {
-      flex: 1, fontSize: 15, fontFamily: "Inter_400Regular",
+      flex: 1, fontSize: 15, fontFamily: "JetBrainsMono_400Regular",
       maxHeight: 100, paddingTop: 4,
     },
     sendBtn: {
@@ -991,17 +991,17 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       flexDirection: "row", alignItems: "center", gap: 5,
       justifyContent: "center", paddingTop: 8, borderTopWidth: 1,
     },
-    anonFooterText: { fontSize: 11, fontFamily: "Inter_400Regular" },
+    anonFooterText: { fontSize: 11, fontFamily: "JetBrainsMono_400Regular" },
 
     modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 24 },
     modal: { width: "100%", borderRadius: 20, padding: 24, gap: 8 },
     modalIconWrap: { alignSelf: "center", width: 56, height: 56, borderRadius: 28, justifyContent: "center", alignItems: "center", marginBottom: 4 },
-    modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", textAlign: "center" },
-    modalBody: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 21, marginBottom: 8 },
+    modalTitle: { fontSize: 18, fontFamily: "JetBrainsMono_700Bold", textAlign: "center" },
+    modalBody: { fontSize: 14, fontFamily: "JetBrainsMono_400Regular", textAlign: "center", lineHeight: 21, marginBottom: 8 },
     modalActions: { flexDirection: "row", gap: 10 },
     modalCancel: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: "center", borderWidth: 1 },
-    modalCancelText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+    modalCancelText: { fontSize: 15, fontFamily: "JetBrainsMono_600SemiBold" },
     modalConfirm: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: "center", backgroundColor: "#FF3B30" },
-    modalConfirmText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#fff" },
+    modalConfirmText: { fontSize: 15, fontFamily: "JetBrainsMono_600SemiBold", color: "#fff" },
   });
 }

@@ -22,7 +22,7 @@ import { ScreenTransition, FadeSlide, AnimatedListItem } from "@/components/Anim
 
 function SectionHeader({ title, colors }: { title: string; colors: ReturnType<typeof useTheme>["colors"] }) {
   return (
-    <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.6, marginLeft: 16, marginBottom: 6, marginTop: 20 }}>
+    <Text style={{ fontSize: 12, fontFamily: "JetBrainsMono_600SemiBold", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.6, marginLeft: 16, marginBottom: 6, marginTop: 20 }}>
       {title}
     </Text>
   );
@@ -426,7 +426,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     toastText: {
       color: "#fff",
       fontSize: 14,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       flex: 1,
     },
     headerBar: {
@@ -439,7 +439,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     backBtn: { padding: 4 },
     headerTitle: {
       fontSize: 17,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.text,
     },
     section: {
@@ -450,7 +450,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     sectionHeader: {
       fontSize: 12,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.textSecondary,
       textTransform: "uppercase",
       letterSpacing: 0.6,
@@ -470,12 +470,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     settingLeft: { flex: 1, gap: 2, marginRight: 12 },
     settingLabel: {
       fontSize: 15,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.text,
     },
     settingSubtitle: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     settingRight: {
@@ -485,7 +485,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     settingRightText: {
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     modalOverlay: {
@@ -504,13 +504,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     modalTitle: {
       fontSize: 17,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: colors.text,
       textAlign: "center",
     },
     modalBody: {
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       textAlign: "center",
       lineHeight: 20,
@@ -529,7 +529,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     modalCancelText: {
       fontSize: 15,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.text,
     },
     modalConfirm: {
@@ -541,7 +541,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     modalConfirmText: {
       fontSize: 15,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: "#000",
     },
     feedPrefOption: {
@@ -554,7 +554,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     feedPrefLabel: {
       fontSize: 15,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.text,
     },
   });

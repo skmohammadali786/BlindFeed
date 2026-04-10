@@ -184,7 +184,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     errorBannerText: {
       color: "#fff",
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       flex: 1,
     },
     backRow: {
@@ -196,7 +196,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     backText: {
       fontSize: 15,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     iconWrap: {
@@ -210,14 +210,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     title: {
       fontSize: 28,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: colors.text,
       letterSpacing: -0.5,
       marginBottom: 8,
     },
     subtitle: {
       fontSize: 15,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       lineHeight: 22,
       marginBottom: 32,
@@ -228,7 +228,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     label: {
       fontSize: 14,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.text,
     },
     input: {
@@ -238,7 +238,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderColor: colors.border,
       padding: 14,
       fontSize: 16,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
     },
     passwordRow: {
@@ -269,7 +269,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     btnText: {
       fontSize: 17,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: "#000",
     },
     switchRow: {
@@ -278,12 +278,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     switchText: {
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     switchLink: {
       color: colors.green,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
     },
   });
 }
