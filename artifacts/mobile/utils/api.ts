@@ -32,7 +32,14 @@ function getApiBase(): string {
   const normalizeDomainToApi = (value: string): string => {
     const trimmed = value.trim();
     if (!trimmed) return "";
-    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const isLocalHost =
+      /^localhost(?::\d+)?$/i.test(trimmed) ||
+      /^127(?:\.\d{1,3}){3}(?::\d+)?$/.test(trimmed) ||
+      /^10(?:\.\d{1,3}){3}(?::\d+)?$/.test(trimmed) ||
+      /^192\.168(?:\.\d{1,3}){2}(?::\d+)?$/.test(trimmed) ||
+      /^172\.(1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}(?::\d+)?$/.test(trimmed);
+    const defaultProtocol = isLocalHost ? "http://" : "https://";
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `${defaultProtocol}${trimmed}`;
     return `${stripTrailingSlash(withProtocol)}/api`;
   };
 

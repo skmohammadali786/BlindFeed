@@ -34,7 +34,7 @@ Optional (required only for related features):
 Use `.env.example` as reference:
 
 - `EXPO_PUBLIC_API_URL`
-- Optional fallback: `EXPO_PUBLIC_DOMAIN` (domain only, app auto-uses `https://<domain>/api`)
+- Optional fallback: `EXPO_PUBLIC_DOMAIN` (domain or full host; app auto-appends `/api` and defaults to `https://`, or `http://` for localhost/private network hosts)
 - For EAS Android APK builds, set one of these in the build profile environment; otherwise native builds may point to local development URLs.
 
 ## Behavior changes in this migration
