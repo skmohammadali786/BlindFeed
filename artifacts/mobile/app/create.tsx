@@ -810,7 +810,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     closeBtn: { padding: 4 },
     headerTitle: {
       fontSize: 17,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.text,
     },
     postBtn: {
@@ -824,13 +824,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     postBtnDisabled: { opacity: 0.4 },
     postBtnText: {
       fontSize: 15,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: "#000",
     },
     postBtnTextDisabled: { opacity: 0.5 },
     textInput: {
       fontSize: 18,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
       minHeight: 160,
       paddingTop: 16,
@@ -838,7 +838,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     charCount: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textTertiary,
       alignSelf: "flex-end",
       marginTop: 4,
@@ -858,7 +858,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     rateLimitText: {
       flex: 1,
       fontSize: 13,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: "#FF9F0A",
     },
     mediaRow: {
@@ -882,7 +882,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     videoDuration: {
       color: "#fff",
       fontSize: 11,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
     },
     removeThumb: {
       position: "absolute",
@@ -912,7 +912,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     toolbarBtnText: {
       fontSize: 14,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.textSecondary,
     },
     toolbarRight: {
@@ -931,7 +931,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     draftsBadgeText: {
       fontSize: 13,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.textSecondary,
     },
     saveDraftBtn: {
@@ -940,7 +940,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     saveDraftText: {
       fontSize: 14,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.textSecondary,
     },
     anonBadge: {
@@ -951,7 +951,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     anonText: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textTertiary,
     },
     expiryRow: {
@@ -967,7 +967,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     expiryLabel: {
       flex: 1,
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     expiryChip: {
@@ -981,7 +981,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     expiryChipText: {
       fontSize: 13,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.green,
     },
     modalOverlay: {
@@ -1000,7 +1000,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     modalTitle: {
       fontSize: 17,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: colors.text,
       textAlign: "center",
       marginBottom: 8,
@@ -1015,7 +1015,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     expiryOptionText: {
       fontSize: 15,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.text,
     },
     modalCancel: {
@@ -1027,7 +1027,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     modalCancelText: {
       fontSize: 15,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.text,
     },
     successContainer: {
@@ -1047,13 +1047,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     successTitle: {
       fontSize: 26,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: colors.text,
       letterSpacing: -0.5,
     },
     successSub: {
       fontSize: 15,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     feedBtn: {
@@ -1065,7 +1065,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     feedBtnText: {
       fontSize: 16,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: "#000",
     },
     noDrafts: {
@@ -1075,7 +1075,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     noDraftsText: {
       fontSize: 16,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     draftCard: {
@@ -1089,13 +1089,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     draftContent: {
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
       lineHeight: 20,
     },
     draftTime: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       marginTop: 6,
     },
@@ -1111,7 +1111,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     draftPublishText: {
       fontSize: 13,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.green,
     },
     scheduledBanner: {
@@ -1125,11 +1125,11 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     scheduledBannerText: {
       flex: 1,
       fontSize: 13,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
     },
     scheduleSubtitle: {
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       textAlign: "center",
       marginBottom: 8,
       marginTop: -4,
@@ -1148,7 +1148,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     schedulePresetText: {
       flex: 1,
       fontSize: 14,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.text,
     },
     scheduleDivider: {
@@ -1163,7 +1163,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     scheduleDividerText: {
       fontSize: 11,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
     },
     scheduleRemoveBtn: {
       flexDirection: "row",
@@ -1175,7 +1175,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     scheduleRemoveBtnText: {
       fontSize: 13,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: "#FF3B30",
     },
     scheduledInfoBox: {
@@ -1190,7 +1190,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     scheduledInfoText: {
       flex: 1,
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       lineHeight: 20,
     },
@@ -1209,7 +1209,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     previewTitle: {
       fontSize: 17,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.text,
     },
     previewHint: {
@@ -1224,7 +1224,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     previewHintText: {
       fontSize: 12,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.green,
     },
     previewCard: {
@@ -1244,14 +1244,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     previewUserId: {
       fontSize: 13,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
     },
     previewDot: {
       fontSize: 13,
     },
     previewTime: {
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       flex: 1,
     },
     previewAnonBadge: {
@@ -1265,11 +1265,11 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     previewAnonLabel: {
       fontSize: 10,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
     },
     previewContent: {
       fontSize: 17,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       lineHeight: 26,
     },
     previewImage: {
@@ -1287,7 +1287,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     previewVideoLabel: {
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
     },
     previewFooter: {
       flexDirection: "row",
@@ -1304,7 +1304,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     previewStatText: {
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
     },
     previewActions: {
       flexDirection: "row",
@@ -1325,7 +1325,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     previewEditText: {
       fontSize: 16,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
     },
     previewPostBtn: {
       flex: 2,
@@ -1338,7 +1338,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     previewPostText: {
       fontSize: 16,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: "#000",
     },
   });

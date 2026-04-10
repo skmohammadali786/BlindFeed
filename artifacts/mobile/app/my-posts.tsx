@@ -258,7 +258,7 @@ export default function MyPostsScreen() {
             <Feather name="alert-circle" size={40} color={colors.textTertiary} />
             <Text style={[styles.loadingText, { marginTop: 12 }]}>{error}</Text>
             <TouchableOpacity onPress={load} style={{ marginTop: 16 }}>
-              <Text style={{ color: colors.green, fontFamily: "Inter_500Medium", fontSize: 15 }}>Try again</Text>
+              <Text style={{ color: colors.green, fontFamily: "JetBrainsMono_500Medium", fontSize: 15 }}>Try again</Text>
             </TouchableOpacity>
           </FadeSlide>
         ) : (
@@ -323,7 +323,7 @@ export default function MyPostsScreen() {
                   <Feather name="trash-2" size={22} color="#FF3B30" />
                 </View>
                 <Text style={[styles.editModalTitle, { textAlign: "center" }]}>Delete post?</Text>
-                <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary, textAlign: "center", marginTop: 6, lineHeight: 20 }}>
+                <Text style={{ fontSize: 14, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary, textAlign: "center", marginTop: 6, lineHeight: 20 }}>
                   This will permanently remove your post from the feed. This action cannot be undone.
                 </Text>
               </View>
@@ -428,7 +428,7 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     expiryText: {
       fontSize: 11,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.green,
     },
     expiryTextExpired: {
@@ -439,7 +439,7 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     content: {
       fontSize: 15,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
       lineHeight: 22,
     },
@@ -456,12 +456,12 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     statText: {
       fontSize: 13,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.textSecondary,
     },
     postTime: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textTertiary,
       marginLeft: "auto" as any,
     },
@@ -495,25 +495,25 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     latestCommentLabel: {
       fontSize: 11,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.green,
       textTransform: "uppercase",
       letterSpacing: 0.4,
     },
     latestCommentText: {
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
       lineHeight: 18,
     },
     latestCommentTime: {
       fontSize: 11,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textTertiary,
     },
     noComments: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textTertiary,
     },
     viewRow: {
@@ -523,7 +523,7 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     viewLabel: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textTertiary,
     },
     editBtn: {
@@ -566,7 +566,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     headerTitle: {
       flex: 1,
       fontSize: 20,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: colors.text,
       letterSpacing: -0.3,
     },
@@ -578,13 +578,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     countText: {
       fontSize: 12,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.green,
     },
     list: { paddingTop: 8 },
     sectionLabel: {
       fontSize: 12,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.textSecondary,
       textTransform: "uppercase",
       letterSpacing: 0.6,
@@ -600,7 +600,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     loadingText: {
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     empty: {
@@ -612,13 +612,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     emptyIconWrap: { width: 72, height: 72, borderRadius: 36, justifyContent: "center", alignItems: "center", marginBottom: 4 },
     emptyTitle: {
       fontSize: 18,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: colors.text,
       textAlign: "center",
     },
     emptySub: {
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       textAlign: "center",
       lineHeight: 21,
@@ -635,7 +635,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     createBtnText: {
       fontSize: 15,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: "#000",
     },
     modalOverlay: {
@@ -652,29 +652,29 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingBottom: 34,
     },
     editModalHeader: { gap: 2 },
-    editModalTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.text },
-    editModalHint: { fontSize: 12, fontFamily: "Inter_400Regular", color: colors.textTertiary },
+    editModalTitle: { fontSize: 17, fontFamily: "JetBrainsMono_600SemiBold", color: colors.text },
+    editModalHint: { fontSize: 12, fontFamily: "JetBrainsMono_400Regular", color: colors.textTertiary },
     editInput: {
       backgroundColor: colors.surface,
       borderRadius: 12,
       padding: 14,
       fontSize: 15,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
       minHeight: 120,
       textAlignVertical: "top",
     },
-    editCharCount: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary, textAlign: "right" },
+    editCharCount: { fontSize: 11, fontFamily: "JetBrainsMono_400Regular", color: colors.textTertiary, textAlign: "right" },
     editActions: { flexDirection: "row", gap: 10 },
     editCancelBtn: {
       flex: 1, borderRadius: 14, paddingVertical: 14,
       backgroundColor: colors.surface, alignItems: "center",
     },
-    editCancelText: { fontSize: 15, fontFamily: "Inter_500Medium", color: colors.textSecondary },
+    editCancelText: { fontSize: 15, fontFamily: "JetBrainsMono_500Medium", color: colors.textSecondary },
     editSaveBtn: {
       flex: 2, borderRadius: 14, paddingVertical: 14,
       backgroundColor: colors.green, alignItems: "center",
     },
-    editSaveText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#000" },
+    editSaveText: { fontSize: 15, fontFamily: "JetBrainsMono_600SemiBold", color: "#000" },
   });
 }

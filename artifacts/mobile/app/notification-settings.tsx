@@ -190,12 +190,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     headerTitle: {
       fontSize: 17,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.text,
     },
     sectionLabel: {
       fontSize: 12,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.textSecondary,
       textTransform: "uppercase",
       letterSpacing: 0.6,
@@ -233,12 +233,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     rowText: { flex: 1, gap: 3 },
     rowTitle: {
       fontSize: 15,
-      fontFamily: "Inter_500Medium",
+      fontFamily: "JetBrainsMono_500Medium",
       color: colors.text,
     },
     rowSubtitle: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       lineHeight: 17,
     },
@@ -255,7 +255,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     permBannerText: {
       flex: 1,
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: "#FF9F0A",
       lineHeight: 19,
     },
@@ -272,7 +272,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     infoText: {
       flex: 1,
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.text,
       lineHeight: 19,
     },

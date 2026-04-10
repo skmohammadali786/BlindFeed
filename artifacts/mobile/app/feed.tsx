@@ -110,8 +110,8 @@ const styles_reaction = StyleSheet.create({
     borderWidth: 1.5,
   },
   iconCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: "center", alignItems: "center" },
-  label: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  count: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
+  label: { fontSize: 13, fontFamily: "JetBrainsMono_600SemiBold" },
+  count: { fontSize: 11, fontFamily: "JetBrainsMono_400Regular", marginTop: 1 },
 });
 
 function useTick(intervalMs: number) {
@@ -129,8 +129,8 @@ function FirstPostBanner({ colors }: { colors: ReturnType<typeof useTheme>["colo
         <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.greenDim, justifyContent: "center", alignItems: "center", marginBottom: 4 }}>
           <Feather name="edit-2" size={22} color={colors.green} />
         </View>
-        <Text style={{ fontSize: 17, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center" }}>You haven't posted yet</Text>
-        <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: colors.textSecondary, textAlign: "center", lineHeight: 19, paddingHorizontal: 10 }}>
+        <Text style={{ fontSize: 17, fontFamily: "JetBrainsMono_700Bold", color: colors.text, textAlign: "center" }}>You haven't posted yet</Text>
+        <Text style={{ fontSize: 13, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary, textAlign: "center", lineHeight: 19, paddingHorizontal: 10 }}>
           Share what's on your mind — completely anonymously. No profile, no judgement. Just your story.
         </Text>
         <AnimatedPressable
@@ -138,7 +138,7 @@ function FirstPostBanner({ colors }: { colors: ReturnType<typeof useTheme>["colo
           onPress={() => router.push("/create")}
           style={{ marginTop: 10, backgroundColor: colors.green, paddingHorizontal: 28, paddingVertical: 13, borderRadius: 14 }}
         >
-          <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#000" }}>Write your first post</Text>
+          <Text style={{ fontSize: 14, fontFamily: "JetBrainsMono_700Bold", color: "#000" }}>Write your first post</Text>
         </AnimatedPressable>
       </View>
     </View>
@@ -648,7 +648,7 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingHorizontal: 8,
       paddingVertical: 4,
     },
-    moreImagesText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+    moreImagesText: { color: "#fff", fontSize: 12, fontFamily: "JetBrainsMono_600SemiBold" },
     videoIndicator: {
       position: "absolute",
       top: 10,
@@ -661,7 +661,7 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingHorizontal: 8,
       paddingVertical: 4,
     },
-    videoIndicatorText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+    videoIndicatorText: { color: "#fff", fontSize: 12, fontFamily: "JetBrainsMono_600SemiBold" },
     videoChip: {
       flexDirection: "row",
       alignItems: "center",
@@ -674,23 +674,23 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       marginHorizontal: 16,
       marginTop: 12,
     },
-    videoChipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: colors.textSecondary },
+    videoChipText: { fontSize: 12, fontFamily: "JetBrainsMono_500Medium", color: colors.textSecondary },
     posterRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 2 },
     posterAvatar: { width: 38, height: 38, borderRadius: 19, justifyContent: "center", alignItems: "center" },
-    posterInitials: { fontSize: 13, fontFamily: "Inter_700Bold" },
-    posterIdText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.text },
-    posterTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary, marginTop: 1 },
+    posterInitials: { fontSize: 13, fontFamily: "JetBrainsMono_700Bold" },
+    posterIdText: { fontSize: 13, fontFamily: "JetBrainsMono_600SemiBold", color: colors.text },
+    posterTime: { fontSize: 11, fontFamily: "JetBrainsMono_400Regular", color: colors.textTertiary, marginTop: 1 },
     tapHint: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
     flagBtn: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
-    cardText: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.text, lineHeight: 23, paddingHorizontal: 16, paddingVertical: 10 },
+    cardText: { fontSize: 15, fontFamily: "JetBrainsMono_400Regular", color: colors.text, lineHeight: 23, paddingHorizontal: 16, paddingVertical: 10 },
     cardMeta: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingBottom: 10 },
     metaChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
-    metaChipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: colors.textSecondary },
+    metaChipText: { fontSize: 12, fontFamily: "JetBrainsMono_500Medium", color: colors.textSecondary },
     voteBarTrack: { flexDirection: "row", height: 7, marginHorizontal: 16, borderRadius: 6, overflow: "hidden", backgroundColor: colors.border + "88" },
     voteBarGreen: { backgroundColor: colors.green },
     voteBarRed: { backgroundColor: "#FF3B30" },
     voteBarLabels: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 6, marginBottom: 4 },
-    voteBarPct: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+    voteBarPct: { fontSize: 11, fontFamily: "JetBrainsMono_600SemiBold" },
     cardActions: { flexDirection: "row", gap: 10, paddingHorizontal: 16, paddingBottom: 14, paddingTop: 4 },
     ownPostBanner: {
       flexDirection: "row",
@@ -703,9 +703,9 @@ function makeCardStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     ownPostLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
     ownPostDot: { width: 8, height: 8, borderRadius: 4 },
-    ownPostLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.green },
+    ownPostLabel: { fontSize: 13, fontFamily: "JetBrainsMono_600SemiBold", color: colors.green },
     ownPostRight: { flexDirection: "row", alignItems: "center", gap: 4 },
-    ownPostManage: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.green },
+    ownPostManage: { fontSize: 13, fontFamily: "JetBrainsMono_500Medium", color: colors.green },
   });
 }
 
@@ -740,7 +740,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     sortToggle: { flexDirection: "row", backgroundColor: colors.surface, borderRadius: 20, padding: 3 },
     sortBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 17 },
     sortBtnActive: { backgroundColor: colors.surfaceElevated },
-    sortBtnText: { fontSize: 14, fontFamily: "Inter_500Medium", color: colors.textSecondary },
+    sortBtnText: { fontSize: 14, fontFamily: "JetBrainsMono_500Medium", color: colors.textSecondary },
     sortBtnTextActive: { color: colors.text },
     searchBtn: { padding: 4 },
     list: {},
@@ -750,10 +750,10 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center",
       gap: 16,
     },
-    loadingText: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.textSecondary },
+    loadingText: { fontSize: 15, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary },
     errorContainer: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, paddingHorizontal: 40 },
-    errorText: { fontSize: 18, fontFamily: "Inter_600SemiBold", color: colors.text },
-    errorSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.textSecondary, textAlign: "center" },
+    errorText: { fontSize: 18, fontFamily: "JetBrainsMono_600SemiBold", color: colors.text },
+    errorSub: { fontSize: 13, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary, textAlign: "center" },
     retryBtn: {
       marginTop: 8,
       paddingHorizontal: 24,
@@ -761,10 +761,10 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       backgroundColor: colors.surface,
       borderRadius: 20,
     },
-    retryText: { fontSize: 14, fontFamily: "Inter_500Medium", color: colors.green },
+    retryText: { fontSize: 14, fontFamily: "JetBrainsMono_500Medium", color: colors.green },
     empty: { paddingTop: 80, alignItems: "center", gap: 12 },
-    emptyTitle: { fontSize: 18, fontFamily: "Inter_600SemiBold", color: colors.textSecondary },
-    emptySub: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textTertiary },
+    emptyTitle: { fontSize: 18, fontFamily: "JetBrainsMono_600SemiBold", color: colors.textSecondary },
+    emptySub: { fontSize: 14, fontFamily: "JetBrainsMono_400Regular", color: colors.textTertiary },
     fabWrapper: { position: "absolute", right: 20 },
     fab: {
       width: 62,
@@ -817,12 +817,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     newPostsBannerTitle: {
       fontSize: 14,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: colors.text,
     },
     newPostsBannerSub: {
       fontSize: 12,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       marginTop: 1,
     },
@@ -836,7 +836,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     newPostsBannerText: {
       fontSize: 12,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: "#000",
     },
     menuOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)" },
@@ -857,15 +857,15 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    menuLabel: { fontSize: 15, fontFamily: "Inter_500Medium", color: colors.text },
+    menuLabel: { fontSize: 15, fontFamily: "JetBrainsMono_500Medium", color: colors.text },
     sensitiveOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 32 },
     sensitiveModal: { borderRadius: 20, padding: 28, alignItems: "center", width: "100%", maxWidth: 340 },
     sensitiveIconWrap: { width: 60, height: 60, borderRadius: 30, justifyContent: "center", alignItems: "center", marginBottom: 16 },
-    sensitiveTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 10, textAlign: "center" },
-    sensitiveBody: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20, marginBottom: 24 },
+    sensitiveTitle: { fontSize: 18, fontFamily: "JetBrainsMono_700Bold", marginBottom: 10, textAlign: "center" },
+    sensitiveBody: { fontSize: 14, fontFamily: "JetBrainsMono_400Regular", textAlign: "center", lineHeight: 20, marginBottom: 24 },
     sensitiveContinue: { width: "100%", paddingVertical: 14, borderRadius: 12, alignItems: "center", marginBottom: 10 },
-    sensitiveContinueText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#fff" },
+    sensitiveContinueText: { fontSize: 15, fontFamily: "JetBrainsMono_600SemiBold", color: "#fff" },
     sensitiveBack: { paddingVertical: 10, alignItems: "center" },
-    sensitiveBackText: { fontSize: 14, fontFamily: "Inter_500Medium" },
+    sensitiveBackText: { fontSize: 14, fontFamily: "JetBrainsMono_500Medium" },
   });
 }

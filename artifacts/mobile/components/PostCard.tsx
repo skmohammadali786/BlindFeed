@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: Colors.text,
     lineHeight: 28,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "JetBrainsMono_400Regular",
   },
   footer: {
     paddingHorizontal: 20,
@@ -280,13 +280,13 @@ const styles = StyleSheet.create({
   anonId: {
     fontSize: 12,
     color: Colors.textTertiary,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "JetBrainsMono_500Medium",
     letterSpacing: 0.5,
   },
   timeAgo: {
     fontSize: 12,
     color: Colors.textTertiary,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "JetBrainsMono_400Regular",
   },
   reactionBar: {
     marginBottom: 14,
@@ -310,12 +310,12 @@ const styles = StyleSheet.create({
   worthItStat: {
     fontSize: 11,
     color: WORTH_IT,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "JetBrainsMono_500Medium",
   },
   skipStat: {
     fontSize: 11,
     color: SKIP,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "JetBrainsMono_500Medium",
   },
   actions: {
     flexDirection: "row",
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "JetBrainsMono_600SemiBold",
   },
   worthItText: {
     color: WORTH_IT,

@@ -110,12 +110,12 @@ const splash = StyleSheet.create({
   icon: { width: 100, height: 100 },
   appName: {
     fontSize: 36,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "JetBrainsMono_700Bold",
     letterSpacing: -1,
   },
   tagline: {
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "JetBrainsMono_400Regular",
     letterSpacing: 0.2,
   },
   dotRow: {
@@ -259,13 +259,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     icon: { width: 88, height: 88 },
     appName: {
       fontSize: 34,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "JetBrainsMono_700Bold",
       color: colors.text,
       letterSpacing: -0.5,
     },
     subtitle: {
       fontSize: 16,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
       textAlign: "center",
       lineHeight: 24,
@@ -285,7 +285,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     trustText: {
       fontSize: 14,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     ctaButton: {
@@ -298,7 +298,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     ctaText: {
       fontSize: 17,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: "#000000",
     },
     loginButton: {
@@ -313,7 +313,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     loginButtonText: {
       fontSize: 17,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "JetBrainsMono_600SemiBold",
       color: colors.text,
     },
     pillsRow: {
@@ -329,7 +329,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     pillText: {
       fontSize: 13,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary,
     },
     pillDot: {

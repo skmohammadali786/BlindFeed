@@ -120,7 +120,7 @@ export default function ReportScreen() {
                 >
                   <View style={styles.reasonLeft}>
                     <Feather name={reason.icon as never} size={18} color={selected === reason.id ? colors.green : colors.textSecondary} />
-                    <Text style={[styles.reasonLabel, selected === reason.id && { color: colors.green, fontFamily: "Inter_500Medium" }]}>
+                    <Text style={[styles.reasonLabel, selected === reason.id && { color: colors.green, fontFamily: "JetBrainsMono_500Medium" }]}>
                       {reason.label}
                     </Text>
                   </View>
@@ -181,32 +181,32 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     container: { flex: 1, backgroundColor: colors.background },
     header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
     backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
-    headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.text },
+    headerTitle: { flex: 1, textAlign: "center", fontSize: 17, fontFamily: "JetBrainsMono_600SemiBold", color: colors.text },
     content: { padding: 20, gap: 16 },
-    question: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.textSecondary },
+    question: { fontSize: 14, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary },
     reasons: { backgroundColor: colors.surface, borderRadius: 14, overflow: "hidden" },
     reasonRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 16 },
     reasonRowSelected: { backgroundColor: "rgba(61, 219, 133, 0.08)" },
     reasonRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
     reasonLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
-    reasonLabel: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.text },
+    reasonLabel: { fontSize: 15, fontFamily: "JetBrainsMono_400Regular", color: colors.text },
     descBox: { backgroundColor: colors.surface, borderRadius: 14, padding: 14, gap: 8 },
-    descLabel: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.textSecondary },
+    descLabel: { fontSize: 13, fontFamily: "JetBrainsMono_500Medium", color: colors.textSecondary },
     descInput: {
-      fontSize: 14, fontFamily: "Inter_400Regular", color: colors.text,
+      fontSize: 14, fontFamily: "JetBrainsMono_400Regular", color: colors.text,
       minHeight: 80, paddingTop: 4,
     },
-    descCount: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary, textAlign: "right" },
+    descCount: { fontSize: 11, fontFamily: "JetBrainsMono_400Regular", color: colors.textTertiary, textAlign: "right" },
     errorBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(255,59,48,0.1)", borderRadius: 12, padding: 12 },
-    errorText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#FF3B30" },
+    errorText: { flex: 1, fontSize: 13, fontFamily: "JetBrainsMono_400Regular", color: "#FF3B30" },
     submitBtn: { backgroundColor: colors.green, borderRadius: 14, paddingVertical: 17, alignItems: "center", marginTop: 4 },
     submitBtnDisabled: { backgroundColor: colors.surface },
-    submitBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
+    submitBtnText: { fontSize: 16, fontFamily: "JetBrainsMono_600SemiBold", color: "#000" },
     successContent: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40, gap: 16 },
     successIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.greenDim, borderWidth: 1.5, borderColor: colors.green, justifyContent: "center", alignItems: "center", marginBottom: 8 },
-    successTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: colors.text },
-    successSub: { fontSize: 15, fontFamily: "Inter_400Regular", color: colors.textSecondary, textAlign: "center", lineHeight: 24 },
+    successTitle: { fontSize: 24, fontFamily: "JetBrainsMono_700Bold", color: colors.text },
+    successSub: { fontSize: 15, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary, textAlign: "center", lineHeight: 24 },
     doneBtn: { marginTop: 16, backgroundColor: colors.green, borderRadius: 14, paddingHorizontal: 48, paddingVertical: 16 },
-    doneBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#000" },
+    doneBtnText: { fontSize: 16, fontFamily: "JetBrainsMono_600SemiBold", color: "#000" },
   });
 }

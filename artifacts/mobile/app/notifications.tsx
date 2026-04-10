@@ -221,7 +221,7 @@ export default function NotificationsScreen() {
             <Text style={styles.emptyTitle}>Couldn't load</Text>
             <Text style={styles.emptySubtitle}>Pull down to try again.</Text>
             <TouchableOpacity onPress={() => load()} style={{ marginTop: 16 }}>
-              <Text style={{ color: colors.green, fontFamily: "Inter_600SemiBold", fontSize: 14 }}>Retry</Text>
+              <Text style={{ color: colors.green, fontFamily: "JetBrainsMono_600SemiBold", fontSize: 14 }}>Retry</Text>
             </TouchableOpacity>
           </View>
         ) : notifications.length === 0 ? (
@@ -278,7 +278,7 @@ export default function NotificationsScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.appealTitle}>Appeal Decision</Text>
-                  <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary }}>Our team reviews all appeals within 24–48 hours</Text>
+                  <Text style={{ fontSize: 11, fontFamily: "JetBrainsMono_400Regular", color: colors.textTertiary }}>Our team reviews all appeals within 24–48 hours</Text>
                 </View>
               </View>
               <Text style={styles.appealSub}>
@@ -335,18 +335,18 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     headerTitle: {
       flex: 1, textAlign: "center",
-      fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.text,
+      fontSize: 17, fontFamily: "JetBrainsMono_600SemiBold", color: colors.text,
     },
     markAllBtn: { width: 80, alignItems: "flex-end" },
-    markAllText: { fontSize: 13, fontFamily: "Inter_500Medium", color: colors.green },
+    markAllText: { fontSize: 13, fontFamily: "JetBrainsMono_500Medium", color: colors.green },
     center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40 },
     emptyIcon: {
       width: 72, height: 72, borderRadius: 36,
       backgroundColor: colors.surface, justifyContent: "center", alignItems: "center", marginBottom: 20,
     },
-    emptyTitle: { fontSize: 20, fontFamily: "Inter_600SemiBold", color: colors.text, marginBottom: 8 },
+    emptyTitle: { fontSize: 20, fontFamily: "JetBrainsMono_600SemiBold", color: colors.text, marginBottom: 8 },
     emptySubtitle: {
-      fontSize: 14, fontFamily: "Inter_400Regular",
+      fontSize: 14, fontFamily: "JetBrainsMono_400Regular",
       color: colors.textSecondary, textAlign: "center", lineHeight: 20,
     },
     card: {
@@ -355,8 +355,8 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     cardUnread: { borderLeftWidth: 3, borderLeftColor: colors.green },
     cardBody: { flex: 1, gap: 3 },
-    cardMessage: { fontSize: 14, fontFamily: "Inter_400Regular", color: colors.text, lineHeight: 20 },
-    cardTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary },
+    cardMessage: { fontSize: 14, fontFamily: "JetBrainsMono_400Regular", color: colors.text, lineHeight: 20 },
+    cardTime: { fontSize: 11, fontFamily: "JetBrainsMono_400Regular", color: colors.textTertiary },
     unreadDot: {
       width: 8, height: 8, borderRadius: 4,
       backgroundColor: colors.green, marginTop: 6,
@@ -366,28 +366,28 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       backgroundColor: colors.greenDim, borderRadius: 10,
       paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12,
     },
-    unreadBannerText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.green },
+    unreadBannerText: { fontSize: 13, fontFamily: "JetBrainsMono_600SemiBold", color: colors.green },
     reportCard: {
       borderRadius: 16, borderWidth: 1.5, overflow: "hidden",
       padding: 16, gap: 10,
     },
     reportCardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
     reportIconBig: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
-    reportActionLabel: { fontSize: 15, fontFamily: "Inter_700Bold" },
-    reportCardMessage: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.text, lineHeight: 19 },
+    reportActionLabel: { fontSize: 15, fontFamily: "JetBrainsMono_700Bold" },
+    reportCardMessage: { fontSize: 13, fontFamily: "JetBrainsMono_400Regular", color: colors.text, lineHeight: 19 },
     appealBtnBig: {
       flexDirection: "row", alignItems: "center", gap: 10,
       borderRadius: 12, borderWidth: 1,
       paddingHorizontal: 14, paddingVertical: 13, marginTop: 2,
     },
-    appealBtnBigText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+    appealBtnBigText: { fontSize: 14, fontFamily: "JetBrainsMono_600SemiBold" },
     appealBtn: {
       flexDirection: "row", alignItems: "center", gap: 5,
       marginTop: 8, backgroundColor: colors.greenDim,
       borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
       alignSelf: "flex-start",
     },
-    appealBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: colors.green },
+    appealBtnText: { fontSize: 12, fontFamily: "JetBrainsMono_600SemiBold", color: colors.green },
     modalOverlay: {
       flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end",
     },
@@ -395,24 +395,24 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20,
       padding: 20, gap: 12, paddingBottom: 34,
     },
-    appealTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: colors.text },
-    appealSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: colors.textSecondary, lineHeight: 19 },
+    appealTitle: { fontSize: 18, fontFamily: "JetBrainsMono_700Bold", color: colors.text },
+    appealSub: { fontSize: 13, fontFamily: "JetBrainsMono_400Regular", color: colors.textSecondary, lineHeight: 19 },
     appealInput: {
       backgroundColor: colors.surface, borderRadius: 12,
-      padding: 14, fontSize: 14, fontFamily: "Inter_400Regular",
+      padding: 14, fontSize: 14, fontFamily: "JetBrainsMono_400Regular",
       color: colors.text, minHeight: 110, textAlignVertical: "top",
     },
-    appealCount: { fontSize: 11, fontFamily: "Inter_400Regular", color: colors.textTertiary, textAlign: "right" },
+    appealCount: { fontSize: 11, fontFamily: "JetBrainsMono_400Regular", color: colors.textTertiary, textAlign: "right" },
     appealActions: { flexDirection: "row", gap: 10 },
     appealCancelBtn: {
       flex: 1, borderRadius: 14, paddingVertical: 14,
       backgroundColor: colors.surface, alignItems: "center",
     },
-    appealCancelText: { fontSize: 15, fontFamily: "Inter_500Medium", color: colors.textSecondary },
+    appealCancelText: { fontSize: 15, fontFamily: "JetBrainsMono_500Medium", color: colors.textSecondary },
     appealSendBtn: {
       flex: 2, borderRadius: 14, paddingVertical: 14,
       backgroundColor: colors.green, alignItems: "center",
     },
-    appealSendText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#000" },
+    appealSendText: { fontSize: 15, fontFamily: "JetBrainsMono_600SemiBold", color: "#000" },
   });
 }
